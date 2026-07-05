@@ -5,6 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dar Al Shams | ERP Portal</title>
     <style>
+/* --- UPDATED RESPONSIVE CSS --- */
+
+/* Ensure the main container behaves on mobile */
+#app-container { 
+    display: flex; 
+    width: 100%; 
+    min-height: 100vh; 
+    flex-direction: row; 
+}
+
+/* Force Table and Content Containers to not stretch */
+.table-responsive, .studio-table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+}
+
+/* Adjust Studio Meta Grid to be more compact on mobile */
+.studio-horizontal-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 15px;
+}
+
+/* Ensure A4 Preview remains centered and scaled without overflow */
+.preview-modal-body-canvas {
+    width: 100%;
+    overflow: hidden; /* Prevent clipping */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.a4-wrapper {
+    width: 800px;
+    height: 1131px;
+    transform-origin: center center; /* Improved scaling anchor */
+    transition: transform 0.2s ease;
+}
+
+/* Mobile Specific Overrides */
+@media screen and (max-width: 768px) {
+    #app-container { flex-direction: column; }
+    
+    .sidebar { width: 100% !important; }
+    
+    /* Make dashboard elements stack */
+    div[style*="grid-template-columns: repeat(3, 1fr)"] {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Ensure inputs don't overflow */
+    input, select, textarea { font-size: 16px; } /* Prevents iOS auto-zoom */
+    
+    .a4-wrapper {
+        width: 100%;
+        height: auto;
+        transform: scale(0.9) !important; /* Scale content down */
+    }
+}
+
+/* Print Specific */
+@media print {
+    .a4-wrapper { transform: scale(1) !important; position: static !important; }
+}
         :root {
             --primary: #cba358;
             --primary-dark: #b58f46;
@@ -447,7 +515,7 @@
                 <div class="premium-gold-frame">
                     <div class="a4-internal-content">
                         <!-- Watermark Configuration using LOGO WHITE .png -->
-                        <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.3; z-index: 0; pointer-events: none;">
+                        <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.25; z-index: 0; pointer-events: none;">
                             <img src="LOGO WHITE .png" alt="Watermark" style="width: 380px; border-radius: 50%;">
                         </div>
                         <div class="a4-header">
@@ -484,17 +552,19 @@
                             </thead>
                             <tbody id="p-table-body"></tbody>
                         </table>
-                        <div class="a4-footer">
-                            <div class="a4-sign-box" style="justify-content: flex-end;">
-                                <div style="height: 65px;"></div> 
-                                <span>Receiver's Sign / توقيع المستلم</span>
-                            </div>
-                            
-                            <div class="a4-sign-box">
-                                <!-- Replaced placeholder with target verification signature file -->
-                                <img src="SIGN.png" alt="Authorized Signature" class="a4-signature-img">
-                                <span>Authorized Signature / التوقيع</span>
-                            </div>
+                        <!-- Inside your Full Screen Invoice Preview Overlay Modal -->
+<div class="a4-footer">
+    <div class="a4-sign-box" style="justify-content: flex-end;">
+        <div style="height: 65px;"></div> 
+        <span>Receiver's Sign / توقيع المستلم</span>
+    </div>
+    
+    <div class="a4-sign-box">
+        <!-- Update the src attribute to "SIGN.webp" below -->
+        <img src="SIGN.webp" alt="Authorized Signature" class="a4-signature-img">
+        <span>Authorized Signature / التوقيع</span>
+    </div>
+</div>
                         </div>
                     </div>
                 </div>
