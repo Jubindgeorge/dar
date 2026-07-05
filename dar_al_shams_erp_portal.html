@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dar Al Shams | ERP Portal</title>
+    <style>
+        :root {
+            --primary: #cba358;
+            --primary-dark: #b58f46;
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --light-bg: #f8fafc;
+            --print-border: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-green: #22c55e;
+            --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
+        body { background: #0f172a; color: var(--text-main); min-height: 100vh; display: flex; overflow-x: hidden; position: relative; }
+
+        /* Immersive Opening Landing Page Screen */
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-image: url('BAG.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: end;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .welcome-content {
+            background: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: blur(8px);
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            max-width: 150px;
+            width: 100%;
+            animation: welcomeFadeIn 0.6s ease-out;
+        }
+
+        .welcome-arrow-btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 56px;
+            height: 56px;
+            background-color: var(--primary, #C4A47A); 
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 12px rgba(196, 164, 122, 0.4);
+        }
+
+        .welcome-arrow-btn:hover {
+            transform: translateX(3px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(196, 164, 122, 0.5);
+            background-color: #b39369;
+        }
+
+        .welcome-arrow-btn:active {
+            transform: scale(0.98);
+        }
+
+        @keyframes welcomeFadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Login Screen Layout */
+        #auth-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+            padding: 20px;
+        }
+        .login-card {
+            background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border-color);
+            padding: 40px 30px; border-radius: 12px; width: 100%; max-width: 400px; backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5); text-align: center;
+        }
+        .login-logo-box {
+            width: 130px; margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;
+        }
+        .login-logo-box img { width: 100%; height: auto; object-fit: contain; border-radius: 25%; }
+        .login-card h2 { margin-bottom: 10px; color: var(--primary); font-size: 1.8rem; }
+        .login-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
+
+        /* Main System Layout */
+        #app-container { display: none; width: 100%; min-height: 100vh; flex-direction: row; }
+        
+        /* Navigation Sidebar */
+        .sidebar { 
+            width: 260px; background: var(--panel-bg); border-right: 1px solid var(--border-color); 
+            display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s ease; overflow-x: hidden;
+        }
+        .sidebar.collapsed { width: 0; border-right: none; }
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); text-align: center; white-space: nowrap; }
+        .sidebar-header h3 { color: var(--primary); font-size: 1.2rem; letter-spacing: 1px; }
+        .sidebar-menu { list-style: none; padding: 20px 0; flex: 1; min-width: 260px; }
+        .sidebar-menu li {
+            padding: 14px 25px; color: var(--text-muted); cursor: pointer;
+            display: flex; align-items: center; gap: 12px; font-weight: 500; transition: all 0.2s;
+        }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(203, 163, 88, 0.1); color: var(--primary); }
+        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border-color); min-width: 260px; }
+
+        /* Content Context Windows */
+        .content-area { flex: 1; display: flex; flex-direction: column; background: #0f172a; min-width: 0; }
+        
+        /* App Portal Header */
+        .top-bar { 
+            min-height: 75px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border-color); display: flex; align-items: center; 
+            justify-content: space-between; padding: 15px 35px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap; gap: 15px;
+        }
+        .top-bar-title-section { display: flex; align-items: center; gap: 15px; }
+        .sidebar-toggle-btn {
+            background: #0f172a; border: 1px solid var(--border-color); color: var(--primary);
+            padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;
+            display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .sidebar-toggle-btn:hover { background: rgba(203, 163, 88, 0.1); }
+        .user-profile-badge {
+            background: #0f172a; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-color);
+            font-size: 0.85rem; color: var(--text-main);
+        }
+        .user-profile-badge strong { color: var(--primary); }
+
+        .view-space { flex: 1; padding: 30px; overflow-y: auto; }
+        .view-panel { display: none; animation: fadeIn 0.3s ease-in-out forwards; }
+        .view-panel.active { display: block; }
+
+        /* Reusable UI Components */
+        .btn {
+            padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer;
+            transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;
+            font-size: 0.85rem; text-align: center;
+        }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #475569; color: white; }
+        .btn-secondary:hover { background: #334155; }
+        .btn-accent { background: var(--accent-blue); color: #0f172a; }
+        .btn-accent:hover { background: #0ea5e9; }
+        .btn-success { background: var(--accent-green); color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:disabled { background: #475569; opacity: 0.4; cursor: not-allowed; color: var(--text-muted); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        input, select, textarea {
+            width: 100%; padding: 10px; background: #0f172a; border: 1px solid var(--border-color);
+            border-radius: 6px; color: white; font-size: 0.95rem;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+        input:disabled { background: #1e293b; color: var(--text-muted); cursor: not-allowed; }
+        
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+
+        /* Tables & Layouts */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .data-table { width: 100%; border-collapse: collapse; background: var(--panel-bg); }
+        .data-table th { background: rgba(0,0,0,0.2); color: var(--primary); text-align: left; padding: 14px 20px; font-size: 0.9rem; white-space: nowrap; }
+        .data-table td { padding: 14px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; word-break: break-word; overflow-wrap: break-word; vertical-align: middle; }
+        .data-table tr:last-child td { border-bottom: none; }
+
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .service-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
+        .service-card h4 { color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;}
+        .service-item-row { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0; color: var(--text-main); border-bottom: 1px dashed rgba(255,255,255,0.05); gap: 10px; }
+        .service-item-row span { color: var(--text-muted); flex-shrink: 0; }
+        .service-card-total { margin-top: 12px; font-weight: bold; text-align: right; color: var(--accent-blue); border-top: 1px solid var(--border-color); padding-top: 8px; }
+
+        .studio-horizontal-meta {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; background: var(--panel-bg);
+            padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;
+        }
+
+        .studio-table-container {
+            width: 100%; overflow-x: auto; border: 1px solid var(--border-color);
+            border-radius: 6px; margin-bottom: 20px; background: rgba(15, 23, 42, 0.4);
+        }
+        .studio-table { width: 100%; border-collapse: collapse; }
+        .studio-table th {
+            background: rgba(0, 0, 0, 0.3); color: var(--primary); padding: 12px 15px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color);
+        }
+        .studio-table td { padding: 8px 15px; border-bottom: 1px solid rgba(51, 65, 85, 0.5); vertical-align: middle; }
+        .studio-table tr:last-child td { border-bottom: none; }
+        .studio-table input { background: #0f172a; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; font-size: 0.9rem; }
+        .studio-table input:focus { border-color: var(--primary); }
+
+        /* Preview Modals */
+        .preview-modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
+            display: flex; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 10001;
+            padding: 20px; overflow: hidden;
+        }
+        .preview-modal-toolbar {
+            width: 100%; max-width: 850px; background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 12px 12px 0 0; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.2); gap: 15px; flex-shrink: 0;
+        }
+        .preview-modal-body-canvas {
+            width: 100%; max-width: 850px; background: #334155; border-radius: 0 0 12px 12px;
+            display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
+            box-shadow: var(--modal-shadow); flex: 1; min-height: 0; padding: 20px; position: relative;
+        }
+        
+        .a4-wrapper {
+            width: 800px; height: 1131px; transform-origin: top left; flex-shrink: 0; box-sizing: border-box; background: white;
+        }
+        .a4-page {
+            width: 100%; height: 100%; padding: 20px; background: white; color: #000; 
+            box-shadow: 0 10px 25px rgb(0 0 0 / 0.3); display: flex; flex-direction: column; position: relative; box-sizing: border-box;
+        }
+
+        .premium-gold-frame {
+            border: 5px solid transparent; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(0, 0, 0, 0.1); background: #ffffff;
+            height: 100%; width: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+        }
+        .a4-internal-content {
+            display: flex; flex-direction: column; height: 100%; width: 100%; padding: 20px; position: relative; z-index: 1; box-sizing: border-box;
+        }
+
+        .a4-header { 
+            display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double var(--primary); 
+            padding-bottom: 15px; margin-bottom: 20px; page-break-inside: avoid; gap: 15px;
+        }
+        .a4-logo-box { width: 110px; height: auto; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
+        .a4-logo-box img { max-width: 100%; height: auto; object-fit: contain; }
+        
+        .a4-co-details { flex: 1; text-align: right; display: flex; flex-direction: column; gap: 2px; }
+        .a4-co-details h1 { font-size: 2.5rem; font-weight: 1000; margin: 0; color: #1e293b; letter-spacing: -0.5px; }
+        .a4-co-details .en-title { font-size: 1.4rem; font-weight: 1000; color: #475569; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .a4-co-details .sub-info { font-size: 0.95rem; font-weight: 500; color: #64748b; }
+        
+        .a4-title { 
+            text-align: center; font-size: 1.5rem; font-weight: 800; margin: 10px 0 15px 0; 
+            letter-spacing: 1px; color: #1e293b; page-break-inside: avoid;
+        }
+        
+        .a4-meta { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; gap: 20px; page-break-inside: avoid; }
+        .a4-meta-column.client-box { max-width: 65%; word-break: break-word; overflow-wrap: break-word; color: #334155; display: flex; flex-direction: column; gap: 6px; }
+        .a4-meta-column.meta-box { text-align: right; max-width: 35%; white-space: nowrap; color: #334155; }
+
+        .client-line-en { font-size: 1rem; text-align: left; }
+        .client-line-ar { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; font-weight: 700; font-size: 1rem; margin-top: 2px; }
+
+        .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; margin-bottom: 25px !important; }
+        .a4-table th { 
+            background: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; 
+            padding: 12px 10px !important; border: 1px solid #94a3b8 !important; text-align: center !important; font-size: 0.95rem !important;
+        }
+        .a4-table td { border: 1px solid #cbd5e1 !important; padding: 10px !important; color: #000 !important; font-size: 1rem !important; vertical-align: middle !important; word-wrap: break-word; }
+        .a4-table th:nth-child(1), .a4-table td:nth-child(1) { width: 10%; text-align: center; } 
+        .a4-table th:nth-child(2), .a4-table td:nth-child(2) { width: 55%; text-align: left; }   
+        .a4-table th:nth-child(3), .a4-table td:nth-child(3) { width: 15%; text-align: center; } 
+        .a4-table th:nth-child(4), .a4-table td:nth-child(4) { width: 20%; text-align: right; padding-right: 15px; } 
+
+        .a4-table tr:last-child td { background: #f8fafc !important; font-weight: 800 !important; font-size: 1rem !important; }
+        .a4-footer { margin-top: auto; display: flex; justify-content: space-between; padding-top: 15px; gap: 20px; }
+        .a4-sign-box { width: 220px; text-align: center; border-top: none; padding-top: 5px; font-size: 0.99rem; font-weight: bold; display: flex; flex-direction: column; align-items: center; }
+        .a4-signature-img { height: 65px; width: auto; max-width: 100%; object-fit: contain; margin-bottom: 5px; }
+
+        .flex-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .custom-modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;
+        }
+        .custom-modal-content {
+            background: var(--panel-bg); border: 1.5px solid var(--primary);
+            padding: 30px; border-radius: 12px; width: 100%; max-width: 440px; text-align: center;
+            box-shadow: var(--modal-shadow); animation: fadeIn 0.2s ease-out;
+        }
+        .custom-modal-content h3 { color: var(--primary); margin-bottom: 12px; font-size: 1.3rem; }
+        .custom-modal-content p { color: var(--text-main); margin-bottom: 24px; font-size: 0.95rem; line-height: 1.5; }
+        .custom-modal-actions { display: flex; gap: 12px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+        .custom-modal-actions .btn { flex: 1; min-width: 120px; }
+
+        .watermark-logo {
+            position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
+            width: 500px !important; z-index: 0 !important; opacity: 0.8 !important; pointer-events: none !important; 
+        }
+        .watermark-logo img { width: 100% !important; height: auto !important; }
+        .a4-header, .a4-title, .a4-meta, .a4-table, .a4-footer { position: relative !important; z-index: 1 !important; }
+
+        @media screen and (max-width: 1024px) {
+            .studio-horizontal-meta { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media screen and (max-width: 768px) {
+            #app-container { flex-direction: column; }
+            .sidebar { width: 100% !important; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .sidebar.collapsed { display: none; }
+            .sidebar-menu { display: flex; flex-wrap: wrap; padding: 10px; justify-content: center; }
+            .sidebar-menu li { padding: 10px 15px; font-size: 0.9rem; }
+            .sidebar-header { padding: 15px; }
+            .sidebar-footer { display: none; }
+            .top-bar { padding: 15px 20px; justify-content: center; text-align: center; }
+            .view-space { padding: 20px 15px; }
+            .studio-horizontal-meta { grid-template-columns: 1fr; }
+            
+            div[style*="grid-template-columns: repeat(3, 1fr)"] {
+                grid-template-columns: 1fr !important; gap: 15px !important;
+            }
+        }
+
+        body.opening-page {
+            margin: 0;
+            padding: 0;
+            background-image: url('BAG.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media print {
+            @page { size: A4 portrait; margin: 0; }
+            html, body { background: #fff !important; color: #000 !important; width: 210mm; height: 297mm; overflow: visible !important; }
+            body * { visibility: hidden; }
+            #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { visibility: visible !important; }
+            #document-preview-modal { position: absolute !important; left: 0 !important; top: 0 !important; background: transparent !important; padding: 0 !important; width: 100% !important; height: 100% !important; overflow: visible !important; display: block !important; }
+            .preview-modal-body-canvas { background: transparent !important; padding: 0 !important; box-shadow: none !important; width: 100% !important; height: 100% !important; overflow: visible !important; display: block !important; }
+            .a4-wrapper { transform: scale(1) !important; width: 210mm !important; height: 297mm !important; max-width: 100% !important; max-height: 100% !important; margin: 0 !important; padding: 0 !important; position: absolute !important; left: 0 !important; top: 0 !important; box-shadow: none !important; }
+            .a4-page { width: 100% !important; height: 100% !important; background: white !important; padding: 20px !important; box-shadow: none !important; border: none !important; box-sizing: border-box !important; }
+            .premium-gold-frame { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; border: 5px solid transparent !important; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30 !important; width: 100% !important; height: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+            .a4-internal-content { padding: 20px !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; }
+            .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            .a4-table th, .a4-table td { border: 1px solid #cbd5e1 !important; padding: 10px !important; }
+            .a4-footer { margin-top: auto !important; display: flex !important; justify-content: space-between !important; }
+            .preview-modal-toolbar, .sidebar, .top-bar, .no-print, .btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Opening Welcome Screen Page -->
+<div id="welcome-screen">
+    <div class="welcome-content">
+        <button class="welcome-arrow-btn" onclick="exitWelcomeScreen()" title="Proceed to Login Auth">➔</button>
+    </div>
+</div>
+
+<!-- General Notification Overlay -->
+<div id="custom-modal" class="custom-modal-backdrop" style="display:none;">
+    <div class="custom-modal-content">
+        <h3 id="modal-title">Notification</h3>
+        <p id="modal-message"></p>
+        <div class="custom-modal-actions" id="modal-actions"></div>
+    </div>
+</div>
+
+<!-- Add/Edit Client Modal -->
+<div id="client-modal" class="custom-modal-backdrop" style="display:none;">
+    <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
+        <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Register New Account</h3>
+        <input type="hidden" id="cl-modal-id">
+        <div class="form-group">
+            <label>Company Name (EN)</label>
+            <input type="text" id="cl-input-name" placeholder="e.g. ACME MARKETING SERVICES">
+        </div>
+        <div class="form-group">
+            <label>Arabic Company Name (AR) - Leave blank to auto-generate</label>
+            <input type="text" id="cl-input-name-ar" placeholder="Arabic Translation">
+        </div>
+        <div class="form-group">
+            <label>Phone Contact</label>
+            <input type="text" id="cl-input-phone" placeholder="e.g. +971 4 123 4567">
+        </div>
+        <div class="custom-modal-actions">
+            <button class="btn btn-secondary" onclick="closeClientModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveClientModalData()">Save Account</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Service Package Modal -->
+<div id="service-modal" class="custom-modal-backdrop" style="display:none;">
+    <div class="custom-modal-content" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
+        <h3 id="service-modal-title" style="text-align: center; margin-bottom: 20px;">Manage Service Package</h3>
+        <input type="hidden" id="srv-modal-id">
+        <div class="form-group">
+            <label>Package Category Title</label>
+            <input type="text" id="srv-input-title" placeholder="e.g. New Visa (Sharjah)">
+        </div>
+        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">Sub-items Cost Table Setup</label>
+        <div id="srv-modal-items-container" style="max-height: 280px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2);"></div>
+        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 20px;" onclick="addSrvModalRow()">+ Append Custom Sub-item row</button>
+        <div class="custom-modal-actions">
+            <button class="btn btn-secondary" onclick="closeServiceModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveServiceModalData()">Save Service Catalog</button>
+        </div>
+    </div>
+</div>
+
+<!-- Full Screen Invoice Preview Overlay Modal -->
+<div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
+    <div class="preview-modal-toolbar">
+        <div>
+            <h3 id="preview-modal-heading" style="color:var(--primary); font-size:1.15rem;">Document Studio Archive Verification</h3>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:2px;">Autosaved to Firebase Storage Cloud</p>
+        </div>
+        <div class="flex-actions">
+            <button class="btn btn-success" onclick="window.print()">⚡ Print Hardcopy</button>
+            <button class="btn btn-secondary" onclick="closePreviewModal()">Close Preview</button>
+        </div>
+    </div>
+    <div class="preview-modal-body-canvas">
+        <div class="a4-wrapper" id="a4-wrapper-element">
+            <div class="a4-page">
+                <div class="premium-gold-frame">
+                    <div class="a4-internal-content">
+                        <!-- Watermark Configuration using LOGO WHITE .png -->
+                        <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.3; z-index: 0; pointer-events: none;">
+                            <img src="LOGO WHITE .png" alt="Watermark" style="width: 380px; border-radius: 50%;">
+                        </div>
+                        <div class="a4-header">
+                            <!-- Header Configuration using LOGO WHITE _2.png -->
+                            <div class="a4-logo-box">
+                                <img src="LOGO WHITE .png" alt="Dar Al Shams Logo" style="border-radius: 50%;" onerror="this.outerHTML='<div style=\'color: #cba358; font-weight: 800; font-size: 1.4rem;\'>DAR AL SHAMS</div>'">
+                            </div>
+                            <div class="a4-co-details">
+                                <h1>دار الشمس لخدمات تخليص المعاملات</h1>
+                                <div class="en-title">DAR AL SHAMS DOCUMENTS CLEARING SERVICES</div>
+                                <div class="sub-info">Tel: +971 4 236 7006 | Office # 227, Dubai, UAE</div>
+                                <div class="sub-info">Email: info@daralshams.ae</div>
+                            </div>
+                        </div>
+                        <div class="a4-title" id="p-doc-title">INVOICE / فاتورة</div>
+                        <div class="a4-meta">
+                            <div class="a4-meta-column client-box">
+                                <div id="p-client-name" class="client-line-en">M/s: </div>
+                                <div id="p-client-name-ar" class="client-line-ar">السيد / </div>
+                            </div>
+                            <div class="a4-meta-column meta-box">
+                                <div id="p-doc-ref" style="font-size:1.05rem; font-weight: bold; color:#1e293b;">No: </div>
+                                <div id="p-doc-date">Date: </div>
+                            </div>
+                        </div>
+                        <table class="a4-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">S.No</th>
+                                    <th style="width: 60%;">Description / التفاصيل</th>
+                                    <th style="width: 12%;">Qty</th>
+                                    <th style="width: 18%;">Amount (Dhs) / المبلغ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="p-table-body"></tbody>
+                        </table>
+                        <div class="a4-footer">
+                            <div class="a4-sign-box" style="justify-content: flex-end;">
+                                <div style="height: 65px;"></div> 
+                                <span>Receiver's Sign / توقيع المستلم</span>
+                            </div>
+                            
+                            <div class="a4-sign-box">
+                                <!-- Replaced placeholder with target verification signature file -->
+                                <img src="SIGN.png" alt="Authorized Signature" class="a4-signature-img">
+                                <span>Authorized Signature / التوقيع</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Authentication Overlay Module using LOGO.jpeg -->
+<div id="auth-container" style="display: none;">
+    <div class="login-card">
+        <div class="login-logo-box">
+            <img src="LOGO.JPEG" alt="Dar Al Shams Official Logo" onerror="this.style.display='none'">
+        </div>
+        <h2>DAR AL SHAMS</h2>
+        <p>Enterprise Resource Document Studio</p>
+        <div class="form-group" style="text-align: left;">
+            <label>Username</label>
+            <input type="text" id="username" value="admin">
+        </div>
+        <div class="form-group" style="text-align: left;">
+            <label>Password</label>
+            <input type="password" id="password" value="1234">
+        </div>
+        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="handleLogin()">Authenticate</button>
+    </div>
+</div>
+
+<div id="app-container">
+    <div class="sidebar" id="app-sidebar">
+        <div class="sidebar-header">
+            <h3>DAR AL SHAMS</h3>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="active" onclick="switchView('dashboard')">Dashboard</li>
+            <li onclick="switchView('clients')">Client Database</li>
+            <li onclick="switchView('services')">Services & Fees</li>
+            <li onclick="switchView('documents')">Documents & Records</li>
+            <li onclick="openStudio('Invoice')">Create Invoice</li>
+            <li onclick="openStudio('Quotation')">Create Quotation</li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn btn-secondary" style="width:100%;" onclick="handleLogout()">Exit Portal</button>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <div class="top-bar">
+            <div class="top-bar-title-section">
+                <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
+                <h2 id="page-title" style="color: var(--primary); font-weight: 700; letter-spacing: 0.5px;">System Overview</h2>
+            </div>
+            <div class="user-profile-badge">Portal Session: <strong>Administrator</strong></div>
+        </div>
+        
+        <div class="view-space">
+            <div id="view-dashboard" class="view-panel active">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                    <div class="studio-editor" style="width:auto;">
+                        <h4 style="color:var(--text-muted)">Total Saved Invoices</h4>
+                        <h1 id="dash-inv-count" style="color:var(--primary); font-size: 2.5rem; margin-top:10px;">0</h1>
+                    </div>
+                    <div class="studio-editor" style="width:auto;">
+                        <h4 style="color:var(--text-muted)">Active Quotations</h4>
+                        <h1 id="dash-quot-count" style="color:var(--primary); font-size: 2.5rem; margin-top:10px;">0</h1>
+                    </div>
+                    <div class="studio-editor" style="width:auto;">
+                        <h4 style="color:var(--text-muted)">Registered Clients</h4>
+                        <h1 id="dash-client-count" style="color:var(--primary); font-size: 2.5rem; margin-top:10px;">0</h1>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-clients" class="view-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
+                    <h3>Corporate Accounts</h3>
+                    <button class="btn btn-primary" onclick="openClientModal(false)">+ Register Account</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Company Account Name (EN)</th><th>Arabic Title (AR)</th><th>Phone Contact</th><th style="width: 180px;">Actions</th></tr>
+                        </thead>
+                        <tbody id="client-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-services" class="view-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
+                    <h3>Government Visa Service Catalogs</h3>
+                    <button class="btn btn-primary" onclick="openServiceModal(false)">+ Create New Package Entry</button>
+                </div>
+                <div class="services-grid" id="services-cards-wrapper"></div>
+            </div>
+
+            <div id="view-documents" class="view-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <h3>Historical Document Logs</h3>
+                    <button id="btn-batch-delete" class="btn btn-danger" disabled onclick="deleteSelectedDocuments()">Delete Selected</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center; width: 5%;"><input type="checkbox" id="th-select-all" onclick="toggleSelectAllDocuments(this)"></th>
+                                <th style="width: 18%;">Doc Reference</th>
+                                <th style="width: 15%;">Document Type</th>
+                                <th style="width: 32%;">Client Account</th>
+                                <th style="width: 30%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doc-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-studio" class="view-panel">
+                <h3 id="studio-mode-title" style="color:var(--primary); margin-bottom:20px;">Document Parameters</h3>
+                
+                <div class="studio-horizontal-meta">
+                    <div class="form-group" style="margin-bottom:0; background: rgba(203, 163, 88, 0.1); padding: 10px; border-radius: 6px; border: 1px dashed var(--primary); display: flex; flex-direction: column; justify-content: center;">
+                        <label style="color: var(--primary); font-weight: bold; margin-bottom: 4px;">⚡ Service Injector</label>
+                        <select id="st-service-injector" onchange="injectServicePresetToItems()">
+                            <option value="">-- Choose Preset Catalog --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Auto-Generated Reference ID</label>
+                        <input type="text" id="st-ref-code" disabled>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Target Account Profile</label>
+                        <input type="text" id="st-client" list="registered-clients-list" placeholder="Type name or select...">
+                        <datalist id="registered-clients-list"></datalist>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Issue Date</label>
+                        <input type="date" id="st-date" oninput="calculateAutoReference()">
+                    </div>
+                </div>
+
+                <div style="background: var(--panel-bg); padding: 25px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap: 10px;">
+                        <h4>Line Items Canvas</h4>
+                        <button class="btn btn-secondary" onclick="addStudioRow(true)">+ Append Row Manually</button>
+                    </div>
+                    
+                    <div class="studio-table-container">
+                        <table class="studio-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%; text-align: center;">#</th>
+                                    <th style="width: 55%;">Item Description / Details</th>
+                                    <th style="width: 12%;">Qty</th>
+                                    <th style="width: 18%;">Unit Price (Dhs)</th>
+                                    <th style="width: 10%; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="st-spreadsheet-body"></tbody>
+                        </table>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem; margin-top:10px;" onclick="commitDocumentToMemory()">Commit Document Record & View Preview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('app-sidebar');
+        if (sidebar) sidebar.classList.toggle('collapsed');
+    }
+    function exitWelcomeScreen() {
+        document.getElementById('welcome-screen').style.opacity = '0';
+        document.getElementById('welcome-screen').style.visibility = 'hidden';
+        document.getElementById('auth-container').style.display = 'flex';
+    }
+    window.toggleSidebar = toggleSidebar;
+    window.exitWelcomeScreen = exitWelcomeScreen;
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCuejMSsX0dnJ09ajwADYrT7-Ow4VWLqGo",
+        authDomain: "dar-al-shams.firebaseapp.com",
+        databaseURL: "https://dar-al-shams-default-rtdb.firebaseio.com",
+        projectId: "dar-al-shams",
+        storageBucket: "dar-al-shams.firebasestorage.app",
+        messagingSenderId: "511599651070",
+        appId: "1:511599651070:web:cac6b0fe3ee622b97a5daf",
+        measurementId: "G-WXEGFW21E7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
+
+    const translationGlossary = {
+        "marketing": "التسويق", "services": "خدمات", "international": "العالمية",
+        "trading": "التجارية", "management": "إدارة", "documents": "المستندات",
+        "clearing": "تخليص", "commercial": "التجاري", "consultancy": "الاستشارات",
+        "logistics": "اللوجستية", "general": "العامة", "technical": "الفنية",
+        "burgeon": "برجون", "dar": "دار", "al": "ال", "shams": "الشمس"
+    };
+
+    const phoneticMap = {
+        'a': 'ا', 'b': 'ب', 'c': 'ك', 'd': 'د', 'e': 'ي', 'f': 'ف', 'g': 'ج', 'h': 'ه', 'i': 'ي', 
+        'j': 'ج', 'k': 'ك', 'l': 'ل', 'm': 'م', 'n': 'ن', 'o': 'و', 'p': 'ب', 'q': 'ق', 'r': 'ر', 
+        's': 'س', 't': 'ت', 'u': 'و', 'v': 'ف', 'w': 'و', 'x': 'اكس', 'y': 'ي', 'z': 'ز'
+    };
+
+    let state = {
+        clients: [],
+        documents: [],
+        services: [],
+        currentStudioMode: 'Invoice', 
+        currentStudioItems: [],
+        activeEditingId: null 
+    };
+
+    function resizePreviewCanvas() {
+        const wrapper = document.getElementById('a4-wrapper-element');
+        const container = document.querySelector('.preview-modal-body-canvas');
+        if (!wrapper || !container) return;
+
+        if (window.matchMedia('print').matches) {
+            wrapper.style.transform = 'none';
+            wrapper.style.margin = '0';
+            return;
+        }
+
+        const availableWidth = container.clientWidth - 40;
+        const availableHeight = container.clientHeight - 40;
+        const baseWidth = 800;
+        const baseHeight = 1131;
+
+        const scaleX = availableWidth / baseWidth;
+        const scaleY = availableHeight / baseHeight;
+        const optimalScaleFactor = Math.min(scaleX, scaleY);
+
+        wrapper.style.transform = `scale(${optimalScaleFactor})`;
+        
+        const offsetLeft = (container.clientWidth - (baseWidth * optimalScaleFactor)) / 2;
+        const offsetTop = (container.clientHeight - (baseHeight * optimalScaleFactor)) / 2;
+        
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = `${offsetLeft}px`;
+        wrapper.style.top = `${offsetTop}px`;
+    }
+
+    window.addEventListener('resize', resizePreviewCanvas);
+
+    function initFirebaseListeners() {
+        onValue(ref(db, 'clients'), (snapshot) => {
+            const data = snapshot.val();
+            state.clients = data ? Object.values(data) : [];
+            renderClientsTable();
+            renderDashboardStats();
+        });
+
+        onValue(ref(db, 'services'), (snapshot) => {
+            const data = snapshot.val();
+            state.services = data ? Object.values(data) : getMockServicesFallback();
+            renderServicesCatalog();
+        });
+
+        onValue(ref(db, 'documents'), (snapshot) => {
+            const data = snapshot.val();
+            state.documents = data ? Object.values(data) : [];
+            renderDocumentsTable();
+            renderDashboardStats();
+        });
+    }
+
+    function getMockServicesFallback() {
+        return [
+            {
+                id: "srv_1",
+                title: "New visa cost (Sharjah)",
+                items: [
+                    { d: "Apply for new quota", p: 80 }, { d: "Labour Card payment", p: 3550 },
+                    { d: "New job Offer letters", p: 280 }, { d: "Insurance Dxb", p: 189 },
+                    { d: "Entry permit", p: 410 }, { d: "Change status", p: 710 },
+                    { d: "(Tawjeeh) Submission", p: 155 }, { d: "Medical", p: 320 },
+                    { d: "Emirates Id", p: 385 }, { d: "Visa stamping", p: 510 },
+                    { d: "ILOE (insurance)", p: 135 }, { d: "Health Insurance", p: 550 }
+                ]
+            },
+            {
+                id: "srv_2",
+                title: "Renewal visa cost (Sharjah)",
+                items: [
+                    { d: "Renewal Labour card form", p: 80 }, { d: "Labour card payment", p: 3553 },
+                    { d: "Insurance", p: 189 }, { d: "Tawjeeh", p: 155 },
+                    { d: "Medical", p: 320 }, { d: "Emirates Id", p: 385 },
+                    { d: "Visa Stamping", p: 510 }, { d: "ILOE", p: 135 },
+                    { d: "Health insurance", p: 550 }
+                ]
+            }
+        ];
+    }
+
+    function showNotification(title, message, callback) {
+        const modal = document.getElementById('custom-modal');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-message').innerText = message;
+        const actions = document.getElementById('modal-actions');
+        actions.innerHTML = `<button class="btn btn-primary" id="custom-ok-btn">Got It</button>`;
+        modal.style.display = 'flex';
+        document.getElementById('custom-ok-btn').onclick = function() {
+            modal.style.display = 'none';
+            if (callback) callback();
+        };
+    }
+
+    function showConfirmDialog(title, message, onYes, onNo) {
+        const modal = document.getElementById('custom-modal');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-message').innerText = message;
+        const actions = document.getElementById('modal-actions');
+        actions.innerHTML = `
+            <button class="btn btn-secondary" id="custom-no-btn">Cancel</button>
+            <button class="btn btn-danger" id="custom-yes-btn">Confirm Action</button>
+        `;
+        modal.style.display = 'flex';
+        document.getElementById('custom-yes-btn').onclick = function() {
+            modal.style.display = 'none';
+            if (onYes) onYes();
+        };
+        document.getElementById('custom-no-btn').onclick = function() {
+            modal.style.display = 'none';
+            if (onNo) onNo();
+        };
+    }
+
+    function autoGenerateArabicProfile(engText) {
+        if (!engText || engText.trim() === "") return "";
+        const match = state.clients.find(c => c.name.trim().toLowerCase() === engText.trim().toLowerCase());
+        if (match && match.nameAr) return match.nameAr;
+
+        let cleanText = engText.toUpperCase().replace(/\b(LLC|L\.L\.C|FZE|EST|LIMITED)\b/g, '').trim();
+        let words = cleanText.split(/\s+/);
+        let translatedArr = [];
+
+        words.forEach(word => {
+            let key = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (!key) return;
+            if (translationGlossary[key]) {
+                translatedArr.push(translationGlossary[key]);
+            } else {
+                let phoneticWord = "";
+                for (let i = 0; i < key.length; i++) {
+                    let char = key[i];
+                    phoneticWord += phoneticMap[char] || char;
+                }
+                if (phoneticWord) translatedArr.push(phoneticWord);
+            }
+        });
+
+        let finalArText = translatedArr.join(" ");
+        if (engText.toUpperCase().includes("LLC") || engText.toUpperCase().includes("L.L.C")) {
+            finalArText += " ش.ذ.م.م";
+        }
+        return finalArText.trim();
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        if(u === 'admin' && p === '1234') {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            initFirebaseListeners();
+        } else {
+            showNotification("Authentication Failed", "Invalid administration access credentials.");
+        }
+    }
+
+    function handleLogout() {
+        document.getElementById('auth-container').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none';
+    }
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar-menu li').forEach(l => l.classList.remove('active'));
+        
+        const targetPanel = document.getElementById(`view-${viewName}`);
+        if(targetPanel) targetPanel.classList.add('active');
+        
+        document.getElementById('page-title').innerText = viewName === 'dashboard' ? 'SYSTEM OVERVIEW' : viewName.toUpperCase();
+        
+        if(viewName === 'documents') {
+            document.getElementById('th-select-all').checked = false;
+            updateDeleteButtonState();
+            renderDocumentsTable();
+        } else if (viewName === 'clients') {
+            renderClientsTable();
+        } else if (viewName === 'services') {
+            renderServicesCatalog();
+        }
+        renderDashboardStats();
+    }
+
+    function renderDashboardStats() {
+        document.getElementById('dash-inv-count').innerText = state.documents.filter(d => d.type === 'Invoice').length;
+        document.getElementById('dash-quot-count').innerText = state.documents.filter(d => d.type === 'Quotation').length;
+        document.getElementById('dash-client-count').innerText = state.clients.length;
+    }
+
+    function renderClientsTable() {
+        const tbody = document.getElementById('client-table-body');
+        if(!tbody) return;
+        tbody.innerHTML = state.clients.map(c => `
+            <tr>
+                <td><strong>${c.name}</strong></td>
+                <td style="direction: rtl; text-align: right;">${c.nameAr || ''}</td>
+                <td>${c.phone}</td>
+                <td>
+                    <div class="flex-actions">
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="openClientModal(true, '${c.id}')">Edit</button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteClient('${c.id}')">Drop</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+        
+        const datalist = document.getElementById('registered-clients-list');
+        if(datalist) {
+            datalist.innerHTML = state.clients.map(c => `<option value="${c.name}"></option>`).join('');
+        }
+    }
+
+    function openClientModal(isEdit, id = null) {
+        const modal = document.getElementById('client-modal');
+        const titleEl = document.getElementById('client-modal-title');
+        
+        if (isEdit && id) {
+            const client = state.clients.find(c => c.id === id);
+            if (!client) return;
+            titleEl.innerText = "Modify Account Profile";
+            document.getElementById('cl-modal-id').value = client.id;
+            document.getElementById('cl-input-name').value = client.name;
+            document.getElementById('cl-input-name-ar').value = client.nameAr || '';
+            document.getElementById('cl-input-phone').value = client.phone;
+        } else {
+            titleEl.innerText = "Register New Corporate Client";
+            document.getElementById('cl-modal-id').value = '';
+            document.getElementById('cl-input-name').value = '';
+            document.getElementById('cl-input-name-ar').value = '';
+            document.getElementById('cl-input-phone').value = '';
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeClientModal() {
+        document.getElementById('client-modal').style.display = 'none';
+    }
+
+    function saveClientModalData() {
+        const id = document.getElementById('cl-modal-id').value || Date.now().toString();
+        const name = document.getElementById('cl-input-name').value.trim();
+        let nameAr = document.getElementById('cl-input-name-ar').value.trim();
+        const phone = document.getElementById('cl-input-phone').value.trim();
+
+        if (!name) {
+            showNotification("Validation Error", "Corporate Name EN is required.");
+            return;
+        }
+        if (!nameAr) nameAr = autoGenerateArabicProfile(name);
+
+        set(ref(db, 'clients/' + id), { id, name, nameAr, phone, office: "UAE" })
+            .then(() => {
+                closeClientModal();
+            });
+    }
+
+    function deleteClient(id) {
+        showConfirmDialog(
+            "Confirm Action",
+            "Are you absolutely sure you want to delete this registered company account?",
+            function() {
+                remove(ref(db, 'clients/' + id));
+            }
+        );
+    }
+
+    function renderServicesCatalog() {
+        const wrapper = document.getElementById('services-cards-wrapper');
+        if(!wrapper) return;
+
+        wrapper.innerHTML = state.services.map(pkg => {
+            let totalSum = pkg.items ? pkg.items.reduce((sum, item) => sum + item.p, 0) : 0;
+            let itemsHtml = pkg.items ? pkg.items.map(item => `
+                <div class="service-item-row">
+                    • ${item.d} <span>${item.p.toFixed(2)} Dhs</span>
+                </div>
+            `).join('') : '';
+
+            return `
+                <div class="service-card">
+                    <h4>
+                        <span>${pkg.title}</span>
+                        <div class="flex-actions">
+                            <button class="btn btn-secondary" style="padding:2px 6px; font-size:0.75rem;" onclick="openServiceModal(true, '${pkg.id}')">Edit</button>
+                            <button class="btn btn-danger" style="padding:2px 6px; font-size:0.75rem;" onclick="deleteServicePackage('${pkg.id}')">Drop</button>
+                        </div>
+                    </h4>
+                    <div>${itemsHtml}</div>
+                    <div class="service-card-total">Combined Cost: ${totalSum.toFixed(2)} Dhs</div>
+                </div>
+            `;
+        }).join('');
+        populateStudioPresetDropdown();
+    }
+
+    function openServiceModal(isEdit, id = null) {
+        const modal = document.getElementById('service-modal');
+        const titleEl = document.getElementById('service-modal-title');
+        const container = document.getElementById('srv-modal-items-container');
+        container.innerHTML = '';
+
+        if (isEdit && id) {
+            const pkg = state.services.find(s => s.id === id);
+            if (!pkg) return;
+            titleEl.innerText = "Modify Service Package";
+            document.getElementById('srv-modal-id').value = pkg.id;
+            document.getElementById('srv-input-title').value = pkg.title;
+            if(pkg.items) {
+                pkg.items.forEach(item => appendSrvModalRowData(item.d, item.p));
+            }
+        } else {
+            titleEl.innerText = "Create New Service Package";
+            document.getElementById('srv-modal-id').value = '';
+            document.getElementById('srv-input-title').value = '';
+            appendSrvModalRowData('', 0);
+        }
+        modal.style.display = 'flex';
+    }
+
+    function appendSrvModalRowData(desc, price) {
+        const container = document.getElementById('srv-modal-items-container');
+        const div = document.createElement('div');
+        div.style.display = 'flex'; div.style.gap = '8px'; div.style.marginBottom = '8px';
+        div.className = 'srv-modal-row-item';
+        div.innerHTML = `
+            <input type="text" class="srv-m-desc" value="${desc}" placeholder="Line Item Description" style="flex:1;">
+            <input type="number" class="srv-m-price" value="${price}" placeholder="Dhs" style="width:110px;">
+            <button class="btn btn-danger" style="padding: 10px;" onclick="this.parentElement.remove()">✕</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function addSrvModalRow() { appendSrvModalRowData('', 0); }
+    function closeServiceModal() { document.getElementById('service-modal').style.display = 'none'; }
+
+    function saveServiceModalData() {
+        const id = document.getElementById('srv-modal-id').value || "srv_" + Date.now();
+        const title = document.getElementById('srv-input-title').value.trim();
+        
+        if (!title) {
+            showNotification("Validation Error", "Please provide a valid Service Package title.");
+            return;
+        }
+
+        const rows = document.querySelectorAll('.srv-modal-row-item');
+        let items = [];
+        rows.forEach(row => {
+            const d = row.querySelector('.srv-m-desc').value.trim();
+            const p = parseFloat(row.querySelector('.srv-m-price').value) || 0;
+            if (d) items.push({ d, p });
+        });
+
+        if (items.length === 0) {
+            showNotification("Validation Error", "The service package must contain at least one valid line item.");
+            return;
+        }
+
+        set(ref(db, 'services/' + id), { id, title, items })
+            .then(() => {
+                closeServiceModal();
+            });
+    }
+
+    function deleteServicePackage(id) {
+        showConfirmDialog(
+            "Confirm Deletion", 
+            "Are you sure you want to drop this entire visa services package from the records?",
+            function() { remove(ref(db, 'services/' + id)); }
+        );
+    }
+
+    function populateStudioPresetDropdown() {
+        const select = document.getElementById('st-service-injector');
+        if(!select) return;
+        select.innerHTML = '<option value="">-- Choose Preset Catalog --</option>' + 
+            state.services.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+    }
+
+    function injectServicePresetToItems() {
+        const select = document.getElementById('st-service-injector');
+        if(!select || !select.value) return;
+
+        const targetPkg = state.services.find(s => s.id === select.value);
+        if(!targetPkg) return;
+
+        showConfirmDialog(
+            "Load Service Template",
+            `Would you like to overwrite the current canvas rows to load the "${targetPkg.title}" template?`,
+            function() {
+                state.currentStudioItems = targetPkg.items.map(item => ({ d: item.d, q: 1, p: item.p }));
+                renderStudioInputs();
+            }
+        );
+        select.value = ""; 
+    }
+
+    function renderDocumentsTable() {
+        const tbody = document.getElementById('doc-table-body');
+        if(!tbody) return;
+        if(state.documents.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No document logs saved in memory registry.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = state.documents.map(d => {
+            let convertButton = d.type === 'Quotation' ? `<button class="btn btn-primary" style="padding:4px 8px; font-size:0.8rem;" onclick="convertQuotationToInvoice('${d.id}')">Convert to Invoice</button>` : '';
+            return `
+                <tr>
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="doc-checkbox" value="${d.id}" onclick="updateDeleteButtonState()">
+                    </td>
+                    <td><strong>${d.ref}</strong></td>
+                    <td>${d.type}</td>
+                    <td>${d.client}</td>
+                    <td>
+                        <div class="flex-actions">
+                            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="loadDocumentToStudio('${d.id}')">Open Studio Canvas / Edit</button>
+                            ${convertButton}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function convertQuotationToInvoice(id) {
+        const quotation = state.documents.find(d => d.id === id);
+        if (!quotation) return;
+
+        state.currentStudioMode = 'Invoice';
+        state.activeEditingId = null; 
+        state.currentStudioItems = quotation.items ? JSON.parse(JSON.stringify(quotation.items)) : []; 
+
+        switchView('studio');
+        document.getElementById('studio-mode-title').innerText = `Construct Invoice (Converted)`;
+        document.getElementById('p-doc-title').innerText = 'INVOICE / فاتورة';
+        document.getElementById('st-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('st-client').value = quotation.client;
+        
+        calculateAutoReference();
+        renderStudioInputs();
+    }
+
+    function toggleSelectAllDocuments(master) {
+        document.querySelectorAll('.doc-checkbox').forEach(cb => cb.checked = master.checked);
+        updateDeleteButtonState();
+    }
+
+    function updateDeleteButtonState() {
+        const checkedCount = document.querySelectorAll('.doc-checkbox:checked').length;
+        const deleteBtn = document.getElementById('btn-batch-delete');
+        if(deleteBtn) {
+            deleteBtn.disabled = checkedCount === 0;
+            deleteBtn.innerText = checkedCount > 0 ? `Delete Selected (${checkedCount})` : 'Delete Selected';
+        }
+    }
+
+    function deleteSelectedDocuments() {
+        const selectedCheckboxes = document.querySelectorAll('.doc-checkbox:checked');
+        const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.value);
+        if(idsToDelete.length === 0) return;
+        
+        showConfirmDialog(
+            "Delete Documents",
+            `Are you sure you want to permanently delete the ${idsToDelete.length} selected document record(s)?`,
+            function() {
+                idsToDelete.forEach(id => { remove(ref(db, 'documents/' + id)); });
+                document.getElementById('th-select-all').checked = false;
+                updateDeleteButtonState();
+            }
+        );
+    }
+
+    function calculateAutoReference() {
+        if(state.activeEditingId) return;
+        const dateElementVal = document.getElementById('st-date').value;
+        const targetYear = dateElementVal ? new Date(dateElementVal).getFullYear() : 2026;
+        const docPrefix = state.currentStudioMode === 'Invoice' ? 'INV' : 'QT';
+        const historyPool = state.documents.filter(d => d.type === state.currentStudioMode);
+        const nextSerial = 1001 + historyPool.length;
+        document.getElementById('st-ref-code').value = `${docPrefix}-${targetYear}-${nextSerial}`;
+    }
+
+    function openStudio(mode) {
+        state.currentStudioMode = mode;
+        state.activeEditingId = null; 
+        switchView('studio');
+        
+        document.getElementById('studio-mode-title').innerText = `Construct ${mode}`;
+        document.getElementById('p-doc-title').innerText = mode === 'Invoice' ? 'INVOICE / فاتورة' : 'QUOTATION / عرض سعر';
+        document.getElementById('st-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('st-client').value = ''; 
+        state.currentStudioItems = [{ d: `Execution of Services - ${mode} Standard Line Item`, q: 1, p: 150 }];
+        
+        calculateAutoReference();
+        renderStudioInputs();
+    }
+
+    function addStudioRow(shouldFocus = false) {
+        state.currentStudioItems.push({ d: '', q: 1, p: 0 });
+        renderStudioInputs();
+        if (shouldFocus) {
+            const nextIdx = state.currentStudioItems.length - 1;
+            const nextInput = document.getElementById(`desc-input-${nextIdx}`);
+            if (nextInput) nextInput.focus();
+        }
+    }
+
+    function handlePriceKeydown(event, currentIndex) {
+        if (event.key === 'Tab' && !event.shiftKey) {
+            if (currentIndex === state.currentStudioItems.length - 1) {
+                event.preventDefault();
+                addStudioRow(true);
+            }
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            addStudioRow(true);
+        }
+    }
+
+    function removeStudioRow(i) {
+        state.currentStudioItems.splice(i, 1);
+        if(state.currentStudioItems.length === 0) state.currentStudioItems.push({ d: '', q: 1, p: 0 });
+        renderStudioInputs();
+    }
+
+    function renderStudioInputs() {
+        const tbody = document.getElementById('st-spreadsheet-body');
+        if(!tbody) return;
+
+        tbody.innerHTML = state.currentStudioItems.map((item, i) => `
+            <tr>
+                <td style="text-align: center; font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">${i+1}</td>
+                <td>
+                    <input type="text" id="desc-input-${i}" value="${item.d}" placeholder="Item Description / Payment Details..." style="width: 100%;">
+                </td>
+                <td>
+                    <input type="number" id="qty-input-${i}" value="${item.q}" placeholder="1" style="width: 100%; text-align: center;">
+                </td>
+                <td>
+                    <input type="number" id="price-input-${i}" value="${item.p}" placeholder="0.00" style="width: 100%; text-align: right;">
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-danger" id="remove-btn-${i}" style="padding: 6px 12px; font-size: 0.8rem;">✕</button>
+                </td>
+            </tr>
+        `).join('');
+
+        state.currentStudioItems.forEach((item, i) => {
+            document.getElementById(`remove-btn-${i}`).onclick = () => removeStudioRow(i);
+            
+            const descInp = document.getElementById(`desc-input-${i}`);
+            descInp.oninput = () => { state.currentStudioItems[i].d = descInp.value; };
+
+            const qtyInp = document.getElementById(`qty-input-${i}`);
+            qtyInp.oninput = () => { state.currentStudioItems[i].q = parseFloat(qtyInp.value) || 0; };
+
+            const prcInp = document.getElementById(`price-input-${i}`);
+            prcInp.oninput = () => { state.currentStudioItems[i].p = parseFloat(prcInp.value) || 0; };
+            prcInp.onkeydown = (e) => handlePriceKeydown(e, i);
+        });
+    }
+
+    function generateAndShowPreviewModal() {
+        const clientName = document.getElementById('st-client').value || "";
+        const dateVal = document.getElementById('st-date').value;
+        const refVal = document.getElementById('st-ref-code').value;
+        
+        const labelPrefix = state.currentStudioMode === 'Invoice' ? 'Invoice No: ' : 'Quotation No: ';
+        const computedArabicProfileName = autoGenerateArabicProfile(clientName);
+
+        document.getElementById('preview-modal-heading').innerText = `${state.currentStudioMode} Console Registry Verification [${refVal}]`;
+        document.getElementById('p-client-name').innerText = "M/s: " + (clientName || "No Profile Selected");
+        document.getElementById('p-client-name-ar').innerText = "السيد / " + (computedArabicProfileName ? computedArabicProfileName : "");
+        document.getElementById('p-doc-date').innerText = "Date: " + dateVal;
+        document.getElementById('p-doc-ref').innerText = labelPrefix + refVal;
+        document.getElementById('p-doc-title').innerText = state.currentStudioMode === 'Invoice' ? 'INVOICE / فاتورة' : 'QUOTATION / عرض سعر';
+        
+        let html = '', total = 0;
+        state.currentStudioItems.forEach((item, i) => {
+            let amt = item.q * item.p;
+            total += amt;
+            html += `<tr><td>${i+1}</td><td style="text-align:left;">${item.d}</td><td>${item.q}</td><td>${amt.toFixed(2)}</td></tr>`;
+        });
+        
+        document.getElementById('p-table-body').innerHTML = html + `
+            <tr>
+                <td colspan="3" style="text-align:right; font-weight:bold; color: #1e293b;">Total / مجموع (Dhs)</td>
+                <td style="font-weight:bold; background:#f1f5f9; color: #000;">${total.toFixed(2)}</td>
+            </tr>
+        `;
+        
+        document.getElementById('document-preview-modal').style.display = 'flex';
+        setTimeout(resizePreviewCanvas, 50);
+    }
+
+    function closePreviewModal() {
+        document.getElementById('document-preview-modal').style.display = 'none';
+        switchView('documents');
+    }
+
+    function commitDocumentToMemory() {
+        const client = document.getElementById('st-client').value;
+        const date = document.getElementById('st-date').value;
+        const refCode = document.getElementById('st-ref-code').value;
+        
+        if(!client || !date) {
+            showNotification("Validation Failed", "Target Client Selection Profile and Valid Issue Date Parameter Fields Required.");
+            return;
+        }
+
+        const id = state.activeEditingId || Date.now().toString();
+        const docPayload = {
+            id: id, ref: refCode, type: state.currentStudioMode, client: client, date: date, items: [...state.currentStudioItems]
+        };
+
+        set(ref(db, 'documents/' + id), docPayload)
+            .then(() => { generateAndShowPreviewModal(); });
+    }
+
+    function loadDocumentToStudio(id) {
+        const doc = state.documents.find(d => d.id === id);
+        if(!doc) return;
+        
+        state.currentStudioMode = doc.type;
+        state.activeEditingId = doc.id; 
+        state.currentStudioItems = doc.items ? [...doc.items] : [];
+        
+        switchView('studio');
+        document.getElementById('studio-mode-title').innerText = `Review & Edit ${doc.type}`;
+        document.getElementById('st-ref-code').value = doc.ref;
+        document.getElementById('st-client').value = doc.client;
+        document.getElementById('st-date').value = doc.date;
+        
+        renderStudioInputs();
+    }
+
+    window.handleLogin = handleLogin;
+    window.handleLogout = handleLogout;
+    window.switchView = switchView;
+    window.openClientModal = openClientModal;
+    window.closeClientModal = closeClientModal;
+    window.saveClientModalData = saveClientModalData;
+    window.deleteClient = deleteClient;
+    window.openServiceModal = openServiceModal;
+    window.addSrvModalRow = addSrvModalRow;
+    window.closeServiceModal = closeServiceModal;
+    window.saveServiceModalData = saveServiceModalData;
+    window.deleteServicePackage = deleteServicePackage;
+    window.injectServicePresetToItems = injectServicePresetToItems;
+    window.convertQuotationToInvoice = convertQuotationToInvoice;
+    window.toggleSelectAllDocuments = toggleSelectAllDocuments;
+    window.updateDeleteButtonState = updateDeleteButtonState;
+    window.deleteSelectedDocuments = deleteSelectedDocuments;
+    window.calculateAutoReference = calculateAutoReference;
+    window.openStudio = openStudio;
+    window.addStudioRow = addStudioRow;
+    window.closePreviewModal = closePreviewModal;
+    window.commitDocumentToMemory = commitDocumentToMemory;
+    window.loadDocumentToStudio = loadDocumentToStudio;
+</script>
+</body>
+</html>
