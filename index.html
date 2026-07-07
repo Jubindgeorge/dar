@@ -341,7 +341,6 @@
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .sidebar.collapsed { 
-                display: flex !important; 
                 transform: translateX(-100%); 
             }
             .sidebar-menu { 
@@ -359,7 +358,7 @@
             .content-area { width: 100%; min-width: 100vw; }
             .top-bar { padding: 15px 20px; gap: 10px; justify-content: space-between; }
             .view-space { padding: 20px 15px; }
-            input, select, textarea { font-size: 16px; } /* Block zoom scaling behavior on iOS viewports */
+            input, select, textarea { font-size: 16px; } 
             .preview-modal-toolbar { padding: 10px 15px; justify-content: center; text-align: center; }
         }
 
@@ -527,7 +526,7 @@
 </div>
 
 <div id="app-container">
-    <div class="sidebar" id="app-sidebar">
+    <div class="sidebar collapsed" id="app-sidebar">
         <div class="sidebar-header">
             <h3>DAR AL SHAMS</h3>
         </div>
@@ -547,7 +546,7 @@
     <div class="content-area">
         <div class="top-bar">
             <div class="top-bar-title-section">
-                <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-trigger" onclick="toggleSidebar(event)">☰</button>
                 <h2 id="page-title" style="color: var(--primary); font-weight: 700; letter-spacing: 0.5px;">System Overview</h2>
             </div>
             <div class="user-profile-badge">Portal Session: <strong>Administrator</strong></div>
@@ -669,33 +668,34 @@
 </div>
 
 <script>
-    function toggleSidebar() {
+    function toggleSidebar(event) {
+        if (event) event.stopPropagation(); // Prevents click event bubbling to the global document layout listener
         const sidebar = document.getElementById('app-sidebar');
         if (sidebar) {
-            // Check if we are currently on a mobile viewport layout
-            if (window.innerWidth <= 768) {
-                if (sidebar.style.display === 'none' || sidebar.classList.contains('collapsed')) {
-                    sidebar.style.setProperty('display', 'block', 'important');
-                    sidebar.classList.remove('collapsed');
-                } else {
-                    sidebar.style.setProperty('display', 'none', 'important');
-                    sidebar.classList.add('collapsed');
-                }
-            } else {
-                // Handle standard native desktop transitions
-                sidebar.style.display = ''; // Clear mobile style overrides
-                sidebar.classList.toggle('collapsed');
-            }
+            sidebar.classList.toggle('collapsed');
         }
     }
-    
+
     function exitWelcomeScreen() {
         document.getElementById('welcome-screen').style.opacity = '0';
         document.getElementById('welcome-screen').style.visibility = 'hidden';
         document.getElementById('auth-container').style.display = 'flex';
     }
-    
-    // Explicitly bind components directly back to absolute global window scope
+
+    // Global document interaction listener to collapse the sidebar when clicking anywhere outside its physical boundaries
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('app-sidebar');
+        const toggleBtn = document.getElementById('sidebar-toggle-trigger');
+        
+        // This execution only applies when the sidebar drawer menu is open/expanded
+        if (sidebar && !sidebar.classList.contains('collapsed')) {
+            // Verify if the clicked target area lies outside both the sidebar container and the toggle button icon
+            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
+                sidebar.classList.add('collapsed');
+            }
+        }
+    });
+
     window.toggleSidebar = toggleSidebar;
     window.exitWelcomeScreen = exitWelcomeScreen;
 </script>
@@ -926,13 +926,10 @@
         }
         renderDashboardStats();
 
-        // ADD THIS AUTO-CLOSE ON MOBILE OPTIMIZATION HERE:
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('app-sidebar');
-            if (sidebar) {
-                sidebar.style.setProperty('display', 'none', 'important');
-                sidebar.classList.add('collapsed');
-            }
+        // Closes sidebar when navigation items are activated on small devices
+        const sidebar = document.getElementById('app-sidebar');
+        if (sidebar) {
+            sidebar.classList.add('collapsed');
         }
     }
 
