@@ -671,13 +671,31 @@
 <script>
     function toggleSidebar() {
         const sidebar = document.getElementById('app-sidebar');
-        if (sidebar) sidebar.classList.toggle('collapsed');
+        if (sidebar) {
+            // Check if we are currently on a mobile viewport layout
+            if (window.innerWidth <= 768) {
+                if (sidebar.style.display === 'none' || sidebar.classList.contains('collapsed')) {
+                    sidebar.style.setProperty('display', 'block', 'important');
+                    sidebar.classList.remove('collapsed');
+                } else {
+                    sidebar.style.setProperty('display', 'none', 'important');
+                    sidebar.classList.add('collapsed');
+                }
+            } else {
+                // Handle standard native desktop transitions
+                sidebar.style.display = ''; // Clear mobile style overrides
+                sidebar.classList.toggle('collapsed');
+            }
+        }
     }
+    
     function exitWelcomeScreen() {
         document.getElementById('welcome-screen').style.opacity = '0';
         document.getElementById('welcome-screen').style.visibility = 'hidden';
         document.getElementById('auth-container').style.display = 'flex';
     }
+    
+    // Explicitly bind components directly back to absolute global window scope
     window.toggleSidebar = toggleSidebar;
     window.exitWelcomeScreen = exitWelcomeScreen;
 </script>
@@ -907,6 +925,15 @@
             renderServicesCatalog();
         }
         renderDashboardStats();
+
+        // ADD THIS AUTO-CLOSE ON MOBILE OPTIMIZATION HERE:
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('app-sidebar');
+            if (sidebar) {
+                sidebar.style.setProperty('display', 'none', 'important');
+                sidebar.classList.add('collapsed');
+            }
+        }
     }
 
     function renderDashboardStats() {
