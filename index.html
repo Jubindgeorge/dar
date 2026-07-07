@@ -24,26 +24,26 @@
         body { background: #0f172a; color: var(--text-main); min-height: 100vh; display: flex; overflow-x: hidden; position: relative; }
 
         /* Immersive Opening Landing Page Screen */
-       /* Immersive Opening Landing Page Screen */
         #welcome-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
-            background-color: #0f172a; /* Fills outer gaps elegantly */
+            background-color: #0f172a; 
             background-image: url('BAG.png');
-            background-size: contain; /* Dynamically shrinks and scales image down on small viewports */
+            background-size: contain; 
             background-position: center;
             background-repeat: no-repeat;
             display: flex;
             justify-content: center;
-            align-items: flex-end;
+            align-items: flex-end; 
             z-index: 9999;
-            padding: 40px 20px;
+            padding: 40px 20px; 
             box-sizing: border-box;
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
+
         .welcome-content {
             background: none;
             backdrop-filter: none;
@@ -113,46 +113,24 @@
         #app-container { display: none; width: 100%; min-height: 100vh; flex-direction: row; }
         
         /* Navigation Sidebar */
-       /* Responsive Mobile Specific Overrides */
-        @media screen and (max-width: 768px) {
-            #app-container { flex-direction: row; position: relative; }
-            
-            /* Sidebar realigned on the left as an overlay panel */
-            .sidebar { 
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 100vh;
-                width: 260px !important; 
-                z-index: 1000;
-                border-right: 1px solid var(--border-color); 
-                border-bottom: none;
-                box-shadow: 10px 0 25px rgba(0,0,0,0.5);
-                transform: translateX(0);
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-            .sidebar.collapsed { 
-                display: flex !important; /* Keep display flex so animation transitions works smoothly */
-                transform: translateX(-100%); /* Slides completely out of view to the left */
-            }
-            .sidebar-menu { 
-                display: flex; 
-                flex-direction: column; /* Restores vertical navigation alignment */
-                overflow-x: hidden;
-                overflow-y: auto;
-                padding: 20px 0; 
-                gap: 0; 
-            }
-            .sidebar-menu li { padding: 14px 25px; font-size: 0.95rem; white-space: normal; }
-            .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); }
-            .sidebar-footer { display: block; }
-            
-            .content-area { width: 100%; min-width: 100vw; }
-            .top-bar { padding: 15px 20px; gap: 10px; justify-content: space-between; }
-            .view-space { padding: 20px 15px; }
-            input, select, textarea { font-size: 16px; } 
-            .preview-modal-toolbar { padding: 10px 15px; justify-content: center; text-align: center; }
+        .sidebar { 
+            width: 260px; background: var(--panel-bg); border-right: 1px solid var(--border-color); 
+            display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.3s ease; overflow-x: hidden;
         }
+        .sidebar.collapsed { width: 0; border-right: none; }
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); text-align: center; white-space: nowrap; }
+        .sidebar-header h3 { color: var(--primary); font-size: 1.2rem; letter-spacing: 1px; }
+        .sidebar-menu { list-style: none; padding: 20px 0; flex: 1; min-width: 260px; }
+        .sidebar-menu li {
+            padding: 14px 25px; color: var(--text-muted); cursor: pointer;
+            display: flex; align-items: center; gap: 12px; font-weight: 500; transition: all 0.2s;
+        }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: rgba(203, 163, 88, 0.1); color: var(--primary); }
+        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border-color); min-width: 260px; }
+
+        /* Content Context Windows */
+        .content-area { flex: 1; display: flex; flex-direction: column; background: #0f172a; min-width: 0; }
+        
         /* App Portal Header */
         .top-bar { 
             min-height: 75px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(8px);
@@ -346,16 +324,42 @@
 
         /* Responsive Mobile Specific Overrides */
         @media screen and (max-width: 768px) {
-            #app-container { flex-direction: column; }
-            .sidebar { width: 100% !important; border-right: none; border-bottom: 1px solid var(--border-color); }
-            .sidebar.collapsed { display: none; }
-            .sidebar-menu { display: flex; overflow-x: auto; padding: 10px; gap: 5px; -webkit-overflow-scrolling: touch; }
-            .sidebar-menu li { padding: 10px 18px; font-size: 0.85rem; white-space: nowrap; border-radius: 6px; }
-            .sidebar-header { padding: 15px; border-bottom: none; }
-            .sidebar-footer { display: none; }
+            #app-container { flex-direction: row; position: relative; }
+            
+            /* Sidebar docked perfectly on the left side */
+            .sidebar { 
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 260px !important; 
+                z-index: 1000;
+                border-right: 1px solid var(--border-color); 
+                border-bottom: none;
+                box-shadow: 10px 0 25px rgba(0,0,0,0.5);
+                transform: translateX(0);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .sidebar.collapsed { 
+                display: flex !important; 
+                transform: translateX(-100%); 
+            }
+            .sidebar-menu { 
+                display: flex; 
+                flex-direction: column; 
+                overflow-x: hidden;
+                overflow-y: auto;
+                padding: 20px 0; 
+                gap: 0; 
+            }
+            .sidebar-menu li { padding: 14px 25px; font-size: 0.95rem; white-space: normal; }
+            .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); }
+            .sidebar-footer { display: block; }
+            
+            .content-area { width: 100%; min-width: 100vw; }
             .top-bar { padding: 15px 20px; gap: 10px; justify-content: space-between; }
             .view-space { padding: 20px 15px; }
-            input, select, textarea { font-size: 16px; } /* Disables auto-zoom scaling on iOS mobile viewports */
+            input, select, textarea { font-size: 16px; } /* Block zoom scaling behavior on iOS viewports */
             .preview-modal-toolbar { padding: 10px 15px; justify-content: center; text-align: center; }
         }
 
@@ -379,14 +383,12 @@
 </head>
 <body>
 
-<!-- Opening Welcome Screen Page -->
 <div id="welcome-screen">
     <div class="welcome-content">
         <button class="welcome-arrow-btn" onclick="exitWelcomeScreen()" title="Proceed to Login Auth">➔</button>
     </div>
 </div>
 
-<!-- General Notification Overlay -->
 <div id="custom-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content">
         <h3 id="modal-title">Notification</h3>
@@ -395,7 +397,6 @@
     </div>
 </div>
 
-<!-- Add/Edit Client Modal -->
 <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
         <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Register New Account</h3>
@@ -419,7 +420,6 @@
     </div>
 </div>
 
-<!-- Add/Edit Service Package Modal -->
 <div id="service-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
         <h3 id="service-modal-title" style="text-align: center; margin-bottom: 20px;">Manage Service Package</h3>
@@ -438,7 +438,6 @@
     </div>
 </div>
 
-<!-- Full Screen Invoice Preview Overlay Modal -->
 <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
     <div class="preview-modal-toolbar">
         <div>
@@ -455,12 +454,10 @@
             <div class="a4-page">
                 <div class="premium-gold-frame">
                     <div class="a4-internal-content">
-                        <!-- Watermark Configuration using LOGO WHITE .png -->
                         <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.25; z-index: 0; pointer-events: none;">
                             <img src="LOGO WHITE .png" alt="Watermark" style="width: 380px; border-radius: 50%;">
                         </div>
                         <div class="a4-header">
-                            <!-- Header Configuration using LOGO WHITE _2.png -->
                             <div class="a4-logo-box">
                                 <img src="LOGO WHITE .png" alt="Dar Al Shams Logo" style="border-radius: 50%;" onerror="this.outerHTML='<div style=\'color: #cba358; font-weight: 800; font-size: 1.4rem;\'>DAR AL SHAMS</div>'">
                             </div>
@@ -510,7 +507,6 @@
     </div>
 </div>
 
-<!-- Authentication Overlay Module -->
 <div id="auth-container" style="display: none;">
     <div class="login-card">
         <div class="login-logo-box">
