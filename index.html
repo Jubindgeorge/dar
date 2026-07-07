@@ -206,8 +206,8 @@
         .service-card-total { margin-top: 12px; font-weight: bold; text-align: right; color: var(--accent-blue); border-top: 1px solid var(--border-color); padding-top: 8px; }
 
         .studio-horizontal-meta {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; background: var(--panel-bg);
-            padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: var(--panel-bg);
+            padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;
         }
 
         .studio-table-container { margin-bottom: 20px; background: rgba(15, 23, 42, 0.4); margin-top: 0; }
@@ -234,13 +234,13 @@
             box-shadow: 0 -5px 25px rgba(0,0,0,0.2); gap: 15px; flex-shrink: 0; flex-wrap: wrap;
         }
         .preview-modal-body-canvas {
-            width: 100%; max-width: 850px; background: #334155; border-radius: 0 0 12px 12px;
-            display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
+            width: 100%; background: #334155; border-radius: 0 0 12px 12px;
+            overflow: auto; display: flex; justify-content: center; align-items: flex-start;
             box-shadow: var(--modal-shadow); flex: 1; min-height: 0; padding: 20px; position: relative;
         }
         
         .a4-wrapper {
-            width: 800px; height: 1131px; transform-origin: top center; flex-shrink: 0; box-sizing: border-box; background: white; transition: transform 0.2s ease;
+            width: 800px; height: 1131px; transform-origin: top center; flex-shrink: 0; box-sizing: border-box; background: white; transition: transform 0.2s ease; margin-bottom: 40px;
         }
         .a4-page {
             width: 100%; height: 100%; padding: 20px; background: white; color: #000; 
@@ -324,7 +324,7 @@
 
         /* Responsive Mobile Specific Overrides */
         @media screen and (max-width: 768px) {
-            #app-container { flex-direction: row; position: relative; }
+            #app-container { flex-direction: column; position: relative; }
             
             /* Sidebar docked perfectly on the left side */
             .sidebar { 
@@ -360,6 +360,10 @@
             .view-space { padding: 20px 15px; }
             input, select, textarea { font-size: 16px; } 
             .preview-modal-toolbar { padding: 10px 15px; justify-content: center; text-align: center; }
+
+            .a4-wrapper {
+                margin-bottom: 20px;
+            }
         }
 
         @media print {
@@ -369,7 +373,7 @@
             #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { visibility: visible !important; }
             #document-preview-modal { position: absolute !important; left: 0 !important; top: 0 !important; background: transparent !important; padding: 0 !important; width: 100% !important; height: 100% !important; overflow: visible !important; display: block !important; }
             .preview-modal-body-canvas { background: transparent !important; padding: 0 !important; box-shadow: none !important; width: 100% !important; height: 100% !important; overflow: visible !important; display: block !important; }
-            .a4-wrapper { transform: scale(1) !important; width: 210mm !important; height: 297mm !important; max-width: 100% !important; max-height: 100% !important; margin: 0 !important; padding: 0 !important; position: absolute !important; left: 0 !important; top: 0 !important; box-shadow: none !important; }
+            .a4-wrapper { transform: scale(1) !important; position: static !important; width: 210mm !important; height: 297mm !important; max-width: 100% !important; max-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
             .a4-page { width: 100% !important; height: 100% !important; background: white !important; padding: 20px !important; box-shadow: none !important; border: none !important; box-sizing: border-box !important; }
             .premium-gold-frame { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; border: 5px solid transparent !important; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30 !important; width: 100% !important; height: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
             .a4-internal-content { padding: 20px !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; }
@@ -754,23 +758,28 @@
             return;
         }
 
-        const availableWidth = container.clientWidth - 20;
-        const availableHeight = container.clientHeight - 20;
+        // Detect real-time width available in preview area canvas container
+        const availableWidth = container.clientWidth - 20; 
         const baseWidth = 800;
         const baseHeight = 1131;
 
-        const scaleX = availableWidth / baseWidth;
-        const scaleY = availableHeight / baseHeight;
-        const optimalScaleFactor = Math.min(scaleX, scaleY);
+        // If the screen is smaller than the document template (800px), calculate exact scale factor
+        let optimalScaleFactor = 1;
+        if (availableWidth < baseWidth) {
+            optimalScaleFactor = availableWidth / baseWidth;
+        }
 
         wrapper.style.transform = `scale(${optimalScaleFactor})`;
         
-        const offsetLeft = (container.clientWidth - (baseWidth * optimalScaleFactor)) / 2;
-        const offsetTop = (container.clientHeight - (baseHeight * optimalScaleFactor)) / 2;
+        // Center the scaled preview horizontally inside the layout frame
+        const offsetLeft = Math.max(0, (container.clientWidth - (baseWidth * optimalScaleFactor)) / 2);
         
         wrapper.style.position = 'absolute';
         wrapper.style.left = `${offsetLeft}px`;
-        wrapper.style.top = `${offsetTop}px`;
+        wrapper.style.top = `20px`; // Fixed top gap avoids cutting off top margin elements
+        
+        // Dynamically adjust container viewport wrapper min-height to maintain scrolling aspect visibility
+        container.style.minHeight = `${(baseHeight * optimalScaleFactor) + 60}px`;
     }
 
     window.addEventListener('resize', resizePreviewCanvas);
