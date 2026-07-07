@@ -322,37 +322,18 @@
             background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;
         }
 
-        /* Responsive Mobile Specific Overrides */
+        /* --- STABLE RESPONSIVE & MOBILE DRAWERS CONTROLS --- */
         @media screen and (max-width: 768px) {
             #app-container { flex-direction: column; position: relative; }
             
-            /* Sidebar docked perfectly on the left side */
             .sidebar { 
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 100vh;
-                width: 260px !important; 
-                z-index: 1000;
-                border-right: 1px solid var(--border-color); 
-                border-bottom: none;
-                box-shadow: 10px 0 25px rgba(0,0,0,0.5);
-                transform: translateX(0);
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                position: fixed; top: 0; left: 0; height: 100vh; width: 260px !important; z-index: 1000;
+                border-right: 1px solid var(--border-color); box-shadow: 10px 0 25px rgba(0,0,0,0.5);
+                transform: translateX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .sidebar.collapsed { 
-                transform: translateX(-100%); 
-            }
-            .sidebar-menu { 
-                display: flex; 
-                flex-direction: column; 
-                overflow-x: hidden;
-                overflow-y: auto;
-                padding: 20px 0; 
-                gap: 0; 
-            }
+            .sidebar.collapsed { transform: translateX(-100%); }
+            .sidebar-menu { display: flex; flex-direction: column; overflow-y: auto; padding: 20px 0; }
             .sidebar-menu li { padding: 14px 25px; font-size: 0.95rem; white-space: normal; }
-            .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border-color); }
             .sidebar-footer { display: block; }
             
             .content-area { width: 100%; min-width: 100vw; }
@@ -360,48 +341,88 @@
             .view-space { padding: 20px 15px; }
             input, select, textarea { font-size: 16px; } 
             
-            /* Enhanced Portrait Mobile Mode Preview Modal Configuration */
-            .preview-modal-backdrop {
-                padding: 10px;
-            }
-            .preview-modal-toolbar { 
-                padding: 12px 15px; 
-                border-radius: 8px 8px 0 0;
-                justify-content: center; 
-                text-align: center; 
-                gap: 8px;
-            }
-            .preview-modal-toolbar div {
-                width: 100%;
-            }
-            .preview-modal-body-canvas { 
-                padding: 10px; 
-                border-radius: 0 0 8px 8px;
-                display: flex;
-                align-items: center; 
-                justify-content: center;
-                overflow: hidden; /* Prevent native window double scrollbars */
-            }
-            .a4-wrapper {
-                margin-bottom: 0;
-                transform-origin: center center; /* Symmetrical scaling calculation inside the display viewport */
-            }
+            /* Preview Modal Adaptive Overrides for On-Screen View */
+            .preview-modal-backdrop { padding: 10px; }
+            .preview-modal-toolbar { padding: 12px 15px; border-radius: 8px 8px 0 0; justify-content: center; text-align: center; gap: 8px; }
+            .preview-modal-toolbar div { width: 100%; }
+            .preview-modal-body-canvas { padding: 10px; border-radius: 0 0 8px 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+            
+            .a4-wrapper { margin-bottom: 0; transform-origin: center center; }
         }
 
+        /* --- IPHONE 13 & MOBILE HARD-ENFORCED SINGLE-PAGE PRINT RULES --- */
         @media print {
-            @page { size: A4 portrait; margin: 0; }
-            html, body { background: #fff !important; color: #000 !important; width: 210mm; height: 297mm; overflow: visible !important; }
+            @page { 
+                size: A4 portrait; 
+                margin: 0 !important; /* Strips browser headers, footers, and page numbers */
+            }
+            html, body { 
+                background: #fff !important; 
+                color: #000 !important; 
+                width: 210mm !important; 
+                height: 297mm !important; 
+                overflow: hidden !important; /* Forces strict cropping inside boundaries */
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+            }
             body * { visibility: hidden; }
-            #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { visibility: visible !important; }
-            #document-preview-modal { position: absolute !important; left: 0 !important; top: 0 !important; background: transparent !important; padding: 0 !important; width: 100% !important; height: 100% !important; overflow: visible !important; display: block !important; }
-            .preview-modal-body-canvas { background: transparent !important; padding: 0 !important; box-shadow: none !important; width: 100% !important; height: 100% !important; overflow: visible !important; display: block !important; }
-            .a4-wrapper { transform: scale(1) !important; position: static !important; width: 210mm !important; height: 297mm !important; max-width: 100% !important; max-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
-            .a4-page { width: 100% !important; height: 100% !important; background: white !important; padding: 20px !important; box-shadow: none !important; border: none !important; box-sizing: border-box !important; }
-            .premium-gold-frame { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; border: 5px solid transparent !important; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30 !important; width: 100% !important; height: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
-            .a4-internal-content { padding: 20px !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; }
-            .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-            .a4-table th, .a4-table td { border: 1px solid #cbd5e1 !important; padding: 10px !important; }
-            .a4-footer { margin-top: auto !important; display: flex !important; justify-content: space-between !important; }
+            
+            /* Isolate content components */
+            #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { 
+                visibility: visible !important; 
+            }
+            
+            #document-preview-modal { 
+                position: absolute !important; left: 0 !important; top: 0 !important; 
+                background: transparent !important; padding: 0 !important; 
+                width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; 
+            }
+            
+            .preview-modal-body-canvas { 
+                background: transparent !important; padding: 0 !important; box-shadow: none !important; 
+                width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; 
+            }
+            
+            /* Scale reset back from interactive preview bounds to standard sheet parameters */
+            .a4-wrapper { 
+                transform: scale(1) !important; 
+                width: 210mm !important; height: 297mm !important; 
+                max-width: 210mm !important; max-height: 297mm !important; 
+                margin: 0 !important; padding: 0 !important; 
+                position: absolute !important; left: 0 !important; top: 0 !important; box-shadow: none !important; 
+            }
+            
+            .a4-page { 
+                width: 210mm !important; height: 297mm !important; 
+                max-width: 210mm !important; max-height: 297mm !important; 
+                background: white !important; padding: 12mm !important; 
+                box-shadow: none !important; border: none !important; box-sizing: border-box !important; 
+                page-break-inside: avoid !important; page-break-after: avoid !important;
+            }
+            
+            .premium-gold-frame { 
+                border: 4mm solid transparent !important; 
+                border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30 !important; 
+                width: 100% !important; height: 100% !important; box-shadow: none !important; 
+                margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; 
+            }
+            
+            .a4-internal-content { padding: 8mm !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; position: relative !important; }
+            .a4-header { margin-bottom: 12mm !important; padding-bottom: 10px !important; }
+            .a4-title { margin: 5mm 0 10mm 0 !important; font-size: 1.4rem !important; }
+            .a4-meta { margin-bottom: 12mm !important; }
+            
+            .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; page-break-inside: avoid !important; }
+            .a4-table th, .a4-table td { border: 1px solid #cbd5e1 !important; padding: 7px 8px !important; font-size: 0.9rem !important; }
+            
+            /* Dynamic positioning overrides for the signature boxes to avoid multi-page generation */
+            .a4-footer { 
+                position: absolute !important; 
+                bottom: 10mm !important; left: 8mm !important; right: 8mm !important; 
+                margin-top: 0 !important; display: flex !important; justify-content: space-between !important; 
+                page-break-inside: avoid !important; 
+            }
+            
             .preview-modal-toolbar, .sidebar, .top-bar, .no-print, .btn { display: none !important; }
         }
     </style>
@@ -494,7 +515,6 @@
                                 <div class="sub-info">Email: info@daralshams.ae</div>
                             </div>
                         </div>
-                        <div class="a4-title" id="p-doc-title">INVOICE / فاتورة</div>
                         <div class="a4-title" id="p-doc-title">INVOICE / فاتورة</div>
                         <div class="a4-meta">
                             <div class="a4-meta-column client-box">
@@ -697,7 +717,7 @@
 
 <script>
     function toggleSidebar(event) {
-        if (event) event.stopPropagation(); // Prevents click event bubbling to the global document layout listener
+        if (event) event.stopPropagation();
         const sidebar = document.getElementById('app-sidebar');
         if (sidebar) {
             sidebar.classList.toggle('collapsed');
@@ -710,14 +730,11 @@
         document.getElementById('auth-container').style.display = 'flex';
     }
 
-    // Global document interaction listener to collapse the sidebar when clicking anywhere outside its physical boundaries
     document.addEventListener('click', function(event) {
         const sidebar = document.getElementById('app-sidebar');
         const toggleBtn = document.getElementById('sidebar-toggle-trigger');
         
-        // This execution only applies when the sidebar drawer menu is open/expanded
         if (sidebar && !sidebar.classList.contains('collapsed')) {
-            // Verify if the clicked target area lies outside both the sidebar container and the toggle button icon
             if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
                 sidebar.classList.add('collapsed');
             }
@@ -788,18 +805,14 @@
         const baseHeight = 1131;
 
         if (isMobile) {
-            // Mobile Specific Logic: Scale cleanly relative to viewport container width bounds
             const availableWidth = container.clientWidth;
             const optimalScaleFactor = availableWidth / baseWidth;
 
             wrapper.style.position = 'static';
             wrapper.style.transform = `scale(${optimalScaleFactor})`;
-            
-            // Adjust parent wrapper minHeight matching the calculated scaled space height footprint to prevent clipping bounds
             container.style.minHeight = `${baseHeight * optimalScaleFactor}px`;
             container.style.height = `${baseHeight * optimalScaleFactor}px`;
         } else {
-            // Desktop Layout Scaling Logic
             const availableWidth = container.clientWidth - 50; 
             let optimalScaleFactor = 1;
             if (availableWidth < baseWidth) {
@@ -971,7 +984,6 @@
         }
         renderDashboardStats();
 
-        // Closes sidebar when navigation items are activated on small devices
         const sidebar = document.getElementById('app-sidebar');
         if (sidebar) {
             sidebar.classList.add('collapsed');
