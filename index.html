@@ -224,9 +224,9 @@
         /* Preview Modals */
         .preview-modal-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px);
             display: flex; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 10001;
-            padding: 10px; overflow: hidden;
+            padding: 15px; overflow: hidden;
         }
         .preview-modal-toolbar {
             width: 100%; max-width: 850px; background: var(--panel-bg); border: 1px solid var(--border-color);
@@ -234,9 +234,9 @@
             box-shadow: 0 -5px 25px rgba(0,0,0,0.2); gap: 15px; flex-shrink: 0; flex-wrap: wrap;
         }
         .preview-modal-body-canvas {
-            width: 100%; background: #334155; border-radius: 0 0 12px 12px;
+            width: 100%; max-width: 850px; background: #334155; border-radius: 0 0 12px 12px;
             overflow: auto; display: flex; justify-content: center; align-items: flex-start;
-            box-shadow: var(--modal-shadow); flex: 1; min-height: 0; padding: 20px; position: relative;
+            box-shadow: var(--modal-shadow); flex: 1; min-height: 0; padding: 25px; position: relative;
         }
         
         .a4-wrapper {
@@ -359,10 +359,32 @@
             .top-bar { padding: 15px 20px; gap: 10px; justify-content: space-between; }
             .view-space { padding: 20px 15px; }
             input, select, textarea { font-size: 16px; } 
-            .preview-modal-toolbar { padding: 10px 15px; justify-content: center; text-align: center; }
-
+            
+            /* Enhanced Portrait Mobile Mode Preview Modal Configuration */
+            .preview-modal-backdrop {
+                padding: 10px;
+            }
+            .preview-modal-toolbar { 
+                padding: 12px 15px; 
+                border-radius: 8px 8px 0 0;
+                justify-content: center; 
+                text-align: center; 
+                gap: 8px;
+            }
+            .preview-modal-toolbar div {
+                width: 100%;
+            }
+            .preview-modal-body-canvas { 
+                padding: 10px; 
+                border-radius: 0 0 8px 8px;
+                display: flex;
+                align-items: center; 
+                justify-content: center;
+                overflow: hidden; /* Prevent native window double scrollbars */
+            }
             .a4-wrapper {
-                margin-bottom: 20px;
+                margin-bottom: 0;
+                transform-origin: center center; /* Symmetrical scaling calculation inside the display viewport */
             }
         }
 
@@ -386,12 +408,14 @@
 </head>
 <body>
 
+<!-- Opening Welcome Screen Page -->
 <div id="welcome-screen">
     <div class="welcome-content">
         <button class="welcome-arrow-btn" onclick="exitWelcomeScreen()" title="Proceed to Login Auth">➔</button>
     </div>
 </div>
 
+<!-- General Notification Overlay -->
 <div id="custom-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content">
         <h3 id="modal-title">Notification</h3>
@@ -400,6 +424,7 @@
     </div>
 </div>
 
+<!-- Add/Edit Client Modal -->
 <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
         <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Register New Account</h3>
@@ -423,6 +448,7 @@
     </div>
 </div>
 
+<!-- Add/Edit Service Package Modal -->
 <div id="service-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
         <h3 id="service-modal-title" style="text-align: center; margin-bottom: 20px;">Manage Service Package</h3>
@@ -441,6 +467,7 @@
     </div>
 </div>
 
+<!-- Full Screen Invoice Preview Overlay Modal -->
 <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
     <div class="preview-modal-toolbar">
         <div>
@@ -457,10 +484,12 @@
             <div class="a4-page">
                 <div class="premium-gold-frame">
                     <div class="a4-internal-content">
+                        <!-- Watermark Configuration using LOGO WHITE .png -->
                         <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.25; z-index: 0; pointer-events: none;">
                             <img src="LOGO WHITE .png" alt="Watermark" style="width: 380px; border-radius: 50%;">
                         </div>
                         <div class="a4-header">
+                            <!-- Header Configuration using LOGO WHITE _2.png -->
                             <div class="a4-logo-box">
                                 <img src="LOGO WHITE .png" alt="Dar Al Shams Logo" style="border-radius: 50%;" onerror="this.outerHTML='<div style=\'color: #cba358; font-weight: 800; font-size: 1.4rem;\'>DAR AL SHAMS</div>'">
                             </div>
@@ -510,6 +539,7 @@
     </div>
 </div>
 
+<!-- Authentication Overlay Module -->
 <div id="auth-container" style="display: none;">
     <div class="login-card">
         <div class="login-logo-box">
@@ -755,31 +785,43 @@
         if (window.matchMedia('print').matches) {
             wrapper.style.transform = 'none';
             wrapper.style.margin = '0';
+            wrapper.style.position = 'static';
             return;
         }
 
-        // Detect real-time width available in preview area canvas container
-        const availableWidth = container.clientWidth - 20; 
+        const isMobile = window.innerWidth <= 768;
         const baseWidth = 800;
         const baseHeight = 1131;
 
-        // If the screen is smaller than the document template (800px), calculate exact scale factor
-        let optimalScaleFactor = 1;
-        if (availableWidth < baseWidth) {
-            optimalScaleFactor = availableWidth / baseWidth;
-        }
+        if (isMobile) {
+            // Mobile Specific Logic: Scale cleanly relative to viewport container width bounds
+            const availableWidth = container.clientWidth;
+            const optimalScaleFactor = availableWidth / baseWidth;
 
-        wrapper.style.transform = `scale(${optimalScaleFactor})`;
-        
-        // Center the scaled preview horizontally inside the layout frame
-        const offsetLeft = Math.max(0, (container.clientWidth - (baseWidth * optimalScaleFactor)) / 2);
-        
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = `${offsetLeft}px`;
-        wrapper.style.top = `20px`; // Fixed top gap avoids cutting off top margin elements
-        
-        // Dynamically adjust container viewport wrapper min-height to maintain scrolling aspect visibility
-        container.style.minHeight = `${(baseHeight * optimalScaleFactor) + 60}px`;
+            wrapper.style.position = 'static';
+            wrapper.style.transform = `scale(${optimalScaleFactor})`;
+            
+            // Adjust parent wrapper minHeight matching the calculated scaled space height footprint to prevent clipping bounds
+            container.style.minHeight = `${baseHeight * optimalScaleFactor}px`;
+            container.style.height = `${baseHeight * optimalScaleFactor}px`;
+        } else {
+            // Desktop Layout Scaling Logic
+            const availableWidth = container.clientWidth - 50; 
+            let optimalScaleFactor = 1;
+            if (availableWidth < baseWidth) {
+                optimalScaleFactor = availableWidth / baseWidth;
+            }
+
+            wrapper.style.transform = `scale(${optimalScaleFactor})`;
+            const offsetLeft = Math.max(0, (container.clientWidth - (baseWidth * optimalScaleFactor)) / 2);
+            
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = `${offsetLeft}px`;
+            wrapper.style.top = `25px`;
+            
+            container.style.minHeight = `${(baseHeight * optimalScaleFactor) + 70}px`;
+            container.style.height = 'auto';
+        }
     }
 
     window.addEventListener('resize', resizePreviewCanvas);
