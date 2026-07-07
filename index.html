@@ -280,12 +280,12 @@
         .client-line-en { font-size: 1rem; text-align: left; }
         .client-line-ar { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; font-weight: 700; font-size: 1rem; margin-top: 2px; }
 
-        .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; margin-bottom: 5px !important; }
+        .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; margin-bottom: 25px !important; }
         .a4-table th { 
             background: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; 
             padding: 12px 10px !important; border: 1px solid #94a3b8 !important; text-align: center !important; font-size: 0.95rem !important;
         }
-        .a4-table td { border: 1px solid #cbd5e1 !important; padding: 10px !important; color: #000 !important; font-size: .95rem !important; vertical-align: middle !important; word-wrap: break-word; }
+        .a4-table td { border: 1px solid #cbd5e1 !important; padding: 10px !important; color: #000 !important; font-size: 1rem !important; vertical-align: middle !important; word-wrap: break-word; }
         .a4-table th:nth-child(1), .a4-table td:nth-child(1) { width: 10%; text-align: center; } 
         .a4-table th:nth-child(2), .a4-table td:nth-child(2) { width: 55%; text-align: left; }   
         .a4-table th:nth-child(3), .a4-table td:nth-child(3) { width: 15%; text-align: center; } 
@@ -380,7 +380,7 @@
                 display: flex;
                 align-items: center; 
                 justify-content: center;
-                overflow: scroll; /* Prevent native window double scrollbars */
+                overflow: hidden; /* Prevent native window double scrollbars */
             }
             .a4-wrapper {
                 margin-bottom: 0;
@@ -408,14 +408,12 @@
 </head>
 <body>
 
-<!-- Opening Welcome Screen Page -->
 <div id="welcome-screen">
     <div class="welcome-content">
         <button class="welcome-arrow-btn" onclick="exitWelcomeScreen()" title="Proceed to Login Auth">➔</button>
     </div>
 </div>
 
-<!-- General Notification Overlay -->
 <div id="custom-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content">
         <h3 id="modal-title">Notification</h3>
@@ -424,7 +422,6 @@
     </div>
 </div>
 
-<!-- Add/Edit Client Modal -->
 <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
         <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Register New Account</h3>
@@ -448,7 +445,6 @@
     </div>
 </div>
 
-<!-- Add/Edit Service Package Modal -->
 <div id="service-modal" class="custom-modal-backdrop" style="display:none;">
     <div class="custom-modal-content" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
         <h3 id="service-modal-title" style="text-align: center; margin-bottom: 20px;">Manage Service Package</h3>
@@ -467,7 +463,6 @@
     </div>
 </div>
 
-<!-- Full Screen Invoice Preview Overlay Modal -->
 <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
     <div class="preview-modal-toolbar">
         <div>
@@ -475,6 +470,7 @@
             <p style="color:var(--text-muted); font-size:0.8rem; margin-top:2px;">Autosaved to Firebase Storage Cloud</p>
         </div>
         <div class="flex-actions">
+            <button class="btn btn-accent" onclick="saveAsPDF()">💾 Save as PDF</button>
             <button class="btn btn-success" onclick="window.print()">⚡ Print Hardcopy</button>
             <button class="btn btn-secondary" onclick="closePreviewModal()">Close Preview</button>
         </div>
@@ -484,12 +480,10 @@
             <div class="a4-page">
                 <div class="premium-gold-frame">
                     <div class="a4-internal-content">
-                        <!-- Watermark Configuration using LOGO WHITE .png -->
                         <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.25; z-index: 0; pointer-events: none;">
                             <img src="LOGO WHITE .png" alt="Watermark" style="width: 380px; border-radius: 50%;">
                         </div>
                         <div class="a4-header">
-                            <!-- Header Configuration using LOGO WHITE _2.png -->
                             <div class="a4-logo-box">
                                 <img src="LOGO WHITE .png" alt="Dar Al Shams Logo" style="border-radius: 50%;" onerror="this.outerHTML='<div style=\'color: #cba358; font-weight: 800; font-size: 1.4rem;\'>DAR AL SHAMS</div>'">
                             </div>
@@ -500,6 +494,7 @@
                                 <div class="sub-info">Email: info@daralshams.ae</div>
                             </div>
                         </div>
+                        <div class="a4-title" id="p-doc-title">INVOICE / فاتورة</div>
                         <div class="a4-title" id="p-doc-title">INVOICE / فاتورة</div>
                         <div class="a4-meta">
                             <div class="a4-meta-column client-box">
@@ -539,7 +534,6 @@
     </div>
 </div>
 
-<!-- Authentication Overlay Module -->
 <div id="auth-container" style="display: none;">
     <div class="login-card">
         <div class="login-logo-box">
@@ -1280,7 +1274,7 @@
         const targetYear = dateElementVal ? new Date(dateElementVal).getFullYear() : 2026;
         const docPrefix = state.currentStudioMode === 'Invoice' ? 'INV' : 'QT';
         const historyPool = state.documents.filter(d => d.type === state.currentStudioMode);
-        const nextSerial = 7001 + historyPool.length;
+        const nextSerial = 1001 + historyPool.length;
         document.getElementById('st-ref-code').value = `${docPrefix}-${targetYear}-${nextSerial}`;
     }
 
@@ -1402,6 +1396,10 @@
         switchView('documents');
     }
 
+    function saveAsPDF() {
+        window.print();
+    }
+
     function commitDocumentToMemory() {
         const client = document.getElementById('st-client').value;
         const date = document.getElementById('st-date').value;
@@ -1459,6 +1457,7 @@
     window.openStudio = openStudio;
     window.addStudioRow = addStudioRow;
     window.closePreviewModal = closePreviewModal;
+    window.saveAsPDF = saveAsPDF;
     window.commitDocumentToMemory = commitDocumentToMemory;
     window.loadDocumentToStudio = loadDocumentToStudio;
 </script>
