@@ -1280,7 +1280,7 @@
         const targetYear = dateElementVal ? new Date(dateElementVal).getFullYear() : 2026;
         const docPrefix = state.currentStudioMode === 'Invoice' ? 'INV' : 'QT';
         const historyPool = state.documents.filter(d => d.type === state.currentStudioMode);
-        const nextSerial = 1001 + historyPool.length;
+        const nextSerial = 7001 + historyPool.length;
         document.getElementById('st-ref-code').value = `${docPrefix}-${targetYear}-${nextSerial}`;
     }
 
