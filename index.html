@@ -623,33 +623,6 @@
     </div>
 </div>
 
-<script>
-    function toggleSidebar(event) {
-        if (event) event.stopPropagation();
-        const sidebar = document.getElementById('app-sidebar');
-        if (sidebar) sidebar.classList.toggle('collapsed');
-    }
-
-    function exitWelcomeScreen() {
-        document.getElementById('welcome-screen').style.opacity = '0';
-        document.getElementById('welcome-screen').style.visibility = 'hidden';
-        document.getElementById('auth-container').style.display = 'flex';
-    }
-
-    document.addEventListener('click', function(event) {
-        const sidebar = document.getElementById('app-sidebar');
-        const toggleBtn = document.getElementById('sidebar-toggle-trigger');
-        if (sidebar && !sidebar.classList.contains('collapsed')) {
-            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
-                sidebar.classList.add('collapsed');
-            }
-        }
-    });
-
-    window.toggleSidebar = toggleSidebar;
-    window.exitWelcomeScreen = exitWelcomeScreen;
-</script>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
@@ -693,7 +666,28 @@
         activeEditingId: null 
     };
 
-    /* CRITICAL FIX: Explicitly ignore and abort processing if the iPhone is generating print/PDF views */
+    function toggleSidebar(event) {
+        if (event) event.stopPropagation();
+        const sidebar = document.getElementById('app-sidebar');
+        if (sidebar) sidebar.classList.toggle('collapsed');
+    }
+
+    function exitWelcomeScreen() {
+        document.getElementById('welcome-screen').style.opacity = '0';
+        document.getElementById('welcome-screen').style.visibility = 'hidden';
+        document.getElementById('auth-container').style.display = 'flex';
+    }
+
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('app-sidebar');
+        const toggleBtn = document.getElementById('sidebar-toggle-trigger');
+        if (sidebar && !sidebar.classList.contains('collapsed')) {
+            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
+                sidebar.classList.add('collapsed');
+            }
+        }
+    });
+
     function resizePreviewCanvas() {
         if (window.matchMedia('print').matches || (window.navigator.userAgent.indexOf('Safari') !== -1 && window.navigator.userAgent.indexOf('Chrome') === -1 && window.innerWidth === 0)) {
             return; 
@@ -1286,6 +1280,9 @@
         renderStudioInputs();
     }
 
+    // Expose ALL required structural workflow functions explicitly to the window layout
+    window.toggleSidebar = toggleSidebar;
+    window.exitWelcomeScreen = exitWelcomeScreen;
     window.handleLogin = handleLogin;
     window.handleLogout = handleLogout;
     window.switchView = switchView;
