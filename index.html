@@ -256,11 +256,11 @@
             .a4-wrapper { margin-bottom: 0; transform-origin: center center; }
         }
 
-        /* --- IPHONE 13 CRITICAL SINGLE-PAGE PDF EXTRACTION OVERRIDES --- */
+        /* --- SINGLE-PAGE PDF EXTRACTION OVERRIDES --- */
         @media print {
             @page { 
                 size: A4 portrait !important; 
-                margin: 0mm !important; /* Strips browser headers/footers completely */
+                margin: 0mm !important;
             }
             html, body { 
                 background: #ffffff !important; 
@@ -269,13 +269,12 @@
                 height: 297mm !important; 
                 max-width: 210mm !important;
                 max-height: 297mm !important;
-                overflow: hidden !important; /* Locks structural layout inside 1 continuous page */
+                overflow: hidden !important; 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important;
             }
             body * { visibility: hidden !important; }
             
-            /* Target extraction sequence */
             #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { 
                 visibility: visible !important; 
             }
@@ -291,7 +290,6 @@
                 width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; 
             }
             
-            /* Completely ignore responsive scale overrides during extraction */
             .a4-wrapper { 
                 transform: scale(1) !important; 
                 width: 210mm !important; height: 297mm !important; 
@@ -323,7 +321,6 @@
             .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; page-break-inside: avoid !important; margin-bottom: 15px !important; }
             .a4-table th, .a4-table td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; font-size: 0.85rem !important; }
             
-            /* Absolute bottom anchoring prevents layout engine spilling */
             .a4-footer { 
                 position: absolute !important; 
                 bottom: 10mm !important; left: 6mm !important; right: 6mm !important; 
@@ -624,9 +621,10 @@
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
-    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+    // Corrected to use a stable and valid release build of the Firebase Web SDK v10 CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCuejMSsX0dnJ09ajwADYrT7-Ow4VWLqGo",
@@ -1280,7 +1278,7 @@
         renderStudioInputs();
     }
 
-    // Expose ALL required structural workflow functions explicitly to the window layout
+    // Expose structural module workflow functions explicitly to the window scope
     window.toggleSidebar = toggleSidebar;
     window.exitWelcomeScreen = exitWelcomeScreen;
     window.handleLogin = handleLogin;
