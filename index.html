@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dar Al Shams | ERP Portal</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         :root {
             --primary: #cba358;
@@ -1247,26 +1249,46 @@
     }
 
     function saveAsPDF() {
-        const targetElement = document.querySelector('.a4-page');
-        const refCode = document.getElementById('st-ref-code').value || 'document';
+        const element = document.getElementById('a4-wrapper-element');
+        const refCode = document.getElementById('st-ref-code').value || 'Document';
         
-        if (!targetElement) return;
-
-        const options = {
+        // Configure explicit high-quality vector options for html2pdf rendering
+        const opt = {
             margin:       0,
             filename:     `${refCode}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { 
                 scale: 2, 
                 useCORS: true, 
-                letterRendering: true,
-                logging: false 
+                letterRendering: true
             },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Render target elements directly to an isolated canvas context and push into the system download manager stream
-        html2pdf().set(options).from(targetElement).save();
+        // Cache original client styling states prior to generation sequence injection
+        const originalTransform = element.style.transform;
+        const originalPosition = element.style.position;
+        const originalLeft = element.style.left;
+        const originalTop = element.style.top;
+        const originalWidth = element.style.width;
+        const originalHeight = element.style.height;
+        
+        // Stabilize responsive node boundaries to uniform 100% canvas standard layout parameters
+        element.style.transform = 'none';
+        element.style.position = 'static';
+        element.style.width = '800px';
+        element.style.height = '1131px';
+        
+        // Construct canvas framework, compile and trigger digital asset stream save down
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Revert adaptive framework back to target presentation layout layer settings seamlessly
+            element.style.transform = originalTransform;
+            element.style.position = originalPosition;
+            element.style.left = originalLeft;
+            element.style.top = originalTop;
+            element.style.width = originalWidth || '800px';
+            element.style.height = originalHeight || '1131px';
+        });
     }
 
     function commitDocumentToMemory() {
