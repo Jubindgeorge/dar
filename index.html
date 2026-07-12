@@ -313,9 +313,9 @@
                 margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; 
             }
             
-            .a4-internal-content { padding: 6mm !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; position: relative !important; }
-            .a4-header { margin-bottom: 10mm !important; padding-bottom: 8px !important; }
-            .a4-title { margin: 4mm 0 8mm 0 !important; font-size: 1rem !important; }
+           .a4-internal-content { display: flex; flex-direction: column; height: 100%; width: 100%; padding: 20px; position: relative; z-index: 1; box-sizing: border-box; }
+        .a4-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double var(--primary); padding-bottom: 15px; margin-bottom: 20px; gap: 15px; }
+         .a4-title { margin: 4mm 0 8mm 0 !important; font-size: 1rem !important; }
             .a4-meta { margin-bottom: 10mm !important; }
             
             .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; page-break-inside: avoid !important; margin-bottom: 15px !important; }
