@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dar Al Shams | ERP Portal</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         :root {
@@ -203,8 +204,18 @@
         .a4-meta { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; gap: 20px; }
         .a4-meta-column.client-box { max-width: 65%; word-break: break-word; overflow-wrap: break-word; color: #334155; display: flex; flex-direction: column; gap: 6px; }
         .a4-meta-column.meta-box { text-align: right; max-width: 35%; white-space: nowrap; color: #334155; }
+        
+        /* Fixed Arabic Typography presentation rendering */
         .client-line-en { font-size: 1rem; text-align: left; }
-        .client-line-ar { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; font-weight: 700; font-size: 1rem; margin-top: 2px; }
+        .client-line-ar { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            direction: rtl !important; 
+            text-align: right !important; 
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            margin-top: 2px;
+            display: block;
+        }
 
         /* Data Matrix Rendering inside Document Sheets */
         .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; margin-bottom: 25px !important; }
@@ -237,7 +248,7 @@
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .studio-editor { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
 
-        /* Adaptive Mobile Screen UI Updates (Hidden completely when printing) */
+        /* Adaptive Mobile Screen UI Updates */
         @media screen and (max-width: 768px) {
             #app-container { flex-direction: column; position: relative; }
             .sidebar { 
@@ -259,81 +270,29 @@
             .a4-wrapper { margin-bottom: 0; transform-origin: center center; }
         }
 
-        /* --- IPHONE 13 CRITICAL SINGLE-PAGE PDF EXTRACTION OVERRIDES --- */
+        /* Standard Native System Print Stylesheet Definitions */
         @media print {
-            @page { 
-                size: A4 portrait !important; 
-                margin: 0mm !important; /* Strips browser headers/footers completely */
-            }
+            @page { size: A4 portrait !important; margin: 0mm !important; }
             html, body { 
-                background: #ffffff !important; 
-                color: #000000 !important; 
-                width: 210mm !important; 
-                height: 297mm !important; 
-                max-width: 210mm !important;
-                max-height: 297mm !important;
-                overflow: hidden !important; /* Locks structural layout inside 1 continuous page */
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important;
+                background: #ffffff !important; color: #000000 !important; 
+                width: 210mm !important; height: 297mm !important; 
+                max-width: 210mm !important; max-height: 297mm !important;
+                overflow: hidden !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
             body * { visibility: hidden !important; }
-            
-            /* Target extraction sequence */
-            #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { 
-                visibility: visible !important; 
-            }
-            
-            #document-preview-modal { 
-                position: absolute !important; left: 0 !important; top: 0 !important; 
-                background: transparent !important; padding: 0 !important; margin: 0 !important;
-                width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; 
-            }
-            
-            .preview-modal-body-canvas { 
-                background: transparent !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; 
-                width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; 
-            }
-            
-            /* Completely ignore responsive scale overrides during extraction */
-            .a4-wrapper { 
-                transform: scale(1) !important; 
-                width: 210mm !important; height: 297mm !important; 
-                max-width: 210mm !important; max-height: 297mm !important; 
-                margin: 0 !important; padding: 0 !important; 
-                position: absolute !important; left: 0 !important; top: 0 !important; box-shadow: none !important; 
-            }
-            
-            .a4-page { 
-                width: 210mm !important; height: 297mm !important; 
-                max-width: 210mm !important; max-height: 297mm !important; 
-                background: white !important; padding: 12mm !important; 
-                box-shadow: none !important; border: none !important; box-sizing: border-box !important; 
-                page-break-inside: avoid !important; page-break-after: avoid !important;
-            }
-            
-            .premium-gold-frame { 
-                border: 4mm solid transparent !important; 
-                border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30 !important; 
-                width: 100% !important; height: 100% !important; box-shadow: none !important; 
-                margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; 
-            }
-            
+            #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { visibility: visible !important; }
+            #document-preview-modal { position: absolute !important; left: 0 !important; top: 0 !important; background: transparent !important; padding: 0 !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; }
+            .preview-modal-body-canvas { background: transparent !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; }
+            .a4-wrapper { transform: scale(1) !important; width: 210mm !important; height: 297mm !important; max-width: 210mm !important; max-height: 297mm !important; margin: 0 !important; padding: 0 !important; position: absolute !important; left: 0 !important; top: 0 !important; box-shadow: none !important; }
+            .a4-page { width: 210mm !important; height: 297mm !important; max-width: 210mm !important; max-height: 297mm !important; background: white !important; padding: 12mm !important; box-shadow: none !important; border: none !important; box-sizing: border-box !important; page-break-inside: avoid !important; page-break-after: avoid !important; }
+            .premium-gold-frame { border: 4mm solid transparent !important; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30 !important; width: 100% !important; height: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
             .a4-internal-content { padding: 6mm !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; position: relative !important; }
             .a4-header { margin-bottom: 10mm !important; padding-bottom: 8px !important; }
             .a4-title { margin: 4mm 0 8mm 0 !important; font-size: 1.4rem !important; }
             .a4-meta { margin-bottom: 10mm !important; }
-            
             .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; page-break-inside: avoid !important; margin-bottom: 15px !important; }
             .a4-table th, .a4-table td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; font-size: 0.85rem !important; }
-            
-            /* Absolute bottom anchoring prevents layout engine spilling */
-            .a4-footer { 
-                position: absolute !important; 
-                bottom: 10mm !important; left: 6mm !important; right: 6mm !important; 
-                margin-top: 0 !important; display: flex !important; justify-content: space-between !important; 
-                page-break-inside: avoid !important; 
-            }
-            
+            .a4-footer { position: absolute !important; bottom: 10mm !important; left: 6mm !important; right: 6mm !important; margin-top: 0 !important; display: flex !important; justify-content: space-between !important; page-break-inside: avoid !important; }
             .preview-modal-toolbar, .sidebar, .top-bar, .no-print, .btn { display: none !important; }
         }
     </style>
@@ -420,7 +379,7 @@
                                 <img src="LOGO WHITE .png" alt="Dar Al Shams Logo" style="border-radius: 50%;" onerror="this.outerHTML='<div style=\'color: #cba358; font-weight: 800; font-size: 1.4rem;\'>DAR AL SHAMS</div>'">
                             </div>
                             <div class="a4-co-details">
-                                <h1>دار الشمس لخدمات تخليص المعاملات</h1>
+                                <h1 style="direction: rtl !important; text-align: right !important;">دار الشمس لخدمات تخليص المعاملات</h1>
                                 <div class="en-title">DAR AL SHAMS DOCUMENTS CLEARING SERVICES</div>
                                 <div class="sub-info">Tel: +971 4 236 7006 | Office # 227, Dubai, UAE</div>
                                 <div class="sub-info">Email: info@daralshams.ae</div>
@@ -646,6 +605,7 @@
     const analytics = getAnalytics(app);
     const db = getDatabase(app);
 
+    // Dynamic Client-side Text Shaping Engine Mapping Contexts
     const translationGlossary = {
         "marketing": "التسويق", "services": "خدمات", "international": "العالمية",
         "trading": "التجارية", "management": "إدارة", "documents": "المستندات",
@@ -659,6 +619,88 @@
         'j': 'ج', 'k': 'ك', 'l': 'ل', 'm': 'م', 'n': 'ن', 'o': 'و', 'p': 'ب', 'q': 'ق', 'r': 'ر', 
         's': 'س', 't': 'ت', 'u': 'و', 'v': 'ف', 'w': 'و', 'x': 'اكس', 'y': 'ي', 'z': 'ز'
     };
+
+    // Native Arabic Text Reshaping Definition Tables for Canvas Mapping
+    const arabicForms = {
+        0x0627: [0xFE8D, 0xFE8D, 0xFE8E, 0xFE8E], // Alef
+        0x0628: [0xFE8F, 0xFE91, 0xFE92, 0xFE90], // Beh
+        0x062A: [0xFE95, 0xFE97, 0xFE98, 0xFE96], // Teh
+        0x062B: [0xFE99, 0xFE9B, 0xFE9C, 0xFE9A], // Theh
+        0x062C: [0xFE9D, 0xFE9F, 0xFEA0, 0xFE9E], // Jeem
+        0x062D: [0xFEA1, 0xFEA3, 0xFEA4, 0xFEA2], // Hah
+        0x062E: [0xFEA5, 0xFEA7, 0xFEA8, 0xFEA6], // KHAH
+        0x062F: [0xFEA9, 0xFEA9, 0xFEAA, 0xFEAA], // Dal
+        0x0630: [0xFEAB, 0xFEAB, 0xFEAC, 0xFEAC], // Thal
+        0x0631: [0xFEAD, 0xFEAD, 0xFEAE, 0xFEAE], // Reh
+        0x0632: [0xFEAF, 0xFEAF, 0xFEB0, 0xFEB0], // Zain
+        0x0633: [0xFEB1, 0xFEB3, 0xFEB4, 0xFEB2], // Seen
+        0x0634: [0xFEB5, 0xFEB7, 0xFEB8, 0xFEB6], // Sheen
+        0x0635: [0xFEB9, 0xFEBB, 0xFEBC, 0xFEBA], // Sad
+        0x0636: [0xFEBD, 0xFEBF, 0xFEC0, 0xFEBE], // Dad
+        0x0637: [0xFEC1, 0xFEC3, 0xFEC4, 0xFEC2], // Tah
+        0x0638: [0xFEC5, 0xFEC7, 0xFEC8, 0xFEC6], // Zah
+        0x0639: [0xFEC9, 0xFECB, 0xFECC, 0xFECA], // Ain
+        0x063A: [0xFECD, 0xFECF, 0xFED0, 0xFECE], // Ghain
+        0x0641: [0xFED1, 0xFED3, 0xFED4, 0xFED2], // Feh
+        0x0642: [0xFED5, 0xFED7, 0xFED8, 0xFED6], // Qaf
+        0x0643: [0xFED9, 0xFEDB, 0xFEDC, 0xFEDA], // Kaf
+        0x0644: [0xFEDD, 0xFEDF, 0xFEE0, 0xFEDE], // Lam
+        0x0645: [0xFEE1, 0xFEE3, 0xFEE4, 0xFEE2], // Meem
+        0x0646: [0xFEE5, 0xFEE7, 0xFEE8, 0xFEE6], // Noon
+        0x0647: [0xFEE9, 0xFEEB, 0xFEEC, 0xFEEA], // Heh
+        0x0648: [0xFEED, 0xFEED, 0xFEEE, 0xFEEE], // Waw
+        0x064A: [0xFEF1, 0xFEF3, 0xFEF4, 0xFEF2], // Yeh
+        0x0622: [0xFE81, 0xFE81, 0xFE82, 0xFE82], // Alef Mad
+        0x0623: [0xFE83, 0xFE83, 0xFE84, 0xFE84], // Alef Hamza Above
+        0x0625: [0xFE87, 0xFE87, 0xFE88, 0xFE88], // Alef Hamza Below
+        0x0649: [0xFEF0, 0xFEF0, 0xFEF0, 0xFEF0], // Alef Maksura
+        0x0629: [0xFE93, 0xFE93, 0xFE94, 0xFE94]  // Teh Marbuta
+    };
+
+    function isArabicChar(ch) {
+        const code = ch.charCodeAt(0);
+        return (code >= 0x0600 && code <= 0x06FF) || (code >= 0xFE70 && code <= 0xFEFF);
+    }
+
+    // Connects isolated letters based on contextual placement in the string
+    function reshapeArabicText(text) {
+        if (!text) return "";
+        let output = [];
+        for (let i = 0; i < text.length; i++) {
+            let code = text.charCodeAt(i);
+            if (arabicForms[code]) {
+                let prev = text.charCodeAt(i - 1);
+                let next = text.charCodeAt(i + 1);
+                
+                let linkPrev = prev && arabicForms[prev] && [0,1,2,3].includes(1);
+                let linkNext = next && arabicForms[next];
+                
+                // Exclude characters that do not join to the left
+                if ([0x0627, 0x062F, 0x0630, 0x0631, 0x0632, 0x0648, 0x0622, 0x0623, 0x0625, 0x0649].includes(prev)) {
+                    linkPrev = false;
+                }
+                
+                let formIdx = 0; // Isolated standard
+                if (linkPrev && linkNext) formIdx = 2;      // Medial
+                else if (linkPrev && !linkNext) formIdx = 3; // Final
+                else if (!linkPrev && linkNext) formIdx = 1; // Initial
+                
+                output.push(String.fromCharCode(arabicForms[code][formIdx]));
+            } else {
+                output.push(text[i]);
+            }
+        }
+        
+        // Handles layout direction inversion loops safely
+        let words = output.join("").split(" ");
+        let finalWords = words.map(word => {
+            if (word.split("").some(ch => isArabicChar(ch))) {
+                return word.split("").reverse().join("");
+            }
+            return word;
+        });
+        return finalWords.join(" ");
+    }
 
     let state = {
         clients: [],
@@ -1248,24 +1290,12 @@
         switchView('documents');
     }
 
+    // High-fidelity programmatic canvas mapping fix for Arabic text shaper processing
     function saveAsPDF() {
         const element = document.getElementById('a4-wrapper-element');
         const refCode = document.getElementById('st-ref-code').value || 'Document';
         
-        // Configure explicit high-quality vector options for html2pdf rendering
-        const opt = {
-            margin:       0,
-            filename:     `${refCode}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true, 
-                letterRendering: true
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        // Cache original client styling states prior to generation sequence injection
+        // Cache original values before DOM modification mapping loop
         const originalTransform = element.style.transform;
         const originalPosition = element.style.position;
         const originalLeft = element.style.left;
@@ -1273,21 +1303,53 @@
         const originalWidth = element.style.width;
         const originalHeight = element.style.height;
         
-        // Stabilize responsive node boundaries to uniform 100% canvas standard layout parameters
+        // Stabilize standard node dimensions at 100% vector viewport presentation layers
         element.style.transform = 'none';
         element.style.position = 'static';
         element.style.width = '800px';
         element.style.height = '1131px';
+
+        // Pre-Process Arabic elements to pass structured shapes down into the html2canvas renderer pipeline
+        const arabicNodes = element.querySelectorAll('h1, .client-line-ar');
+        const originalTextCache = [];
         
-        // Construct canvas framework, compile and trigger digital asset stream save down
-        html2pdf().set(opt).from(element).save().then(() => {
-            // Revert adaptive framework back to target presentation layout layer settings seamlessly
+        arabicNodes.forEach((node, i) => {
+            originalTextCache[i] = node.innerText;
+            node.innerText = reshapeArabicText(node.innerText);
+            node.style.direction = 'ltr'; 
+            node.style.textAlign = 'right';
+        });
+
+        // Generate vector image matrix via native Canvas wrapper calls
+        window.html2canvas(element, {
+            scale: 2.5,
+            useCORS: true,
+            logging: false,
+            letterRendering: true,
+            allowTaint: false
+        }).then(canvas => {
+            // Restore text properties back to live editing layers
+            arabicNodes.forEach((node, idx) => {
+                node.innerText = originalTextCache[idx];
+                node.style.direction = 'rtl';
+                node.style.textAlign = 'right';
+            });
+
+            // Restore responsive UI presentation layouts safely
             element.style.transform = originalTransform;
             element.style.position = originalPosition;
             element.style.left = originalLeft;
             element.style.top = originalTop;
             element.style.width = originalWidth || '800px';
             element.style.height = originalHeight || '1131px';
+
+            // Compile document data metrics seamlessly
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+            pdf.save(`${refCode}.pdf`);
         });
     }
 
@@ -1324,7 +1386,7 @@
         renderStudioInputs();
     }
 
-    // Expose ALL required structural workflow functions explicitly to the window layout
+    // Expose structural layout workflow anchors to window framework scopes globally
     window.toggleSidebar = toggleSidebar;
     window.exitWelcomeScreen = exitWelcomeScreen;
     window.handleLogin = handleLogin;
