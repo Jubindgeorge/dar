@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dar Al Shams | ERP Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary: #cba358;
@@ -256,11 +257,11 @@
             .a4-wrapper { margin-bottom: 0; transform-origin: center center; }
         }
 
-        /* --- SINGLE-PAGE PDF EXTRACTION OVERRIDES --- */
+        /* --- IPHONE 13 CRITICAL SINGLE-PAGE PDF EXTRACTION OVERRIDES --- */
         @media print {
             @page { 
                 size: A4 portrait !important; 
-                margin: 0mm !important;
+                margin: 0mm !important; /* Strips browser headers/footers completely */
             }
             html, body { 
                 background: #ffffff !important; 
@@ -269,12 +270,13 @@
                 height: 297mm !important; 
                 max-width: 210mm !important;
                 max-height: 297mm !important;
-                overflow: hidden !important; 
+                overflow: hidden !important; /* Locks structural layout inside 1 continuous page */
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important;
             }
             body * { visibility: hidden !important; }
             
+            /* Target extraction sequence */
             #document-preview-modal, .a4-wrapper, .a4-page, .premium-gold-frame, .a4-internal-content, .a4-internal-content * { 
                 visibility: visible !important; 
             }
@@ -290,6 +292,7 @@
                 width: 210mm !important; height: 297mm !important; overflow: hidden !important; display: block !important; 
             }
             
+            /* Completely ignore responsive scale overrides during extraction */
             .a4-wrapper { 
                 transform: scale(1) !important; 
                 width: 210mm !important; height: 297mm !important; 
@@ -313,14 +316,15 @@
                 margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; 
             }
             
-           .a4-internal-content { display: flex; flex-direction: column; height: 100%; width: 100%; padding: 20px; position: relative; z-index: 1; box-sizing: border-box; }
-        .a4-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double var(--primary); padding-bottom: 15px; margin-bottom: 20px; gap: 15px; }
-         .a4-title { margin: 4mm 0 8mm 0 !important; font-size: 1rem !important; }
+            .a4-internal-content { padding: 6mm !important; height: 100% !important; width: 100% !important; box-sizing: border-box !important; position: relative !important; }
+            .a4-header { margin-bottom: 10mm !important; padding-bottom: 8px !important; }
+            .a4-title { margin: 4mm 0 8mm 0 !important; font-size: 1.4rem !important; }
             .a4-meta { margin-bottom: 10mm !important; }
             
             .a4-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; page-break-inside: avoid !important; margin-bottom: 15px !important; }
             .a4-table th, .a4-table td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; font-size: 0.85rem !important; }
             
+            /* Absolute bottom anchoring prevents layout engine spilling */
             .a4-footer { 
                 position: absolute !important; 
                 bottom: 10mm !important; left: 6mm !important; right: 6mm !important; 
@@ -621,10 +625,9 @@
 </div>
 
 <script type="module">
-    // Corrected to use a stable and valid release build of the Firebase Web SDK v10 CDN
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCuejMSsX0dnJ09ajwADYrT7-Ow4VWLqGo",
@@ -1243,7 +1246,28 @@
         switchView('documents');
     }
 
-    function saveAsPDF() { window.print(); }
+    function saveAsPDF() {
+        const targetElement = document.querySelector('.a4-page');
+        const refCode = document.getElementById('st-ref-code').value || 'document';
+        
+        if (!targetElement) return;
+
+        const options = {
+            margin:       0,
+            filename:     `${refCode}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                letterRendering: true,
+                logging: false 
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Render target elements directly to an isolated canvas context and push into the system download manager stream
+        html2pdf().set(options).from(targetElement).save();
+    }
 
     function commitDocumentToMemory() {
         const client = document.getElementById('st-client').value;
@@ -1278,7 +1302,7 @@
         renderStudioInputs();
     }
 
-    // Expose structural module workflow functions explicitly to the window scope
+    // Expose ALL required structural workflow functions explicitly to the window layout
     window.toggleSidebar = toggleSidebar;
     window.exitWelcomeScreen = exitWelcomeScreen;
     window.handleLogin = handleLogin;
