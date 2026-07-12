@@ -1291,6 +1291,7 @@
     }
 
     // High-fidelity programmatic canvas mapping fix for Arabic text shaper processing
+// High-fidelity programmatic canvas mapping fix for Arabic text shaper processing
     function saveAsPDF() {
         const element = document.getElementById('a4-wrapper-element');
         const refCode = document.getElementById('st-ref-code').value || 'Document';
@@ -1326,7 +1327,8 @@
             useCORS: true,
             logging: false,
             letterRendering: true,
-            allowTaint: false
+            allowTaint: false,
+            backgroundColor: "#ffffff" // <-- CRITICAL FIX: Forces the canvas background to be true white, removing the ash-gray boxes!
         }).then(canvas => {
             // Restore text properties back to live editing layers
             arabicNodes.forEach((node, idx) => {
