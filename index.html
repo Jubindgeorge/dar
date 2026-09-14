@@ -209,6 +209,11 @@
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .metric-card { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
 
+        /* Works Tab Custom Styles */
+        .branch-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .branch-company { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .branch-staff { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Print Styles */
@@ -263,7 +268,8 @@
             </div>
             <ul class="sidebar-menu">
                 <li onclick="switchTab('dashboard')" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
-                <li onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-users"></i><span>Client Accounts</span></li>
+                <li onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-users"></i><span>Clients</span></li>
+                <li onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works</span></li>
                 <li onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
                 <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Financial Records</span></li>
                 <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts Ledger</span></li>
@@ -279,7 +285,7 @@
             <header class="top-bar">
                 <div class="top-bar-title-section">
                     <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-                    <div>
+                    <div style="display: inline-block; cursor: pointer; margin-left: 10px;" onclick="switchTab('dashboard')">
                         <h2 style="font-size: 1.1rem; color: var(--primary);" id="topbar-title">Dashboard Overview</h2>
                         <span style="font-size: 0.75rem; color: var(--text-muted);">Secure Cloud Connected</span>
                     </div>
@@ -297,52 +303,50 @@
                         <div class="metric-card">
                             <div>
                                 <p style="font-size: 0.85rem; color: var(--text-muted);">Saved Clients</p>
-                                <h3 id="dash-client-count" style="font-size: 1.8rem; color: var(--primary); margin-top: 5px;">142</h3>
+                                <h3 id="dash-client-count" style="font-size: 1.8rem; color: var(--primary); margin-top: 5px;">0</h3>
                             </div>
                             <i class="fa-solid fa-users fa-2x" style="color: rgba(203,163,88,0.3);"></i>
                         </div>
                         <div class="metric-card">
                             <div>
                                 <p style="font-size: 0.85rem; color: var(--text-muted);">Monthly Payouts</p>
-                                <h3 id="dash-monthly-payout" style="font-size: 1.8rem; color: var(--accent-green); margin-top: 5px;">AED 12,450</h3>
+                                <h3 id="dash-monthly-payout" style="font-size: 1.8rem; color: var(--accent-green); margin-top: 5px;">AED 0</h3>
                             </div>
                             <i class="fa-solid fa-wallet fa-2x" style="color: rgba(34,197,94,0.3);"></i>
                         </div>
                         <div class="metric-card">
                             <div>
                                 <p style="font-size: 0.85rem; color: var(--text-muted);">Annual Payouts</p>
-                                <h3 id="dash-annual-payout" style="font-size: 1.8rem; color: var(--accent-blue); margin-top: 5px;">AED 149,400</h3>
+                                <h3 id="dash-annual-payout" style="font-size: 1.8rem; color: var(--accent-blue); margin-top: 5px;">AED 0</h3>
                             </div>
                             <i class="fa-solid fa-chart-line fa-2x" style="color: rgba(56,189,248,0.3);"></i>
                         </div>
                         <div class="metric-card">
                             <div>
                                 <p style="font-size: 0.85rem; color: var(--text-muted);">Total Works Logged</p>
-                                <h3 id="dash-works-count" style="font-size: 1.8rem; color: #f59e0b; margin-top: 5px;">318</h3>
+                                <h3 id="dash-works-count" style="font-size: 1.8rem; color: #f59e0b; margin-top: 5px;">0</h3>
                             </div>
                             <i class="fa-solid fa-clipboard-check fa-2x" style="color: rgba(245,158,11,0.3);"></i>
                         </div>
                     </div>
                 </section>
 
-                <!-- TAB 2: CLIENT ACCOUNTS -->
+                <!-- TAB 2: CLIENTS -->
                 <section id="tab-clients" class="view-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                         <div>
                             <h2 style="color: var(--primary); font-size: 1.4rem;">Corporate Accounts & Dossiers</h2>
                             <p style="font-size: 0.85rem; color: var(--text-muted);">Manage client names, company names, and contact details.</p>
                         </div>
-                        <button onclick="openClientModal(false)" class="btn btn-primary">+ Register Account</button>
+                        <button onclick="openClientModal(false)" class="btn btn-primary">+ Add New Company</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Client Name</th>
                                     <th>Company Name</th>
-                                    <th>Contact Person</th>
-                                    <th style="text-align: right;">Arabic Title (AR)</th>
-                                    <th>Phone Contact</th>
+                                    <th style="text-align: right;">Arabic Names</th>
+                                    <th>Contact</th>
                                     <th style="text-align: center;">Actions</th>
                                 </tr>
                             </thead>
@@ -351,9 +355,64 @@
                     </div>
                 </section>
 
+                <!-- TAB 2.2: WORKS PAGE -->
+                <section id="tab-works" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Company Works Directory</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Browse company invoices categorized by Company Works & Staff Works branches.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th>Total Invoices</th>
+                                    <th style="text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="works-table-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB 2.3: WORKS BRANCH DETAIL -->
+                <section id="tab-works-detail" class="view-panel">
+                    <button onclick="switchTab('works')" class="btn btn-secondary" style="margin-bottom: 15px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Works Directory</button>
+                    
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Company Folder</span>
+                        <h2 id="works-detail-company-title" style="color: var(--primary); font-size: 1.4rem;">-</h2>
+                    </div>
+
+                    <!-- Branch Selection Tabs/Buttons -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button id="btn-branch-company" onclick="switchWorksBranch('company')" class="btn btn-primary" style="flex: 1; padding: 12px;"><i class="fa-solid fa-building"></i> Company Works (<span id="count-company-works">0</span>)</button>
+                        <button id="btn-branch-staff" onclick="switchWorksBranch('staff')" class="btn btn-secondary" style="flex: 1; padding: 12px;"><i class="fa-solid fa-users"></i> Staff Works (<span id="count-staff-works">0</span>)</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference ID</th>
+                                    <th>Client Name</th>
+                                    <th>Company Name</th>
+                                    <th>Contact Person</th>
+                                    <th>Work Details</th>
+                                    <th>Total Amount</th>
+                                    <th style="text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="works-detail-records-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
                 <!-- TAB 2.5: CLIENT SPECIFIC DOSSIER -->
                 <section id="tab-client-detail" class="view-panel">
-                    <button onclick="switchTab('clients')" class="btn btn-secondary" style="margin-bottom: 15px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Accounts</button>
+                    <button onclick="switchTab('clients')" class="btn btn-secondary" style="margin-bottom: 15px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Clients</button>
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Client Name</span><strong id="cd-client-name" style="font-size: 1rem;">-</strong></div>
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Company Name</span><strong id="cd-company-name" style="font-size: 1rem; color: var(--primary);">-</strong></div>
@@ -415,6 +474,7 @@
                                         <th>Doc Reference</th>
                                         <th>Client Name</th>
                                         <th>Company Name</th>
+                                        <th>Folder Branch</th>
                                         <th>Work Details</th>
                                         <th style="text-align: center;">Actions</th>
                                     </tr>
@@ -428,34 +488,90 @@
                 <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
                 <section id="tab-accounts-ledger" class="view-panel">
                     <div style="margin-bottom: 20px;">
-                        <h2 style="color: var(--primary); font-size: 1.4rem;">Accounts & Advance Balance Tracking</h2>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Inspect individual invoice advancements, payments, and remaining balances.</p>
+                        <h2 style="color: var(--primary); font-size: 1.4rem;">Accounts & Profit Management Ledger</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Track balances, expense distributions, payments, and invoice profits.</p>
                     </div>
 
-                    <!-- Invoice Selector -->
-                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                        <label for="acc-invoice-select" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Select Invoice Reference:</label>
-                        <select id="acc-invoice-select" onchange="renderAccountsLedgerDetail(this.value)" style="max-width: 350px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; color: white;">
-                            <option value="">-- No Invoices Available --</option>
-                        </select>
+                    <!-- Named Monthly Expenses Management Section -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <h3 style="color: var(--primary); font-size: 1.1rem;"><i class="fa-solid fa-receipt"></i> Monthly Operating Expenses</h3>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">Expenses added here are equally distributed across all invoices created in the target month.</p>
+                            </div>
+                            <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Monthly Expense</button>
+                        </div>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Month / Year</th>
+                                        <th>Expense Title</th>
+                                        <th>Expense Amount (AED)</th>
+                                        <th style="text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthly-expenses-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Selector & Actions Bar -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
+                            <label for="acc-invoice-select" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Select Invoice Reference:</label>
+                            <select id="acc-invoice-select" onchange="renderAccountsLedgerDetail(this.value)" style="max-width: 350px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; color: white;">
+                                <option value="">-- No Invoices Available --</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="openAddPaymentModal()" class="btn btn-primary"><i class="fa-solid fa-hand-holding-dollar"></i> Add Payment</button>
+                            <button onclick="printPaymentStatusStatement()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> Print Payment Status</button>
+                        </div>
                     </div>
 
                     <!-- Selected Invoice Financial Breakdown Cards -->
-                    <div id="acc-selected-summary-card" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                    <div id="acc-selected-summary-card" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
                         <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
                             <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Total Amount</span>
-                            <h3 id="acc-card-total" style="font-size: 1.6rem; color: var(--text-main);">AED 0.00</h3>
+                            <h3 id="acc-card-total" style="font-size: 1.5rem; color: var(--text-main);">AED 0.00</h3>
                         </div>
                         <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
                             <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Advance Paid</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <h3 id="acc-card-advance" style="font-size: 1.6rem; color: var(--accent-green);">AED 0.00</h3>
-                                <button onclick="promptEditAdvance()" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">Edit Advance</button>
+                                <h3 id="acc-card-advance" style="font-size: 1.5rem; color: var(--accent-green);">AED 0.00</h3>
+                                <button onclick="promptEditAdvance()" class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;">Edit</button>
                             </div>
                         </div>
                         <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Total Payments</span>
+                            <h3 id="acc-card-payments" style="font-size: 1.5rem; color: var(--accent-blue);">AED 0.00</h3>
+                        </div>
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
                             <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Remaining Balance</span>
-                            <h3 id="acc-card-remaining" style="font-size: 1.6rem; color: var(--accent-red);">AED 0.00</h3>
+                            <h3 id="acc-card-remaining" style="font-size: 1.5rem; color: var(--accent-red);">AED 0.00</h3>
+                        </div>
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Invoice Calculated Profit</span>
+                            <h3 id="acc-card-profit" style="font-size: 1.5rem; color: var(--primary);">AED 0.00</h3>
+                        </div>
+                    </div>
+
+                    <!-- Payment Logs Table for Selected Invoice -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                        <h3 style="color: var(--primary); font-size: 1rem; margin-bottom: 12px;"><i class="fa-solid fa-clock-rotate-left"></i> Recorded Payment Logs</h3>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount Paid (AED)</th>
+                                        <th>Payment Note / Remarks</th>
+                                        <th style="text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="acc-payment-logs-tbody"></tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -466,12 +582,14 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Invoice Reference</th>
+                                        <th>Invoice Ref</th>
                                         <th>Client Name</th>
-                                        <th>Company Name</th>
+                                        <th>Govt Fees (AED)</th>
+                                        <th>Monthly Expense Share (AED)</th>
                                         <th>Total Amount (AED)</th>
-                                        <th>Advance Paid (AED)</th>
-                                        <th>Remaining Balance (AED)</th>
+                                        <th>Total Paid (AED)</th>
+                                        <th>Balance (AED)</th>
+                                        <th style="color: var(--primary);">Calculated Profit (AED)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="acc-full-ledger-tbody"></tbody>
@@ -497,6 +615,10 @@
                         <div>
                             <label>Reference / ID</label>
                             <input type="text" id="st-ref-code" disabled>
+                        </div>
+                        <div>
+                            <label>Invoice Creation Date</label>
+                            <input type="date" id="st-created-date">
                         </div>
                         <div>
                             <label>Visa Expiry Date</label>
@@ -530,7 +652,11 @@
                         </div>
                     </div>
 
-                    <div class="studio-editor" style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px;">
+                    <div class="studio-editor" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                        <div>
+                            <label>Govt. Fees (AED)</label>
+                            <input type="number" id="st-govt-amt" value="1400" style="font-weight: bold; color: var(--primary);">
+                        </div>
                         <div>
                             <label>Total Amount in Invoice (AED)</label>
                             <input type="number" id="st-total-amt" value="2500" style="font-weight: bold; color: var(--accent-green);">
@@ -580,27 +706,19 @@
     <!-- Client Registration Modal -->
     <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
         <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
-            <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Register New Account</h3>
+            <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Add New Company</h3>
             <input type="hidden" id="cl-modal-id">
-            <div class="form-group">
-                <label>Client Name (EN)</label>
-                <input type="text" id="cl-input-client-name" placeholder="Primary Account Name">
-            </div>
             <div class="form-group">
                 <label>Company Name (EN)</label>
                 <input type="text" id="cl-input-company-name" placeholder="Alpha Logistics FZ">
-            </div>
-            <div class="form-group">
-                <label>Contact Person Name (EN)</label>
-                <input type="text" id="cl-input-contact-person" placeholder="John Doe">
             </div>
             <div class="form-group">
                 <label>Arabic Company Name (AR) - Blank for Auto</label>
                 <input type="text" id="cl-input-name-ar" placeholder="Arabic Translation" style="direction: rtl; font-family: 'Amiri', serif;">
             </div>
             <div class="form-group">
-                <label>Phone Contact</label>
-                <input type="text" id="cl-input-phone" placeholder="+971 4 123 4567">
+                <label>Contact Person / Phone</label>
+                <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
             </div>
             <div class="custom-modal-actions">
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
@@ -636,6 +754,52 @@
             <div class="custom-modal-actions">
                 <button onclick="closeServiceModal()" class="btn btn-secondary">Cancel</button>
                 <button onclick="saveServiceModalData()" class="btn btn-primary">Save Catalog</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Monthly Expense Modal -->
+    <div id="monthly-expense-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align: left; max-width: 420px;">
+            <h3 style="text-align: center; margin-bottom: 20px;">Add Monthly Operating Expense</h3>
+            <div class="form-group">
+                <label>Target Month & Year</label>
+                <input type="month" id="exp-input-month" value="2026-09">
+            </div>
+            <div class="form-group">
+                <label>Expense Name / Title</label>
+                <input type="text" id="exp-input-title" placeholder="Office Rent, Utilities, Software Subscription">
+            </div>
+            <div class="form-group">
+                <label>Total Amount (AED)</label>
+                <input type="number" id="exp-input-amount" placeholder="1000">
+            </div>
+            <div class="custom-modal-actions">
+                <button onclick="closeMonthlyExpenseModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveMonthlyExpenseData()" class="btn btn-primary">Save Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Post-Advance Payment Modal -->
+    <div id="payment-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align: left; max-width: 420px;">
+            <h3 style="text-align: center; margin-bottom: 20px;">Record Invoice Payment</h3>
+            <div class="form-group">
+                <label>Payment Date</label>
+                <input type="date" id="pay-input-date">
+            </div>
+            <div class="form-group">
+                <label>Amount Received (AED)</label>
+                <input type="number" id="pay-input-amount" placeholder="200">
+            </div>
+            <div class="form-group">
+                <label>Note / Payment Ref</label>
+                <input type="text" id="pay-input-note" placeholder="Bank Transfer / Cash / Cheque #">
+            </div>
+            <div class="custom-modal-actions">
+                <button onclick="closeAddPaymentModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="savePaymentLogData()" class="btn btn-primary">Save Payment</button>
             </div>
         </div>
     </div>
@@ -686,18 +850,20 @@
                                 </div>
                             </div>
 
-                            <!-- Table -->
-                            <table class="a4-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 10%;">S.No</th>
-                                        <th style="width: 55%; text-align: left;">Specific Work Details / التفاصيل</th>
-                                        <th style="width: 15%;">Qty</th>
-                                        <th style="width: 20%; text-align: right;">Amount (AED)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="p-table-body"></tbody>
-                            </table>
+                            <!-- Dynamic Table Container -->
+                            <div id="p-content-container">
+                                <table class="a4-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">S.No</th>
+                                            <th style="width: 55%; text-align: left;">Specific Work Details / التفاصيل</th>
+                                            <th style="width: 15%;">Qty</th>
+                                            <th style="width: 20%; text-align: right;">Amount (AED)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="p-table-body"></tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <!-- Footer Signatures -->
@@ -767,10 +933,13 @@
             clients: [],
             documents: [],
             services: [],
+            monthlyExpenses: [],
             currentStudioMode: 'Invoice',
             currentStudioItems: [],
             activeEditingId: null,
-            activeViewingClientId: null
+            activeViewingClientId: null,
+            activeViewingCompanyWorksName: null,
+            activeWorksBranch: 'company'
         };
 
         function switchTab(tabId) {
@@ -785,7 +954,9 @@
 
             const titles = {
                 'dashboard': 'Dashboard Overview',
-                'clients': 'Corporate Accounts & Dossiers',
+                'clients': 'Clients',
+                'works': 'Works Directory',
+                'works-detail': 'Company Works Branch Dossier',
                 'client-detail': 'Client Specific Dossier',
                 'services-config': 'Services & Tariffs Catalog',
                 'documents': 'Financial Ledger & Records',
@@ -796,6 +967,8 @@
 
             if (tabId === 'dashboard') renderDashboardStats();
             if (tabId === 'clients') renderClientsTable();
+            if (tabId === 'works') renderWorksTable();
+            if (tabId === 'works-detail') renderWorksDetailView();
             if (tabId === 'services-config') renderServicesCatalog();
             if (tabId === 'documents') renderDocumentsTable();
             if (tabId === 'accounts-ledger') initAccountsLedgerView();
@@ -836,6 +1009,14 @@
                 renderServicesCatalog();
             });
 
+            db.ref('monthlyExpenses').on('value', (snapshot) => {
+                const data = snapshot.val();
+                state.monthlyExpenses = data ? Object.values(data) : [];
+                if (document.getElementById('tab-accounts-ledger').classList.contains('active')) {
+                    initAccountsLedgerView();
+                }
+            });
+
             db.ref('documents').on('value', (snapshot) => {
                 const data = snapshot.val();
                 state.documents = data ? Object.values(data) : getMockDocumentsFallback();
@@ -844,6 +1025,12 @@
                 }
                 renderDocumentsTable();
                 renderDashboardStats();
+                if(document.getElementById('tab-works').classList.contains('active')) {
+                    renderWorksTable();
+                }
+                if(document.getElementById('tab-works-detail').classList.contains('active') && state.activeViewingCompanyWorksName) {
+                    renderWorksDetailView();
+                }
                 if(document.getElementById('tab-accounts-ledger').classList.contains('active')) {
                     initAccountsLedgerView();
                 }
@@ -853,8 +1040,8 @@
 
         function getMockClientsFallback() {
             return [
-                { id: "c1", clientName: "Alpha Account", companyName: "Alpha Logistics FZ", contactPerson: "John Doe", nameAr: "ألفا للخدمات اللوجستية ش.ذ.م.م", phone: "+971 4 111 2233" },
-                { id: "c2", clientName: "Nexus Account", companyName: "Nexus Technologies", contactPerson: "Sarah Jenkins", nameAr: "نيكسوس للتقنية", phone: "+971 4 222 3344" }
+                { id: "c1", companyName: "Alpha Logistics FZ", nameAr: "ألفا للخدمات اللوجستية ش.ذ.م.م", contactPerson: "John Doe / +971 4 111 2233" },
+                { id: "c2", companyName: "Nexus Technologies", nameAr: "نيكسوس للتقنية", contactPerson: "Sarah Jenkins / +971 4 222 3344" }
             ];
         }
 
@@ -867,8 +1054,52 @@
 
         function getMockDocumentsFallback() {
             return [
-                { id: "d1", ref: "INV-2026-1001", type: "Invoice", clientName: "Alpha Account", companyName: "Alpha Logistics FZ", contactPerson: "John Doe", expiry: "2026-10-15", total: 2500, advance: 500, items: [{ d: "Employment Visa Processing (2 Persons)", q: 1, p: 2500 }] }
+                { id: "d1", ref: "INV-2026-1001", type: "Invoice", createdDate: "2026-09-01", clientName: "Alpha Account", companyName: "Alpha Logistics FZ", contactPerson: "John Doe", expiry: "2026-10-15", govtFee: 1400, total: 2500, advance: 500, payments: [], items: [{ d: "Employment Visa Processing (2 Persons)", q: 1, p: 2500 }] }
             ];
+        }
+
+        function getDocBranch(doc) {
+            const client = (doc.clientName || "").trim().toLowerCase();
+            const company = (doc.companyName || "").trim().toLowerCase();
+            const contact = (doc.contactPerson || "").trim().toLowerCase();
+
+            if (contact && ((company && contact !== company) || (client && contact !== client))) {
+                return 'staff';
+            }
+            return 'company';
+        }
+
+        function getDocMonthKey(doc) {
+            let dateStr = doc.createdDate;
+            if (!dateStr && doc.ref && doc.ref.includes('-')) {
+                dateStr = '2026-09-01';
+            }
+            if (!dateStr) dateStr = new Date().toISOString().slice(0, 7);
+            return dateStr.slice(0, 7);
+        }
+
+        function getMonthlyExpenseShareForDoc(doc) {
+            const mKey = getDocMonthKey(doc);
+            const totalMonthlyExp = state.monthlyExpenses
+                .filter(e => e.monthYear === mKey)
+                .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+            const monthInvoicesCount = state.documents.filter(d => getDocMonthKey(d) === mKey).length;
+            if (monthInvoicesCount === 0) return 0;
+            return totalMonthlyExp / monthInvoicesCount;
+        }
+
+        function getTotalPaymentsForDoc(doc) {
+            const advance = Number(doc.advance) || 0;
+            const extraPayments = doc.payments ? doc.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) : 0;
+            return advance + extraPayments;
+        }
+
+        function calculateDocProfit(doc) {
+            const govt = Number(doc.govtFee) || 0;
+            const total = Number(doc.total) || 0;
+            const expShare = getMonthlyExpenseShareForDoc(doc);
+            return govt - expShare - total;
         }
 
         function showNotification(title, message, callback) {
@@ -924,14 +1155,14 @@
         }
 
         function renderDashboardStats() {
-            document.getElementById('dash-client-count').innerText = state.clients.length || 142;
-            document.getElementById('dash-works-count').innerText = state.documents.length || 318;
+            document.getElementById('dash-client-count').innerText = state.clients.length;
+            document.getElementById('dash-works-count').innerText = state.documents.length;
             let totalProfit = state.services.reduce((sum, s) => {
                 let pkgTotal = s.items ? s.items.reduce((acc, item) => acc + (item.p * (item.q || 1)), 0) : 0;
                 let pkgGovt = Number(s.govtFee) || 0;
                 return sum + (pkgTotal - pkgGovt);
             }, 0);
-            let monthly = totalProfit > 0 ? totalProfit : 12450;
+            let monthly = totalProfit;
             document.getElementById('dash-monthly-payout').innerText = `AED ${monthly.toLocaleString()}`;
             document.getElementById('dash-annual-payout').innerText = `AED ${(monthly * 12).toLocaleString()}`;
         }
@@ -941,11 +1172,9 @@
             if (!tbody) return;
             tbody.innerHTML = state.clients.map(c => `
                 <tr>
-                    <td><a href="#" onclick="viewClientDetail('${c.id}')" style="color: var(--primary); text-decoration: none; font-weight: 600;"><i class="fa-solid fa-folder-open"></i> ${c.clientName || '-'}</a></td>
-                    <td>${c.companyName || '-'}</td>
-                    <td>${c.contactPerson || '-'}</td>
+                    <td><a href="#" onclick="viewClientDetail('${c.id}')" style="color: var(--primary); text-decoration: none; font-weight: 600;"><i class="fa-solid fa-folder-open"></i> ${c.companyName || c.clientName || '-'}</a></td>
                     <td style="text-align: right; font-family: 'Amiri', serif; color: var(--primary);" dir="rtl">${c.nameAr || ''}</td>
-                    <td>${c.phone || '-'}</td>
+                    <td>${c.contactPerson || c.phone || '-'}</td>
                     <td style="text-align: center;">
                         <button onclick="viewClientDetail('${c.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">View</button>
                         <button onclick="openClientModal(true, '${c.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</button>
@@ -956,11 +1185,113 @@
             populateStudioClientSelector();
         }
 
+        function renderWorksTable() {
+            const tbody = document.getElementById('works-table-body');
+            if (!tbody) return;
+
+            const companyMap = {};
+
+            state.documents.forEach(doc => {
+                const compName = (doc.companyName || doc.clientName || "Unassigned Company").trim();
+                if (!companyMap[compName]) {
+                    companyMap[compName] = 0;
+                }
+                companyMap[compName]++;
+            });
+
+            state.clients.forEach(c => {
+                const compName = (c.companyName || c.clientName || "").trim();
+                if (compName && !companyMap[compName]) {
+                    companyMap[compName] = 0;
+                }
+            });
+
+            const companyKeys = Object.keys(companyMap);
+
+            if (companyKeys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No company records or works logged.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = companyKeys.map(comp => `
+                <tr>
+                    <td><strong style="color: var(--primary);"><i class="fa-solid fa-building" style="margin-right: 8px;"></i>${comp}</strong></td>
+                    <td><span style="font-weight: bold;">${companyMap[comp]}</span> Invoices</td>
+                    <td style="text-align: center;">
+                        <button onclick="viewCompanyWorks('${comp.replace(/'/g, "\\'")}')" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem;"><i class="fa-solid fa-folder-open"></i> Select Company</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function viewCompanyWorks(companyName) {
+            state.activeViewingCompanyWorksName = companyName;
+            state.activeWorksBranch = 'company';
+            switchTab('works-detail');
+        }
+
+        function switchWorksBranch(branch) {
+            state.activeWorksBranch = branch;
+            const btnCompany = document.getElementById('btn-branch-company');
+            const btnStaff = document.getElementById('btn-branch-staff');
+
+            if (branch === 'company') {
+                btnCompany.className = 'btn btn-primary';
+                btnStaff.className = 'btn btn-secondary';
+            } else {
+                btnCompany.className = 'btn btn-secondary';
+                btnStaff.className = 'btn btn-primary';
+            }
+            renderWorksDetailView();
+        }
+
+        function renderWorksDetailView() {
+            const companyName = state.activeViewingCompanyWorksName;
+            if (!companyName) return;
+
+            document.getElementById('works-detail-company-title').innerText = companyName;
+
+            const compDocs = state.documents.filter(d => 
+                (d.companyName && d.companyName.trim().toLowerCase() === companyName.toLowerCase()) ||
+                (d.clientName && d.clientName.trim().toLowerCase() === companyName.toLowerCase())
+            );
+
+            const companyWorks = compDocs.filter(d => getDocBranch(d) === 'company');
+            const staffWorks = compDocs.filter(d => getDocBranch(d) === 'staff');
+
+            document.getElementById('count-company-works').innerText = companyWorks.length;
+            document.getElementById('count-staff-works').innerText = staffWorks.length;
+
+            const activeList = state.activeWorksBranch === 'company' ? companyWorks : staffWorks;
+
+            const tbody = document.getElementById('works-detail-records-body');
+            if (!tbody) return;
+
+            if (activeList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No records found under ${state.activeWorksBranch === 'company' ? 'Company Works' : 'Staff Works'} folder.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = activeList.map(d => `
+                <tr>
+                    <td><strong style="color: var(--primary);">${d.ref}</strong></td>
+                    <td>${d.clientName || '-'}</td>
+                    <td>${d.companyName || '-'}</td>
+                    <td>${d.contactPerson || '-'}</td>
+                    <td>${d.items && d.items[0] ? d.items[0].d : 'Service Entry'}</td>
+                    <td style="color: var(--accent-green); font-weight: bold;">AED ${(Number(d.total) || 0).toLocaleString()}</td>
+                    <td style="text-align: center;">
+                        <button onclick="loadDocumentToStudio('${d.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit Invoice</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
         function populateStudioClientSelector() {
             const sel = document.getElementById('st-client-selector');
             if(!sel) return;
             sel.innerHTML = '<option value="">-- Select Registered Client --</option>' + state.clients.map(c => `
-                <option value="${c.id}">${c.clientName} | ${c.companyName}</option>
+                <option value="${c.id}">${c.companyName || c.clientName}</option>
             `).join('');
         }
 
@@ -968,7 +1299,7 @@
             if(!clientId) return;
             const c = state.clients.find(x => x.id === clientId);
             if(!c) return;
-            document.getElementById('st-client-name').value = c.clientName || '';
+            document.getElementById('st-client-name').value = c.companyName || c.clientName || '';
             document.getElementById('st-company-name').value = c.companyName || '';
             document.getElementById('st-contact-person').value = c.contactPerson || '';
         }
@@ -981,14 +1312,14 @@
         function renderClientDetailView() {
             const client = state.clients.find(c => c.id === state.activeViewingClientId);
             if (!client) return;
-            document.getElementById('cd-client-name').innerText = client.clientName || '-';
+            document.getElementById('cd-client-name').innerText = client.companyName || client.clientName || '-';
             document.getElementById('cd-company-name').innerText = client.companyName || '-';
             document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
             document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
             document.getElementById('cd-phone').innerText = client.phone || '-';
 
             const clientDocs = state.documents.filter(d => 
-                (d.clientName && client.clientName && d.clientName.trim().toLowerCase() === client.clientName.trim().toLowerCase()) ||
+                (d.clientName && client.companyName && d.clientName.trim().toLowerCase() === client.companyName.trim().toLowerCase()) ||
                 (d.companyName && client.companyName && d.companyName.trim().toLowerCase() === client.companyName.trim().toLowerCase())
             );
             const tbody = document.getElementById('client-detail-records-body');
@@ -1013,18 +1344,14 @@
                 const client = state.clients.find(c => c.id === id);
                 if (!client) return;
                 document.getElementById('cl-modal-id').value = client.id;
-                document.getElementById('cl-input-client-name').value = client.clientName || '';
-                document.getElementById('cl-input-company-name').value = client.companyName || '';
-                document.getElementById('cl-input-contact-person').value = client.contactPerson || '';
+                document.getElementById('cl-input-company-name').value = client.companyName || client.clientName || '';
+                document.getElementById('cl-input-contact-person').value = client.contactPerson || client.phone || '';
                 document.getElementById('cl-input-name-ar').value = client.nameAr || '';
-                document.getElementById('cl-input-phone').value = client.phone || '';
             } else {
                 document.getElementById('cl-modal-id').value = '';
-                document.getElementById('cl-input-client-name').value = '';
                 document.getElementById('cl-input-company-name').value = '';
                 document.getElementById('cl-input-contact-person').value = '';
                 document.getElementById('cl-input-name-ar').value = '';
-                document.getElementById('cl-input-phone').value = '';
             }
             modal.style.display = 'flex';
         }
@@ -1033,14 +1360,12 @@
 
         function saveClientModalData() {
             const id = document.getElementById('cl-modal-id').value || "c_" + Date.now();
-            const clientName = document.getElementById('cl-input-client-name').value.trim();
             const companyName = document.getElementById('cl-input-company-name').value.trim();
             const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
             let nameAr = document.getElementById('cl-input-name-ar').value.trim();
-            const phone = document.getElementById('cl-input-phone').value.trim();
 
             if (!nameAr && companyName) nameAr = autoGenerateArabicProfile(companyName);
-            db.ref('clients/' + id).set({ id, clientName, companyName, contactPerson, nameAr, phone }).then(() => { closeClientModal(); });
+            db.ref('clients/' + id).set({ id, companyName, clientName: companyName, contactPerson, nameAr, phone: contactPerson }).then(() => { closeClientModal(); });
         }
 
         function deleteClient(id) {
@@ -1148,22 +1473,30 @@
             }
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No financial records found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No financial records found.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = filtered.map(d => `
-                <tr>
-                    <td style="text-align: center;"><input type="checkbox" value="${d.id}" onclick="updateDeleteButtonState()" class="doc-checkbox"></td>
-                    <td><strong style="color: var(--primary);">${d.ref || '-'}</strong></td>
-                    <td>${d.clientName || '-'}</td>
-                    <td>${d.companyName || '-'}</td>
-                    <td>${d.items && d.items[0] ? d.items[0].d : 'Service Entry'}</td>
-                    <td style="text-align: center;">
-                        <button onclick="loadDocumentToStudio('${d.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = filtered.map(d => {
+                const branch = getDocBranch(d);
+                const badgeHtml = branch === 'company' 
+                    ? `<span class="branch-badge branch-company">Company Work</span>` 
+                    : `<span class="branch-badge branch-staff">Staff Work</span>`;
+
+                return `
+                    <tr>
+                        <td style="text-align: center;"><input type="checkbox" value="${d.id}" onclick="updateDeleteButtonState()" class="doc-checkbox"></td>
+                        <td><strong style="color: var(--primary);">${d.ref || '-'}</strong></td>
+                        <td>${d.clientName || '-'}</td>
+                        <td>${d.companyName || '-'}</td>
+                        <td>${badgeHtml}</td>
+                        <td>${d.items && d.items[0] ? d.items[0].d : 'Service Entry'}</td>
+                        <td style="text-align: center;">
+                            <button onclick="loadDocumentToStudio('${d.id}')" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function toggleSelectAllDocuments(master) {
@@ -1188,8 +1521,66 @@
             });
         }
 
+        // ================= MONTHLY EXPENSES MANAGEMENT =================
+        function openMonthlyExpenseModal() {
+            document.getElementById('exp-input-month').value = new Date().toISOString().slice(0, 7);
+            document.getElementById('exp-input-title').value = '';
+            document.getElementById('exp-input-amount').value = '';
+            document.getElementById('monthly-expense-modal').style.display = 'flex';
+        }
+
+        function closeMonthlyExpenseModal() {
+            document.getElementById('monthly-expense-modal').style.display = 'none';
+        }
+
+        function saveMonthlyExpenseData() {
+            const monthYear = document.getElementById('exp-input-month').value;
+            const title = document.getElementById('exp-input-title').value.trim();
+            const amount = parseFloat(document.getElementById('exp-input-amount').value) || 0;
+
+            if (!monthYear || !title || amount <= 0) {
+                showNotification("Invalid Entry", "Please provide a valid month, expense title, and non-zero amount.");
+                return;
+            }
+
+            const id = "exp_" + Date.now();
+            db.ref('monthlyExpenses/' + id).set({ id, monthYear, title, amount }).then(() => {
+                closeMonthlyExpenseModal();
+                initAccountsLedgerView();
+            });
+        }
+
+        function deleteMonthlyExpense(id) {
+            showConfirmDialog("Confirm Delete", "Remove this expense item?", () => {
+                db.ref('monthlyExpenses/' + id).remove().then(() => {
+                    initAccountsLedgerView();
+                });
+            });
+        }
+
+        function renderMonthlyExpensesTable() {
+            const tbody = document.getElementById('monthly-expenses-tbody');
+            if (!tbody) return;
+
+            if (state.monthlyExpenses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">No monthly operating expenses added yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = state.monthlyExpenses.map(e => `
+                <tr>
+                    <td><strong>${e.monthYear}</strong></td>
+                    <td>${e.title}</td>
+                    <td>AED ${Number(e.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td style="text-align: center;"><button onclick="deleteMonthlyExpense('${e.id}')" class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+
         // ================= ACCOUNTS & ADVANCE LEDGER LOGIC =================
         function initAccountsLedgerView() {
+            renderMonthlyExpensesTable();
+
             const select = document.getElementById('acc-invoice-select');
             if (!select) return;
 
@@ -1197,16 +1588,21 @@
                 select.innerHTML = '<option value="">-- No Invoices Available --</option>';
                 document.getElementById('acc-card-total').innerText = 'AED 0.00';
                 document.getElementById('acc-card-advance').innerText = 'AED 0.00';
+                document.getElementById('acc-card-payments').innerText = 'AED 0.00';
                 document.getElementById('acc-card-remaining').innerText = 'AED 0.00';
-                document.getElementById('acc-full-ledger-tbody').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No accounts data.</td></tr>`;
+                document.getElementById('acc-card-profit').innerText = 'AED 0.00';
+                document.getElementById('acc-payment-logs-tbody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">No payments recorded.</td></tr>`;
+                document.getElementById('acc-full-ledger-tbody').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No accounts data.</td></tr>`;
                 return;
             }
 
+            const activeSelection = select.value && state.documents.find(d => d.id === select.value) ? select.value : state.documents[0].id;
+
             select.innerHTML = state.documents.map(d => `
-                <option value="${d.id}">${d.ref} — ${d.clientName || 'Client'} (${d.companyName || 'Company'})</option>
+                <option value="${d.id}" ${d.id === activeSelection ? 'selected' : ''}>${d.ref} — ${d.clientName || 'Client'} (${d.companyName || 'Company'})</option>
             `).join('');
 
-            renderAccountsLedgerDetail(state.documents[0].id);
+            renderAccountsLedgerDetail(activeSelection);
             renderFullAccountsTable();
         }
 
@@ -1216,12 +1612,88 @@
 
             const total = Number(doc.total) || 0;
             const advance = Number(doc.advance) || 0;
-            const remaining = total - advance;
+            const totalPayments = getTotalPaymentsForDoc(doc);
+            const remaining = total - totalPayments;
+            const profit = calculateDocProfit(doc);
 
             document.getElementById('acc-card-total').innerText = `AED ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('acc-card-advance').innerText = `AED ${advance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('acc-card-payments').innerText = `AED ${totalPayments.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
             document.getElementById('acc-card-remaining').innerText = `AED ${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('acc-card-profit').innerText = `AED ${profit.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            
             window._currentActiveAccountDocId = doc.id;
+            renderPaymentLogsTable(doc);
+        }
+
+        function renderPaymentLogsTable(doc) {
+            const tbody = document.getElementById('acc-payment-logs-tbody');
+            if (!tbody) return;
+
+            const logs = doc.payments || [];
+            if (logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">No extra payments logged after initial advance.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = logs.map((p, idx) => `
+                <tr>
+                    <td>${p.date || '-'}</td>
+                    <td>AED ${Number(p.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td>${p.note || '-'}</td>
+                    <td style="text-align: center;"><button onclick="deletePaymentLog(${idx})" class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddPaymentModal() {
+            const docId = window._currentActiveAccountDocId;
+            if (!docId) {
+                showNotification("No Invoice Selected", "Please select a valid invoice from the dropdown first.");
+                return;
+            }
+            document.getElementById('pay-input-date').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('pay-input-amount').value = '';
+            document.getElementById('pay-input-note').value = '';
+            document.getElementById('payment-modal').style.display = 'flex';
+        }
+
+        function closeAddPaymentModal() {
+            document.getElementById('payment-modal').style.display = 'none';
+        }
+
+        function savePaymentLogData() {
+            const docId = window._currentActiveAccountDocId;
+            const doc = state.documents.find(d => d.id === docId);
+            if (!doc) return;
+
+            const date = document.getElementById('pay-input-date').value;
+            const amount = parseFloat(document.getElementById('pay-input-amount').value) || 0;
+            const note = document.getElementById('pay-input-note').value.trim();
+
+            if (amount <= 0) {
+                showNotification("Invalid Payment", "Please enter a positive payment amount.");
+                return;
+            }
+
+            const currentPayments = doc.payments ? [...doc.payments] : [];
+            currentPayments.push({ date, amount, note });
+
+            db.ref(`documents/${doc.id}/payments`).set(currentPayments).then(() => {
+                closeAddPaymentModal();
+            });
+        }
+
+        function deletePaymentLog(index) {
+            const docId = window._currentActiveAccountDocId;
+            const doc = state.documents.find(d => d.id === docId);
+            if (!doc || !doc.payments) return;
+
+            showConfirmDialog("Confirm Payment Removal", "Delete this recorded payment log?", () => {
+                const updated = [...doc.payments];
+                updated.splice(index, 1);
+                db.ref(`documents/${doc.id}/payments`).set(updated);
+            });
         }
 
         function promptEditAdvance() {
@@ -1229,194 +1701,310 @@
             const doc = state.documents.find(d => d.id === docId);
             if (!doc) return;
 
-            const newAdvanceStr = prompt(`Enter new advance payment amount for ${doc.ref} (AED):`, doc.advance || 0);
-            if (newAdvanceStr === null) return;
-            const newAdvance = parseFloat(newAdvanceStr);
-            if (isNaN(newAdvance)) {
-                showNotification("Invalid Input", "Please enter a valid numeric value.");
-                return;
+            const newAdvance = prompt("Enter new Initial Advance Paid Amount (AED):", doc.advance || 0);
+            if (newAdvance !== null) {
+                const val = parseFloat(newAdvance) || 0;
+                db.ref(`documents/${doc.id}/advance`).set(val);
             }
-
-            doc.advance = newAdvance;
-            db.ref('documents/' + doc.id).set(doc).then(() => {
-                renderAccountsLedgerDetail(doc.id);
-                renderFullAccountsTable();
-            });
         }
 
         function renderFullAccountsTable() {
             const tbody = document.getElementById('acc-full-ledger-tbody');
             if (!tbody) return;
 
+            if (state.documents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No accounts data available.</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = state.documents.map(d => {
                 const total = Number(d.total) || 0;
-                const advance = Number(d.advance) || 0;
-                const remaining = total - advance;
+                const paid = getTotalPaymentsForDoc(d);
+                const bal = total - paid;
+                const govt = Number(d.govtFee) || 0;
+                const expShare = getMonthlyExpenseShareForDoc(d);
+                const profit = calculateDocProfit(d);
+
                 return `
-                    <tr onclick="document.getElementById('acc-invoice-select').value='${d.id}'; renderAccountsLedgerDetail('${d.id}');" style="cursor: pointer;">
+                    <tr>
                         <td><strong style="color: var(--primary);">${d.ref}</strong></td>
                         <td>${d.clientName || '-'}</td>
-                        <td>${d.companyName || '-'}</td>
+                        <td>AED ${govt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td>AED ${expShare.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                         <td>AED ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td style="color: var(--accent-green);">AED ${advance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td style="color: var(--accent-red); font-weight: bold;">AED ${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td style="color: var(--accent-green);">AED ${paid.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td style="color: ${bal > 0 ? 'var(--accent-red)' : 'var(--accent-green)'};">AED ${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td style="color: var(--primary); font-weight: bold;">AED ${profit.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                     </tr>
                 `;
             }).join('');
         }
-        // ====================================================================
+
+        function printPaymentStatusStatement() {
+            const docId = window._currentActiveAccountDocId;
+            const doc = state.documents.find(d => d.id === docId);
+            if (!doc) {
+                showNotification("No Selection", "Please select an invoice reference to print.");
+                return;
+            }
+
+            const total = Number(doc.total) || 0;
+            const advance = Number(doc.advance) || 0;
+            const extraPayments = doc.payments ? doc.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) : 0;
+            const totalPaid = advance + extraPayments;
+            const remaining = total - totalPaid;
+
+            document.getElementById('p-doc-title').innerText = "STATEMENT OF PAYMENT STATUS / كشف حالة الدفع";
+            document.getElementById('p-client-name').innerText = `Client Name: ${doc.clientName || '-'}`;
+            document.getElementById('p-company-name').innerText = `Company Name: ${doc.companyName || '-'}`;
+            document.getElementById('p-contact-person').innerText = `Contact Person: ${doc.contactPerson || '-'}`;
+            document.getElementById('p-doc-ref').innerText = `Ref: ${doc.ref}`;
+            document.getElementById('p-expiry-display').innerText = `Date: ${new Date().toISOString().slice(0, 10)}`;
+
+            const targetClient = state.clients.find(c => c.clientName === doc.clientName || c.companyName === doc.companyName);
+            document.getElementById('p-client-name-ar').innerText = targetClient && targetClient.nameAr ? `السيد / ${targetClient.nameAr}` : 'السيد / ';
+
+            let logsTableHtml = `
+                <table class="a4-table">
+                    <thead>
+                        <tr>
+                            <th>Transaction / Payment Stage</th>
+                            <th>Date</th>
+                            <th>Note / Ref</th>
+                            <th style="text-align: right;">Amount Paid (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Initial Advance Deposit</td>
+                            <td>${doc.createdDate || '-'}</td>
+                            <td>Account Opening Advance</td>
+                            <td style="text-align: right;">${advance.toFixed(2)}</td>
+                        </tr>
+            `;
+
+            if (doc.payments && doc.payments.length > 0) {
+                doc.payments.forEach((p, i) => {
+                    logsTableHtml += `
+                        <tr>
+                            <td>Subsequent Payment #${i + 1}</td>
+                            <td>${p.date || '-'}</td>
+                            <td>${p.note || '-'}</td>
+                            <td style="text-align: right;">${Number(p.amount).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            logsTableHtml += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; padding: 15px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;"><span>Total Invoice Value:</span><span>AED ${total.toFixed(2)}</span></div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; color: #16a34a; margin-bottom: 8px;"><span>Total Amount Settled:</span><span>AED ${totalPaid.toFixed(2)}</span></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; color: #dc2626; border-top: 1px solid #cbd5e1; padding-top: 8px;"><span>Outstanding Remaining Balance:</span><span>AED ${remaining.toFixed(2)}</span></div>
+                </div>
+            `;
+
+            document.getElementById('p-content-container').innerHTML = logsTableHtml;
+            document.getElementById('document-preview-modal').style.display = 'flex';
+        }
+
+        // ================= SERVICE ENTRY STUDIO LOGIC =================
+        function openStudio(mode = 'Invoice') {
+            state.currentStudioMode = mode;
+            state.activeEditingId = null;
+            document.getElementById('st-ref-code').value = 'INV-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('st-created-date').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('st-expiry-date').value = '';
+            document.getElementById('st-client-name').value = '';
+            document.getElementById('st-company-name').value = '';
+            document.getElementById('st-contact-person').value = '';
+            document.getElementById('st-govt-amt').value = '1400';
+            document.getElementById('st-total-amt').value = '2500';
+            document.getElementById('st-advance-amt').value = '500';
+
+            state.currentStudioItems = [{ d: "Employment Visa Processing (2 Persons)", q: 1, p: 2500 }];
+            renderStudioTable();
+            populateStudioPresetDropdown();
+            switchTab('studio');
+        }
 
         function populateStudioPresetDropdown() {
             const select = document.getElementById('st-service-injector');
             if (!select) return;
-            select.innerHTML = '<option value="">-- Choose Preset Catalog --</option>' + state.services.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+            select.innerHTML = `<option value="">-- Choose Preset Catalog --</option>` + state.services.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
         }
 
         function injectServicePresetToItems() {
             const select = document.getElementById('st-service-injector');
-            if (!select || !select.value) return;
             const pkg = state.services.find(s => s.id === select.value);
             if (!pkg) return;
-            state.currentStudioItems = pkg.items.map(i => ({ d: i.d, q: i.q || 1, p: i.p }));
-            let total = state.currentStudioItems.reduce((sum, i) => sum + (i.q * i.p), 0);
+
+            document.getElementById('st-govt-amt').value = pkg.govtFee || 0;
+            state.currentStudioItems = pkg.items ? pkg.items.map(i => ({ d: i.d, q: i.q || 1, p: i.p })) : [];
+            
+            let total = state.currentStudioItems.reduce((acc, curr) => acc + (curr.p * curr.q), 0);
             document.getElementById('st-total-amt').value = total;
-            renderStudioInputs();
-            select.value = "";
+
+            renderStudioTable();
         }
 
-        function openStudio(mode) {
-            state.currentStudioMode = mode;
-            state.activeEditingId = null;
-            switchTab('studio');
-            document.getElementById('st-expiry-date').value = '2026-10-15';
-            document.getElementById('st-client-name').value = '';
-            document.getElementById('st-company-name').value = '';
-            document.getElementById('st-contact-person').value = '';
-            document.getElementById('st-total-amt').value = 2500;
-            document.getElementById('st-advance-amt').value = 500;
-            document.getElementById('st-ref-code').value = `INV-2026-${1000 + state.documents.length + 1}`;
-            state.currentStudioItems = [{ d: 'Employment Visa Processing (2 Persons)', q: 1, p: 2500 }];
-            renderStudioInputs();
-        }
-
-        function addStudioRow(focus = false) {
-            state.currentStudioItems.push({ d: '', q: 1, p: 0 });
-            renderStudioInputs();
-            if (focus) {
-                const idx = state.currentStudioItems.length - 1;
-                document.getElementById(`desc-input-${idx}`)?.focus();
-            }
-        }
-
-        function removeStudioRow(i) {
-            state.currentStudioItems.splice(i, 1);
-            if (state.currentStudioItems.length === 0) state.currentStudioItems.push({ d: '', q: 1, p: 0 });
-            renderStudioInputs();
-        }
-
-        function renderStudioInputs() {
+        function renderStudioTable() {
             const tbody = document.getElementById('st-spreadsheet-body');
             if (!tbody) return;
-            tbody.innerHTML = state.currentStudioItems.map((item, i) => `
+            tbody.innerHTML = state.currentStudioItems.map((item, idx) => `
                 <tr>
-                    <td style="text-align: center; color: var(--text-muted);">${i+1}</td>
-                    <td><input type="text" id="desc-input-${i}" value="${item.d}" placeholder="Work details..."></td>
-                    <td><input type="number" id="qty-input-${i}" value="${item.q}" style="text-align: center;"></td>
-                    <td><input type="number" id="price-input-${i}" value="${item.p}" style="text-align: right;"></td>
-                    <td style="text-align: center;"><button onclick="removeStudioRow(${i})" class="btn btn-danger" style="padding: 4px 8px;">✕</button></td>
+                    <td style="text-align: center; font-weight: bold; color: var(--primary);">${idx + 1}</td>
+                    <td><input type="text" value="${item.d}" onchange="updateStudioItem(${idx}, 'd', this.value)"></td>
+                    <td><input type="number" value="${item.q}" style="text-align: center;" onchange="updateStudioItem(${idx}, 'q', this.value)"></td>
+                    <td><input type="number" value="${item.p}" style="text-align: right;" onchange="updateStudioItem(${idx}, 'p', this.value)"></td>
+                    <td style="text-align: center;"><button onclick="removeStudioRow(${idx})" class="btn btn-danger" style="padding: 4px 8px;">✕</button></td>
                 </tr>
             `).join('');
-
-            state.currentStudioItems.forEach((item, i) => {
-                document.getElementById(`desc-input-${i}`).oninput = (e) => state.currentStudioItems[i].d = e.target.value;
-                document.getElementById(`qty-input-${i}`).oninput = (e) => {
-                    state.currentStudioItems[i].q = parseFloat(e.target.value) || 0;
-                    autoUpdateTotalFromItems();
-                };
-                document.getElementById(`price-input-${i}`).oninput = (e) => {
-                    state.currentStudioItems[i].p = parseFloat(e.target.value) || 0;
-                    autoUpdateTotalFromItems();
-                };
-            });
         }
 
-        function autoUpdateTotalFromItems() {
-            let sum = state.currentStudioItems.reduce((acc, curr) => acc + (curr.q * curr.p), 0);
-            if(sum > 0) document.getElementById('st-total-amt').value = sum;
+        function addStudioRow(rerender = true) {
+            state.currentStudioItems.push({ d: "", q: 1, p: 0 });
+            if (rerender) renderStudioTable();
         }
 
-        function commitDocumentToMemory() {
-            const clientName = document.getElementById('st-client-name').value.trim();
-            const companyName = document.getElementById('st-company-name').value.trim();
-            const contactPerson = document.getElementById('st-contact-person').value.trim();
-            const expiry = document.getElementById('st-expiry-date').value;
-            const refCode = document.getElementById('st-ref-code').value;
-            const total = parseFloat(document.getElementById('st-total-amt').value) || 0;
-            const advance = parseFloat(document.getElementById('st-advance-amt').value) || 0;
+        function removeStudioRow(idx) {
+            state.currentStudioItems.splice(idx, 1);
+            renderStudioTable();
+        }
 
-            const id = state.activeEditingId || "d_" + Date.now();
-            const doc = { id, ref: refCode, type: 'Invoice', clientName, companyName, contactPerson, expiry, total, advance, items: [...state.currentStudioItems] };
-
-            db.ref('documents/' + id).set(doc).then(() => { generateAndShowPreviewModal(doc); });
+        function updateStudioItem(idx, key, value) {
+            if (key === 'q' || key === 'p') value = parseFloat(value) || 0;
+            state.currentStudioItems[idx][key] = value;
+            
+            let calcTotal = state.currentStudioItems.reduce((acc, curr) => acc + (curr.p * curr.q), 0);
+            document.getElementById('st-total-amt').value = calcTotal;
         }
 
         function loadDocumentToStudio(id) {
             const doc = state.documents.find(d => d.id === id);
             if (!doc) return;
             state.activeEditingId = doc.id;
-            state.currentStudioItems = doc.items ? JSON.parse(JSON.stringify(doc.items)) : [{ d: 'General Service', q: 1, p: doc.total || 0 }];
-
-            switchTab('studio');
             document.getElementById('st-ref-code').value = doc.ref;
+            document.getElementById('st-created-date').value = doc.createdDate || new Date().toISOString().slice(0, 10);
+            document.getElementById('st-expiry-date').value = doc.expiry || '';
             document.getElementById('st-client-name').value = doc.clientName || '';
             document.getElementById('st-company-name').value = doc.companyName || '';
             document.getElementById('st-contact-person').value = doc.contactPerson || '';
-            document.getElementById('st-expiry-date').value = doc.expiry || '';
+            document.getElementById('st-govt-amt').value = doc.govtFee || 0;
             document.getElementById('st-total-amt').value = doc.total || 0;
             document.getElementById('st-advance-amt').value = doc.advance || 0;
-            renderStudioInputs();
+
+            state.currentStudioItems = doc.items ? JSON.parse(JSON.stringify(doc.items)) : [];
+            renderStudioTable();
+            populateStudioPresetDropdown();
+            switchTab('studio');
         }
 
-        function generateAndShowPreviewModal(doc) {
-            const clientName = doc.clientName || "Valued Client";
-            const companyName = doc.companyName || "";
-            const contactPerson = doc.contactPerson || "";
-            let clientAr = autoGenerateArabicProfile(companyName || clientName);
+        function commitDocumentToMemory() {
+            const id = state.activeEditingId || "doc_" + Date.now();
+            const ref = document.getElementById('st-ref-code').value;
+            const createdDate = document.getElementById('st-created-date').value;
+            const expiry = document.getElementById('st-expiry-date').value;
+            const clientName = document.getElementById('st-client-name').value.trim();
+            const companyName = document.getElementById('st-company-name').value.trim();
+            const contactPerson = document.getElementById('st-contact-person').value.trim();
+            const govtFee = parseFloat(document.getElementById('st-govt-amt').value) || 0;
+            const total = parseFloat(document.getElementById('st-total-amt').value) || 0;
+            const advance = parseFloat(document.getElementById('st-advance-amt').value) || 0;
 
-            document.getElementById('p-client-name').innerText = "Client Name: " + clientName;
-            document.getElementById('p-company-name').innerText = companyName ? "Company Name: " + companyName : "";
-            document.getElementById('p-contact-person').innerText = contactPerson ? "Contact Person: " + contactPerson : "";
-            document.getElementById('p-client-name-ar').innerText = "السيد / " + clientAr;
-            document.getElementById('p-doc-ref').innerText = "Ref No: " + doc.ref;
-            document.getElementById('p-expiry-display').innerText = doc.expiry ? "Visa Expiry Date: " + doc.expiry : "";
+            const existingDoc = state.documents.find(d => d.id === id);
+            const payments = existingDoc && existingDoc.payments ? existingDoc.payments : [];
 
-            let total = 0;
-            let html = doc.items.map((item, i) => {
-                let amt = item.q * item.p;
-                total += amt;
-                return `<tr><td style="text-align: center;">${i+1}</td><td>${item.d}</td><td style="text-align: center;">${item.q}</td><td style="text-align: right;">AED ${amt.toFixed(2)}</td></tr>`;
-            }).join('');
+            const docData = {
+                id, ref, type: 'Invoice', createdDate, expiry, clientName, companyName, contactPerson,
+                govtFee, total, advance, payments, items: state.currentStudioItems
+            };
 
-            html += `<tr style="background: #f8fafc; font-weight: bold;"><td colspan="3" style="text-align: right;">Total Payable Amount (AED)</td><td style="text-align: right;">AED ${(doc.total || total).toFixed(2)}</td></tr>`;
-            
-            document.getElementById('p-table-body').innerHTML = html;
+            db.ref('documents/' + id).set(docData).then(() => {
+                showInvoicePreview(docData);
+            });
+        }
+
+        function showInvoicePreview(doc) {
+            document.getElementById('p-doc-title').innerText = "TAX INVOICE / فاتورة ضريبية";
+            document.getElementById('p-client-name').innerText = `Client Name: ${doc.clientName || '-'}`;
+            document.getElementById('p-company-name').innerText = `Company Name: ${doc.companyName || '-'}`;
+            document.getElementById('p-contact-person').innerText = `Contact Person: ${doc.contactPerson || '-'}`;
+            document.getElementById('p-doc-ref').innerText = `Ref: ${doc.ref}`;
+            document.getElementById('p-expiry-display').innerText = doc.expiry ? `Visa Expiry: ${doc.expiry}` : '';
+
+            const targetClient = state.clients.find(c => c.clientName === doc.clientName || c.companyName === doc.companyName);
+            document.getElementById('p-client-name-ar').innerText = targetClient && targetClient.nameAr ? `السيد / ${targetClient.nameAr}` : 'السيد / ';
+
+            let tableHtml = `
+                <table class="a4-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">S.No</th>
+                            <th style="width: 55%; text-align: left;">Specific Work Details / التفاصيل</th>
+                            <th style="width: 15%;">Qty</th>
+                            <th style="width: 20%; text-align: right;">Amount (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let subtotal = 0;
+            doc.items.forEach((item, idx) => {
+                let lineTotal = (item.p * item.q);
+                subtotal += lineTotal;
+                tableHtml += `
+                    <tr>
+                        <td style="text-align: center;">${idx + 1}</td>
+                        <td>${item.d}</td>
+                        <td style="text-align: center;">${item.q}</td>
+                        <td style="text-align: right;">${lineTotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            const advance = Number(doc.advance) || 0;
+            const extraPayments = doc.payments ? doc.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) : 0;
+            const totalPaid = advance + extraPayments;
+            const balanceDue = subtotal - totalPaid;
+
+            tableHtml += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; padding: 15px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;"><span>Total Invoice Amount:</span><span>AED ${subtotal.toFixed(2)}</span></div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; color: #16a34a; margin-bottom: 8px;"><span>Advance / Total Paid:</span><span>AED ${totalPaid.toFixed(2)}</span></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; color: #dc2626; border-top: 1px solid #cbd5e1; padding-top: 8px;"><span>Balance Due:</span><span>AED ${balanceDue.toFixed(2)}</span></div>
+                </div>
+            `;
+
+            document.getElementById('p-content-container').innerHTML = tableHtml;
             document.getElementById('document-preview-modal').style.display = 'flex';
         }
 
         function closePreviewModal() {
             document.getElementById('document-preview-modal').style.display = 'none';
-            switchTab('documents');
         }
 
         function saveAsPDF() {
+            const { jsPDF } = window.jspdf;
             const element = document.getElementById('a4-wrapper-element');
-            const refCode = document.getElementById('st-ref-code').value || 'Financial_Statement';
-            window.html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const { jsPDF } = window.jspdf;
+            
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-                pdf.save(`${refCode}.pdf`);
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`DarAlShams_Document.pdf`);
             });
         }
     </script>
