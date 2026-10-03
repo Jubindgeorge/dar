@@ -12,6 +12,7 @@
 </head>
 <body>
     <div id="app-container" class="app-layout">
+        <!-- Sidebar Navigation -->
         <aside id="main-sidebar" class="sidebar">
             <div class="sidebar-brand">
                 <h2>DAR AL SHAMS</h2>
@@ -28,6 +29,7 @@
             </ul>
         </aside>
 
+        <!-- Main Workspace -->
         <main class="main-content">
             <header class="top-bar no-print">
                 <button class="icon-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
@@ -37,6 +39,7 @@
             </header>
 
             <div class="view-space">
+                <!-- Dashboard Panel -->
                 <div id="tab-dashboard" class="view-panel active">
                     <div class="stats-grid">
                         <div class="stat-card"><h3>Clients</h3><p id="dash-client-count">0</p></div>
@@ -46,6 +49,7 @@
                     </div>
                 </div>
 
+                <!-- Quotation Standby View Panel -->
                 <div id="tab-quotation" class="view-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" class="no-print">
                         <h2 style="color: var(--primary);">Quotation Preview Panel</h2>
@@ -54,18 +58,39 @@
                     <div id="quotation-panel-content"></div>
                 </div>
 
-                <!-- Additional View Panels Rendered Dynamically -->
+                <!-- Documents List Panel -->
+                <div id="tab-documents" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
+                        <input type="text" id="doc-search-input" placeholder="Search reference, client..." onkeyup="renderDocumentsTable()" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--panel-bg); color: #fff; width: 300px;">
+                        <span id="ledger-total-amount" style="font-weight: bold; color: var(--primary);">AED 0.00</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all-docs" onclick="toggleSelectAllDocs(this)"></th>
+                                <th>Ref Code</th>
+                                <th>Client</th>
+                                <th>Company</th>
+                                <th>Branch</th>
+                                <th>Description</th>
+                                <th style="text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doc-table-body"></tbody>
+                    </table>
+                </div>
+
             </div>
         </main>
     </div>
 
-    <!-- Modals -->
-    <div id="document-preview-modal" class="modal-backdrop">
+    <!-- Print & Document Preview Modal -->
+    <div id="document-preview-modal" class="modal-backdrop" style="display: none;">
         <div class="modal-content-lg">
-            <div class="modal-header no-print">
+            <div class="modal-header no-print" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                 <h3>Document Preview</h3>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Print</button>
+                    <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Print Document</button>
                     <button onclick="document.getElementById('document-preview-modal').style.display='none'" class="btn btn-secondary">Close</button>
                 </div>
             </div>
@@ -73,6 +98,7 @@
         </div>
     </div>
 
+    <!-- Module Script Loading Order -->
     <script src="config.js"></script>
     <script src="state.js"></script>
     <script src="ui.js"></script>
