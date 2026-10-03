@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Works Directory - Dar Al Shams</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <div id="app-container" class="app-layout">
+        <aside id="main-sidebar" class="sidebar">
+            <div class="sidebar-brand"><h2>DAR AL SHAMS</h2><span>CLEARING SERVICES</span></div>
+            <ul class="sidebar-menu">
+                <li onclick="window.location.href='index.html'"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></li>
+                <li class="active" onclick="window.location.href='works.html'"><i class="fa-solid fa-folder-closed"></i> <span>Works Directory</span></li>
+                <li onclick="window.location.href='clients.html'"><i class="fa-solid fa-users"></i> <span>Clients Dossier</span></li>
+                <li onclick="window.location.href='quotation.html'"><i class="fa-solid fa-file-signature"></i> <span>Quotation View</span></li>
+                <li onclick="window.location.href='services.html'"><i class="fa-solid fa-gears"></i> <span>Service Tariffs</span></li>
+                <li onclick="window.location.href='ledger.html'"><i class="fa-solid fa-calculator"></i> <span>Accounts Ledger</span></li>
+            </ul>
+        </aside>
+        <main class="main-content">
+            <header class="top-bar no-print"><button class="icon-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button></header>
+            <div class="view-space">
+                <div class="view-panel active">
+                    <h2 style="color: var(--primary); margin-bottom: 20px;">Active Work Folders by Company</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Company / Client Folder</th><th>Active Records</th><th style="text-align: center;">Actions</th></tr>
+                        </thead>
+                        <tbody id="works-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="config.js"></script>
+    <script src="state.js"></script>
+    <script src="ui.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
