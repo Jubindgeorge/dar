@@ -1,0 +1,99 @@
+<section id="tab-documents" class="view-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h2 style="color: var(--primary); font-size: 1.4rem;">Financial Ledger & Invoices</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Overview of all generated financial documents and billing statements.</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="btn-batch-delete" onclick="deleteSelectedDocuments()" disabled class="btn btn-danger">Delete Selected</button>
+            <button onclick="openStudio('Invoice')" class="btn btn-primary">+ Add Entry Studio</button>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; flex-wrap: wrap;">
+        <input type="text" id="doc-search-input" placeholder="Search by Client, Company or Ref..." oninput="renderDocumentsTable()" style="max-width: 350px;">
+        <div style="font-size: 1.1rem; font-weight: bold; color: var(--primary);">Total Billed: <span id="ledger-total-amount">AED 0.00</span></div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="th-select-all" onclick="toggleSelectAllDocuments(this)"></th>
+                    <th>Ref Code</th>
+                    <th>Client Name</th>
+                    <th>Company Name</th>
+                    <th>Branch Type</th>
+                    <th>Primary Service</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="doc-table-body"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Official Invoice Modal (Matching inv 7002.pdf) -->
+<div id="document-preview-modal" class="preview-modal-backdrop" style="display: none;">
+    <div class="preview-modal-toolbar">
+        <h3 style="color: var(--primary);" id="preview-modal-heading">Invoice Document Studio Viewer</h3>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="saveAsPDF()" class="btn btn-secondary"><i class="fa-solid fa-file-pdf"></i> Save as PDF</button>
+            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Print Document</button>
+            <button onclick="closePreviewModal()" class="btn btn-danger">Close</button>
+        </div>
+    </div>
+    <div class="preview-modal-body-canvas">
+        <div class="doc-sheet" id="a4-wrapper-element">
+            <div class="doc-header-strip"></div>
+            <div class="doc-header">
+                <div class="doc-brand">
+                    <h1 class="ar-title">دار الشمس لخدمات تخليص المعاملات</h1>
+                    <h2 class="en-title">DAR AL SHAMS DOCUMENTS CLEARING SERVICES</h2>
+                    <p class="contact-info">Tel: +971 4 236 7006 | Office # 227, Dubai, UAE</p>
+                    <p class="contact-info">Email: info@daralshams.ae</p>
+                </div>
+            </div>
+
+            <div id="p-doc-title" class="doc-type-banner">INVOICE / فاتورة</div>
+
+            <div class="doc-meta-grid">
+                <div class="meta-left">
+                    <p><strong>M/s:</strong> <span id="p-company-name">BURGEON INTERNATIONAL MARKETING SERVICE</span></p>
+                    <p class="ar-text"><strong>السيد /</strong> <span id="p-client-name-ar">برجون العالمية التسويق سيرفيكي</span></p>
+                </div>
+                <div class="meta-right">
+                    <p><strong>Invoice No:</strong> <span id="p-doc-ref">INV-2026-7002</span></p>
+                    <p><strong>Date:</strong> <span id="p-doc-date">2026-07-07</span></p>
+                </div>
+            </div>
+
+            <table class="official-doc-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">S.No</th>
+                        <th style="width: 58%; text-align: left;">التفاصيل / Description</th>
+                        <th style="width: 10%;">Qty</th>
+                        <th style="width: 24%; text-align: right;">Amount (Dhs) / المبلغ</th>
+                    </tr>
+                </thead>
+                <tbody id="p-items-body"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="total-label">Total / مجموع Dhs</td>
+                        <td class="total-val" id="p-total-amount">0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="doc-signatures">
+                <div class="sig-box">
+                    <p>Receiver's Sign / توقيع المستلم</p>
+                    <div class="sig-line"></div>
+                </div>
+                <div class="sig-box text-right">
+                    <p>Authorized Signature / التوقيع المعتمد</p>
+                    <div class="sig-line"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
