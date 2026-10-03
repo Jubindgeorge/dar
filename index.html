@@ -3,208 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dar Al Shams | ERP Portal</title>
-    
-    <!-- FontAwesome Icons -->
+    <title>DAR AL SHAMS - ERP System</title>
+    <!-- FontAwesome & jsPDF / HTML2Canvas Libraries -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
-
-    <!-- jsPDF and html2canvas for Document Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <!-- Firebase SDKs & Core Modules -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="config.js" defer></script>
-    <script src="state.js" defer></script>
-    <script src="ui.js" defer></script>
-    <script src="services.js" defer></script>
-    <script src="ledger.js" defer></script>
-    <script src="app.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Welcome Screen -->
-    <div id="welcome-screen">
-        <div class="welcome-content">
-            <button class="welcome-arrow-btn" onclick="exitWelcomeScreen()" title="Proceed to Authentication">➔</button>
-        </div>
-    </div>
-
-    <!-- Authentication View -->
-    <div id="auth-container" style="display:none;">
-        <div class="login-card">
-            <h2>DAR AL SHAMS</h2>
-            <p>Enterprise Financial & Document Studio</p>
-            <form id="login-form" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 15px;">
-                <div style="text-align: left;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">USERNAME</label>
-                    <input type="text" id="login-user" value="admin" required>
-                </div>
-                <div style="text-align: left;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">PASSWORD</label>
-                    <input type="password" id="login-pin" value="1234" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 5px;">Authenticate</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Main App Container -->
-    <div id="app-container">
-        
+    <div class="app-layout">
         <!-- Sidebar Navigation -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h3>DAR AL SHAMS</h3>
-                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">ERP & Financial Studio</p>
+        <aside class="sidebar">
+            <div class="brand">
+                <h2>DAR AL SHAMS</h2>
+                <p>Documents Clearing</p>
             </div>
-            <ul class="sidebar-menu">
-                <li onclick="switchTab('dashboard')" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
-                <li onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-users"></i><span>Clients</span></li>
-                <li onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works</span></li>
-                <li onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
-                <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Financial Records</span></li>
-                <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts Ledger</span></li>
-                <li onclick="switchTab('quotation')" data-target="quotation"><i class="fa-solid fa-file-contract"></i><span>Price Quotations</span></li>
-                <li onclick="openStudio('Invoice')"><i class="fa-solid fa-plus-circle"></i><span>+ Add Entry Studio</span></li>
-            </ul>
-            <div class="sidebar-footer">
-                <button onclick="handleLogout()" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;">Exit Portal</button>
-            </div>
+            <nav class="nav-menu">
+                <a class="nav-item active" onclick="switchTab('dashboard')">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+                <a class="nav-item" onclick="switchTab('clients')">
+                    <i class="fa-solid fa-users"></i> Clients
+                </a>
+                <a class="nav-item" onclick="switchTab('works')">
+                    <i class="fa-solid fa-folder-tree"></i> Works Directory
+                </a>
+                <a class="nav-item" onclick="switchTab('services-config')">
+                    <i class="fa-solid fa-tags"></i> Services Catalog
+                </a>
+                <a class="nav-item" onclick="switchTab('documents')">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Ledger & Invoices
+                </a>
+                <a class="nav-item" onclick="switchTab('accounts-ledger')">
+                    <i class="fa-solid fa-wallet"></i> Accounts Ledger
+                </a>
+                <a class="nav-item" onclick="switchTab('quotation')">
+                    <i class="fa-solid fa-file-contract"></i> Price Quotation
+                </a>
+                <a class="nav-item" onclick="openStudio('Invoice')">
+                    <i class="fa-solid fa-plus-circle"></i> + Add Entry Studio
+                </a>
+            </nav>
         </aside>
 
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <header class="top-bar">
-                <div class="top-bar-title-section">
-                    <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-                    <div style="display: inline-block; cursor: pointer; margin-left: 10px;" onclick="switchTab('dashboard')">
-                        <h2 style="font-size: 1.1rem; color: var(--primary);" id="topbar-title">Dashboard Overview</h2>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Secure Cloud Connected</span>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div class="user-profile-badge">Session: <strong>Administrator</strong></div>
-                </div>
-            </header>
+        <!-- Main Content Area containing all imported tabs -->
+        <main class="main-content">
+            
+            <!-- 1. Dashboard View -->
+            <section id="tab-dashboard" class="view-panel active">
+                <!-- Content from dashboard.html -->
+            </section>
 
-            <main class="view-space">
+            <!-- 2. Clients View -->
+            <section id="tab-clients" class="view-panel">
+                <!-- Content from clients.html -->
+            </section>
 
-                <!-- DASHBOARD, CLIENTS, WORKS, SERVICES, DOCUMENTS & LEDGER TABS OMITTED FOR BREVITY -->
-                <section id="tab-dashboard" class="view-panel active">
-                    <div class="dashboard-grid">
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Saved Clients</p>
-                                <h3 id="dash-client-count" style="font-size: 1.8rem; color: var(--primary); margin-top: 5px;">0</h3>
-                            </div>
-                            <i class="fa-solid fa-users fa-2x" style="color: rgba(203,163,88,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Monthly Payouts</p>
-                                <h3 id="dash-monthly-payout" style="font-size: 1.8rem; color: var(--accent-green); margin-top: 5px;">AED 0</h3>
-                            </div>
-                            <i class="fa-solid fa-wallet fa-2x" style="color: rgba(34,197,94,0.3);"></i>
-                        </div>
-                    </div>
-                </section>
+            <!-- 3. Works Directory & Branch View -->
+            <section id="tab-works" class="view-panel">
+                <!-- Content from works.html -->
+            </section>
+            <section id="tab-works-detail" class="view-panel">
+                <!-- Branch Detail Panel from works.html -->
+            </section>
 
-                <!-- TAB 7: PRICE QUOTATIONS -->
-                <section id="tab-quotation" class="view-panel">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                        <div>
-                            <h2 style="color: var(--primary); font-size: 1.4rem;">Price Quotation Studio</h2>
-                            <p style="font-size: 0.85rem; color: var(--text-muted);">Generate and print official price quotations matching billing format.</p>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-secondary" onclick="renderQuotationView()"><i class="fa-solid fa-rotate"></i> Reset View</button>
-                            <button class="btn btn-primary" onclick="openStudio('Quotation')">+ Create Quotation</button>
-                        </div>
-                    </div>
+            <!-- 4. Services Catalog View -->
+            <section id="tab-services-config" class="view-panel">
+                <!-- Content from services.html -->
+            </section>
 
-                    <!-- Official Document Layout for Quotation -->
-                    <div class="doc-sheet-container">
-                        <div class="doc-sheet" id="quotation-card-wrapper-element">
-                            <!-- Dual Line Header -->
-                            <div class="doc-header-strip"></div>
-                            
-                            <div class="doc-header">
-                                <div class="doc-brand">
-                                    <h1 class="ar-title">دار الشمس لخدمات تخليص المعاملات</h1>
-                                    <h2 class="en-title">DAR AL SHAMS DOCUMENTS CLEARING SERVICES</h2>
-                                    <p class="contact-info">Tel: +971 4 236 7006 | Office # 227, Dubai, UAE</p>
-                                    <p class="contact-info">Email: info@daralshams.ae</p>
-                                </div>
-                            </div>
+            <!-- 5. Documents & Financial Ledger View -->
+            <section id="tab-documents" class="view-panel">
+                <!-- Content from documents.html -->
+            </section>
 
-                            <div class="doc-type-banner">
-                                PRICE QUOTATION / عرض سعر
-                            </div>
+            <!-- 6. Accounts Ledger View -->
+            <section id="tab-accounts-ledger" class="view-panel">
+                <!-- Content from accounts-ledger.html -->
+            </section>
 
-                            <div class="doc-meta-grid">
-                                <div class="meta-left">
-                                    <p><strong>M/s:</strong> <span id="qt-company-display">BURGEON INTERNATIONAL MARKETING SERVICE</span></p>
-                                    <p class="ar-text"><strong>السيد /</strong> <span id="qt-client-ar-display">برجون العالمية التسويق سيرفيكي</span></p>
-                                </div>
-                                <div class="meta-right">
-                                    <p><strong>Quotation No:</strong> <span id="qt-ref-display">QT-2026-7002</span></p>
-                                    <p><strong>Date:</strong> <span id="qt-date-display">2026-07-07</span></p>
-                                </div>
-                            </div>
+            <!-- 7. Price Quotation Studio View -->
+            <section id="tab-quotation" class="view-panel">
+                <!-- Content from quotation.html -->
+            </section>
 
-                            <table class="official-doc-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 8%;">S.No</th>
-                                        <th style="width: 58%; text-align: left;">التفاصيل / Description</th>
-                                        <th style="width: 10%;">Qty</th>
-                                        <th style="width: 24%; text-align: right;">Amount (Dhs) / المبلغ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="quotation-items-body">
-                                    <!-- Dynamic Rows -->
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="3" class="total-label">Total / مجموع Dhs</td>
-                                        <td class="total-val" id="qt-grandtotal">0.00</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+            <!-- 8. Service Entry Studio View -->
+            <section id="tab-studio" class="view-panel">
+                <!-- Content from studio.html -->
+            </section>
 
-                            <div class="doc-signatures">
-                                <div class="sig-box">
-                                    <p>Receiver's Sign / توقيع المستلم</p>
-                                    <div class="sig-line"></div>
-                                </div>
-                                <div class="sig-box text-right">
-                                    <p>Authorized Signature / التوقيع المعتمد</p>
-                                    <div class="sig-line"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;" class="no-print">
-                            <button class="btn btn-secondary" onclick="saveQuotationAsPDF()"><i class="fa-solid fa-file-pdf"></i> Save as PDF</button>
-                            <button class="btn btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Quotation</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- STUDIO TAB OMITTED FOR BREVITY -->
-            </main>
-        </div>
+        </main>
     </div>
 
-    <!-- MODAL 1: OFFICIAL PREVIEW INVOICE & A4 EXPORT -->
+    <!-- Global Official Document Preview Modal -->
     <div id="document-preview-modal" class="preview-modal-backdrop" style="display: none;">
         <div class="preview-modal-toolbar">
             <h3 style="color: var(--primary);" id="preview-modal-heading">Invoice Document Studio Viewer</h3>
@@ -216,9 +108,7 @@
         </div>
         <div class="preview-modal-body-canvas">
             <div class="doc-sheet" id="a4-wrapper-element">
-                <!-- Dual Line Header -->
                 <div class="doc-header-strip"></div>
-                
                 <div class="doc-header">
                     <div class="doc-brand">
                         <h1 class="ar-title">دار الشمس لخدمات تخليص المعاملات</h1>
@@ -250,9 +140,7 @@
                             <th style="width: 24%; text-align: right;">Amount (Dhs) / المبلغ</th>
                         </tr>
                     </thead>
-                    <tbody id="p-items-body">
-                        <!-- Dynamic Invoice Items -->
-                    </tbody>
+                    <tbody id="p-items-body"></tbody>
                     <tfoot>
                         <tr>
                             <td colspan="3" class="total-label">Total / مجموع Dhs</td>
@@ -275,14 +163,6 @@
         </div>
     </div>
 
-    <!-- GENERAL NOTIFICATION MODAL -->
-    <div id="custom-modal" class="custom-modal-backdrop" style="display: none;">
-        <div class="custom-modal-content">
-            <h3 id="modal-title">Notification</h3>
-            <p id="modal-message"></p>
-            <div id="modal-actions" class="custom-modal-actions"></div>
-        </div>
-    </div>
-
+    <script src="ui.js"></script>
 </body>
 </html>
