@@ -1,0 +1,168 @@
+/* ==========================================================================
+   OFFICIAL DOCUMENT STYLES (MATCHING INV 7002.PDF)
+   ========================================================================== */
+
+.doc-sheet-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.doc-sheet {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff;
+    color: #000000;
+    padding: 15mm 20mm;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+    margin: 0 auto;
+}
+
+/* Double Header Line */
+.doc-header-strip {
+    border-top: 3px solid #1b4d3e;
+    border-bottom: 1px solid #1b4d3e;
+    height: 3px;
+    margin-bottom: 15px;
+}
+
+.doc-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.doc-brand .ar-title {
+    font-family: 'Amiri', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1b4d3e;
+    margin: 0 0 4px 0;
+}
+
+.doc-brand .en-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1b4d3e;
+    letter-spacing: 0.5px;
+    margin: 0 0 6px 0;
+}
+
+.doc-brand .contact-info {
+    font-size: 11px;
+    color: #333333;
+    margin: 2px 0;
+}
+
+.doc-type-banner {
+    border-top: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    text-align: center;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 5px 0;
+    margin: 15px 0 20px 0;
+    letter-spacing: 1px;
+}
+
+.doc-meta-grid {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.doc-meta-grid .ar-text {
+    font-family: 'Amiri', serif;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.doc-meta-grid .meta-right {
+    text-align: right;
+}
+
+/* Official Billing Table */
+.official-doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.official-doc-table th, 
+.official-doc-table td {
+    border: 1px solid #000000;
+    padding: 6px 8px;
+    font-size: 11px;
+}
+
+.official-doc-table th {
+    background-color: #f2f2f2;
+    font-weight: 700;
+    text-align: center;
+}
+
+.official-doc-table td {
+    height: 22px;
+}
+
+.official-doc-table .total-label {
+    text-align: right;
+    font-weight: 800;
+    font-size: 12px;
+}
+
+.official-doc-table .total-val {
+    text-align: right;
+    font-weight: 800;
+    font-size: 12px;
+}
+
+/* Signatures */
+.doc-signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding: 0 10px;
+}
+
+.sig-box {
+    width: 40%;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.sig-box.text-right {
+    text-align: right;
+}
+
+.sig-line {
+    margin-top: 35px;
+    border-bottom: 1px solid #000000;
+    width: 100%;
+}
+
+/* Print Overrides */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .doc-sheet, .doc-sheet * {
+        visibility: visible;
+    }
+    .doc-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none;
+        padding: 10mm 15mm;
+    }
+    .no-print {
+        display: none !important;
+    }
+}
