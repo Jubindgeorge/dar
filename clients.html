@@ -1,0 +1,22 @@
+<section id="tab-clients" class="view-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h2 style="color: var(--primary); font-size: 1.4rem;">Corporate Accounts & Dossiers</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Manage client names, company names, and contact details.</p>
+        </div>
+        <button onclick="openClientModal(false)" class="btn btn-primary">+ Add New Company</button>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th style="text-align: right;">Arabic Names</th>
+                    <th>Contact</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="client-table-body"></tbody>
+        </table>
+    </div>
+</section>
