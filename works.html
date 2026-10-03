@@ -1,0 +1,48 @@
+<section id="tab-works" class="view-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h2 style="color: var(--primary); font-size: 1.4rem;">Company Works Directory</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Browse company invoices categorized by Company Works & Staff Works branches.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>Total Invoices</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="works-table-body"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Works Branch Detail Panel -->
+<section id="tab-works-detail" class="view-panel">
+    <button onclick="switchTab('works')" class="btn btn-secondary" style="margin-bottom: 15px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Works Directory</button>
+    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h2 id="works-detail-company-title" style="color: var(--primary); font-size: 1.5rem; margin-bottom: 15px;">-</h2>
+        <div style="display: flex; gap: 10px;">
+            <button id="btn-branch-company" onclick="switchWorksBranch('company')" class="btn btn-primary">Company Works (<span id="count-company-works">0</span>)</button>
+            <button id="btn-branch-staff" onclick="switchWorksBranch('staff')" class="btn btn-secondary">Staff Works (<span id="count-staff-works">0</span>)</button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Ref Code</th>
+                    <th>Client Name</th>
+                    <th>Company Name</th>
+                    <th>Contact Person</th>
+                    <th>Primary Service</th>
+                    <th>Amount</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="works-detail-records-body"></tbody>
+        </table>
+    </div>
+</section>
