@@ -1,0 +1,58 @@
+<section id="tab-accounts-ledger" class="view-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h2 style="color: var(--primary); font-size: 1.4rem;">Accounts & Advance Ledger</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Monitor payments, advance balances, expenses, and net margins.</p>
+        </div>
+        <button onclick="openMonthlyExpenseModal()" class="btn btn-secondary">+ Log Monthly Expense</button>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Select Invoice Reference to Manage Ledger:</label>
+        <select id="acc-invoice-select" onchange="renderAccountsLedgerDetail(this.value)" style="max-width: 500px;"></select>
+    </div>
+
+    <div class="dashboard-grid" style="margin-bottom: 25px;">
+        <div class="metric-card">
+            <div>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Total Invoice Value</p>
+                <h3 id="acc-card-total" style="font-size: 1.4rem; color: var(--text-main);">AED 0.00</h3>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Initial Advance Paid</p>
+                <h3 id="acc-card-advance" style="font-size: 1.4rem; color: var(--primary);">AED 0.00</h3>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Total Amount Settled</p>
+                <h3 id="acc-card-payments" style="font-size: 1.4rem; color: var(--accent-green);">AED 0.00</h3>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Remaining Outstanding</p>
+                <h3 id="acc-card-remaining" style="font-size: 1.4rem; color: var(--accent-red);">AED 0.00</h3>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 12px;">Full Enterprise Accounts Ledger</h3>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Ref</th>
+                    <th>Client</th>
+                    <th>Govt Fee</th>
+                    <th>Total Value</th>
+                    <th>Total Paid</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody id="acc-full-ledger-tbody"></tbody>
+        </table>
+    </div>
+</section>
