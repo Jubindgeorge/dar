@@ -720,7 +720,14 @@
             if (typeof switchTab === 'function') switchTab('studio');
         };
     </script>
-
+<!-- Google GenAI SDK for Browser -->
+<script type="importmap">
+  {
+    "imports": {
+      "@google/genai": "https://esm.run/@google/genai"
+    }
+  }
+</script>
     <!-- System JavaScript Modules -->
     <script src="config.js"></script>
     <script src="state.js"></script>
@@ -729,5 +736,6 @@
     <script src="services.js"></script>
     <script src="ledger.js"></script>
     <script src="app.js"></script>
+    <script src="translator.js"></script>
 </body>
 </html>

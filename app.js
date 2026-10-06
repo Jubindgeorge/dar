@@ -363,13 +363,13 @@ window.previewInvoiceDocument = function(refCode) {
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     
+
     const compName = doc.clientName || doc.companyName || 'N/A';
     if (clientName) clientName.innerText = compName;
     if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
 
     let arName = '';
-    // ഇവിടെ companyName അല്ലെങ്കിൽ clientName വെച്ച് clients ലിസ്റ്റിൽ പരതുന്നു
-    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
+        const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
     if (matchedClient) {
         arName = matchedClient.nameAr || '';
     }
@@ -418,6 +418,7 @@ window.previewInvoiceDocument = function(refCode) {
 };
 
 window.saveAsPDF = function() {
+  
     const element = document.getElementById('a4-wrapper-element') || document.getElementById('document-preview-print-area');
     
     if (!element) {
@@ -434,7 +435,7 @@ window.saveAsPDF = function() {
     const cleanFilename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
 
     const opt = {
-        margin:       [5, 5, 5, 5], 
+        margin:       [5, 5, 5, 5], // 
         filename:     cleanFilename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 

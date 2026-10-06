@@ -1,30 +1,33 @@
-// ui.js
-window.autoTranslateToArabic = function(text) {
-    if (!text) return '';
-    return text;
-};
+// ui.js - Custom Modals & Translation Utilities
+function showCustomModal(title, message, customActionsHTML = '') {
+    const modal = document.getElementById('custom-modal');
+    if (!modal) return;
 
-window.showCustomModal = function(title, message, customButtonsHTML = null) {
-    const titleEl = document.getElementById('modal-title');
-    const msgEl = document.getElementById('modal-message');
-    const actionsEl = document.getElementById('modal-actions');
-
-    if (titleEl) titleEl.innerText = title;
-    if (msgEl) msgEl.innerHTML = message;
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-message').innerHTML = message;
     
-    if (actionsEl) {
-        if (customButtonsHTML) {
-            actionsEl.innerHTML = customButtonsHTML;
+    const actionsContainer = document.getElementById('modal-actions');
+    if (actionsContainer) {
+        if (customActionsHTML) {
+            actionsContainer.innerHTML = customActionsHTML;
         } else {
-            actionsEl.innerHTML = `<button onclick="closeCustomModal()" class="btn btn-primary">OK</button>`;
+            actionsContainer.innerHTML = `<button onclick="closeCustomModal()" class="btn btn-primary">OK</button>`;
         }
     }
+    modal.style.display = 'flex';
+}
 
-    const modal = document.getElementById('custom-modal');
-    if (modal) modal.style.display = 'flex';
-};
-
-window.closeCustomModal = function() {
+function closeCustomModal() {
     const modal = document.getElementById('custom-modal');
     if (modal) modal.style.display = 'none';
-};
+}
+
+// Updated to async to support Gemini & Glossary lookup
+async function autoTranslateToArabic(text) {
+    if (!text) return '';
+    // If window.autoTranslateToArabic is attached by translator.js module, use it
+    if (window._geminiTranslate && typeof window._geminiTranslate === 'function') {
+        return await window._geminiTranslate(text);
+    }
+    return text;
+}
