@@ -1,13 +1,20 @@
 // translator.js
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize Google GenAI client for browser (Uses user or default API key)
-const apiKey = localStorage.getItem('gemini_api_key') || '';
-const ai = new GoogleGenAI({ apiKey: apiKey });
-
 window.translateCompanyName = async function(englishName) {
     if (!englishName || !englishName.trim()) return '';
+
+    // Fetch API key dynamically when the function runs
+    const apiKey = localStorage.getItem('AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ');
+    if (!apiKey) {
+        console.error("Gemini API key is missing. Please set 'gemini_api_key' in localStorage.");
+        return '';
+    }
+
     try {
+        // Initialize the client here so it doesn't fail on page load
+        const ai = new GoogleGenAI({ apiKey: apiKey });
+
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Translate the following company or client name into official, professional Arabic business terminology used in UAE commercial registries. Return ONLY the translated Arabic text with no extra conversational remarks, explanations, or quotes: "${englishName}"`
