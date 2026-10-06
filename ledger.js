@@ -3,6 +3,7 @@ function renderAccountsLedgerMaster() {
     populateInvoiceSelectOptions();
     renderMonthlyExpensesTable();
     renderFullAccountsLedgerTable();
+    renderAccountsLedgerSummaryTotals();
     
     const sel = document.getElementById('acc-invoice-select');
     if (sel && sel.value) {
@@ -64,7 +65,7 @@ function renderFullAccountsLedgerTable() {
     }
 
     tbody.innerHTML = state.documents.map(d => {
-        const total = parseFloat(d.totalAmt) || 0;
+        const total = parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
         const govt = parseFloat(d.govtAmt) || 0;
         const advance = parseFloat(d.advanceAmt) || 0;
         
@@ -74,7 +75,7 @@ function renderFullAccountsLedgerTable() {
 
         const docMonth = (d.createdDate || '').slice(0, 7);
         const monthDocs = state.documents.filter(doc => (doc.createdDate || '').startsWith(docMonth));
-        const monthExpenses = state.monthlyExpenses.filter(e => e.month === docMonth).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+        const monthExpenses = state.monthlyExpenses ? state.monthlyExpenses.filter(e => e.month === docMonth).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0) : 0;
         const expenseShare = monthDocs.length > 0 ? (monthExpenses / monthDocs.length) : 0;
 
         const profit = total - govt - expenseShare;
@@ -99,7 +100,7 @@ function renderAccountsLedgerDetail(refCode) {
     const doc = state.documents.find(d => d.refCode === refCode);
     if (!doc) return;
 
-    const total = parseFloat(doc.totalAmt) || 0;
+    const total = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
     const advance = parseFloat(doc.advanceAmt) || 0;
     const govt = parseFloat(doc.govtAmt) || 0;
 
@@ -109,7 +110,7 @@ function renderAccountsLedgerDetail(refCode) {
 
     const docMonth = (doc.createdDate || '').slice(0, 7);
     const monthDocs = state.documents.filter(d => (d.createdDate || '').startsWith(docMonth));
-    const monthExpenses = state.monthlyExpenses.filter(e => e.month === docMonth).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+    const monthExpenses = state.monthlyExpenses ? state.monthlyExpenses.filter(e => e.month === docMonth).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0) : 0;
     const expenseShare = monthDocs.length > 0 ? (monthExpenses / monthDocs.length) : 0;
     const profit = total - govt - expenseShare;
 
@@ -215,4 +216,43 @@ function printPaymentStatusStatement() {
     const refCode = state.selectedDocRefForLedger;
     if (!refCode) return;
     previewInvoiceDocument(refCode);
+}
+
+function renderAccountsLedgerSummaryTotals() {
+    const summaryContainer = document.getElementById('acc-ledger-summary-cards');
+    if (!summaryContainer) return;
+
+    if (!state.documents || state.documents.length === 0) {
+        summaryContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted);">No records available for summary.</div>`;
+        return;
+    }
+
+    let grandTotal = 0;
+    let grandPaid = 0;
+    let grandBalance = 0;
+    let grandProfit = 0;
+    let grandGovt = 0;
+
+    state.documents.forEach(d => {
+        const total = parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        const govt = parseFloat(d.govtAmt) || 0;
+        const advance = parseFloat(d.advanceAmt) || 0;
+        
+        const payments = d.paymentLogs ? Object.values(d.paymentLogs).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0) : 0;
+        const totalPaid = advance + payments;
+        const balance = total - totalPaid;
+
+        const docMonth = (d.createdDate || '').slice(0, 7);
+        const monthDocs = state.documents.filter(doc => (doc.createdDate || '').startsWith(docMonth));
+        const monthExpenses = state.monthlyExpenses ? state.monthlyExpenses.filter(e => e.month === docMonth).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0) : 0;
+        const expenseShare = monthDocs.length > 0 ? (monthExpenses / monthDocs.length) : 0;
+
+        const profit = total - govt - expenseShare;
+
+        grandTotal += total;
+        grandPaid += totalPaid;
+        grandBalance += balance;
+        grandProfit += profit;
+        grandGovt += govt;
+    });
 }

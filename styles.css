@@ -1,4 +1,6 @@
-/* styles.css */
+/* ==========================================
+   Base Theme & Layout Configuration
+   ========================================== */
 :root {
     --primary: #cba358;
     --primary-dark: #b58f46;
@@ -155,28 +157,68 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
     box-shadow: 0 -5px 25px rgba(0,0,0,0.2); gap: 15px; flex-shrink: 0; flex-wrap: wrap;
 }
 .preview-modal-body-canvas {
-    width: 100%; max-width: 850px; background: #334155; border-radius: 0 0 12px 12px;
+    width: 800p; max-width: 850px; background: #334155; border-radius: 0 0 12px 12px;
     overflow: auto; display: flex; justify-content: center; align-items: flex-start;
     box-shadow: var(--modal-shadow); flex: 1; min-height: 0; padding: 25px; position: relative;
 }
-.a4-wrapper {
-    width: 800px; height: 1131px; transform-origin: top center; flex-shrink: 0; box-sizing: border-box; background: white; margin-bottom: 40px;
+
+/* ==========================================
+   Flexible Sizing & Print/PDF Fixes
+   ========================================== */
+#a4-wrapper-element { 
+    width: 100% !important; 
+    max-width: 210mm !important; 
+    min-height: auto !important;
+    margin: 0 auto !important; 
+    position: relative !important; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; 
+    padding: 12mm 14mm !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    border: 3px double #b8860b !important;
 }
+
 .premium-gold-frame {
-    border: 5px solid transparent; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30;
-    background: #ffffff; height: 100%; width: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+    border: 8px solid transparent; 
+    border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 30;
+    background: #ffffff; 
+    height: auto !important; 
+    min-height: 100%;
+    width: 100%; 
+    box-sizing: border-box; 
+    display: flex; 
+    flex-direction: column;
 }
-.a4-internal-content { display: flex; flex-direction: column; height: 100%; width: 100%; padding: 20px; position: relative; z-index: 1; box-sizing: border-box; }
+
+.a4-internal-content { display: flex; flex-direction: column; height: 100%; width: 100%; padding: 10px; position: relative; z-index: 1; box-sizing: border-box; }
 .a4-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double var(--primary); padding-bottom: 15px; margin-bottom: 20px; gap: 15px; }
 .a4-co-details { flex: 1; text-align: right; display: flex; flex-direction: column; gap: 2px; }
-.a4-co-details h1 { font-size: 1.6rem; font-weight: 1000; margin: 0; color: #1e293b; }
-.a4-title { text-align: center; font-size: 1.5rem; font-weight: 800; margin: 10px 0 15px 0; letter-spacing: 1px; color: #1e293b; }
-.a4-meta { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; gap: 20px; }
+.a4-co-details h1 { font-size: 1.5rem; font-weight: 800; margin: 0; color: #1e293b; }
+.a4-title { text-align: center; font-size: 1.4rem; font-weight: 800; margin: 10px 0 15px 0; letter-spacing: 1px; color: #1e293b; }
+.a4-meta { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; gap: 20px; flex-wrap: wrap; }
 .client-line-ar { direction: rtl !important; text-align: right !important; font-weight: 700; font-size: 1.1rem; margin-top: 2px; display: block; }
 
-.a4-table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 25px !important; }
-.a4-table th { background: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; padding: 12px 10px !important; border: 1px solid #94a3b8 !important; text-align: center !important; font-size: 0.95rem !important; }
-.a4-table td { border: 1px solid #cbd5e1 !important; padding: 10px !important; color: #000 !important; font-size: 1rem !important; vertical-align: middle !important; }
+.a4-table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 15px !important; }
+.a4-table th { background: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; padding: 10px 8px !important; border: 1px solid #94a3b8 !important; text-align: center !important; font-size: 0.9rem !important; }
+.a4-table td { border: 1px solid #cbd5e1 !important; padding: 8px !important; color: #000 !important; font-size: 0.95rem !important; vertical-align: middle !important; }
+
+.editable-preview-input, .editable-cell {
+    background: transparent;
+    border: 1px dashed transparent;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    width: 100%;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.editable-preview-input:hover, .editable-cell:hover,
+.editable-preview-input:focus, .editable-cell:focus {
+    border-color: #b58f46;
+    background-color: #ffffff;
+    outline: none;
+}
 
 .custom-modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 15px; }
 .custom-modal-content { background: var(--panel-bg); border: 1.5px solid var(--primary); padding: 25px; border-radius: 12px; width: 100%; max-width: 440px; text-align: center; box-shadow: var(--modal-shadow); animation: fadeIn 0.2s ease-out; }
@@ -196,119 +238,92 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ==========================================
-   A4 Sizing, Preview, and Print Rules
+   Streamlined Print & PDF Export Media Rules
    ========================================== */
-
-@page {
-    size: A4 portrait;
-    margin: 0;
-}
-
-body {
-    background: #525659; /* Standard preview background */
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* Main A4 Sheet Container */
-#a4-wrapper-element {
-    width: 205mm;
-    min-height: 280mm;
-    max-width: 205mm;
-    margin: 10mm auto;
-    background: #ffffff;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    padding: 15mm; /* Inner printable margins */
-    position: relative;
-}
-
-/* Editable Input Styles for Invoice & Quotation Preview */
-.editable-preview-input, .editable-cell {
-    background: transparent;
-    border: 1px dashed transparent;
-    font-family: inherit;
-    font-size: inherit;
-    color: inherit;
-    width: 100%;
-    padding: 2px 4px;
-    border-radius: 4px;
-}
-
-.editable-preview-input:hover, .editable-cell:hover,
-.editable-preview-input:focus, .editable-cell:focus {
-    border-color: #b58f46;
-    background-color: #ffffff;
-    outline: none;
-}
-
-/* Unified Print Styles (Handles both browser print & PDF layout) */
 @media print {
-    @page { 
-        size: A4 portrait !important; 
-        margin: 0mm !important; 
+    /* Reset page size and margins */
+    @page {
+        size: A4;
+        margin: 5mm; 
     }
-    
-    html, body { 
-        background: #ffffff !important; 
-        color: #000000 !important; 
-        width: 210mm !important; 
-        height: 297mm !important; 
-        overflow: hidden !important; 
+
+    body, html {
+        width: 100%;
+        height: auto;
+        margin: 0 !important;
+        padding: 0 !important;
     }
-    
-    body * { 
-        visibility: hidden !important; 
-    }
-    
-    #document-preview-modal, 
-    #a4-wrapper-element, 
-    #a4-wrapper-element * { 
-        visibility: visible !important; 
-    }
-    
-    #document-preview-modal { 
-        position: absolute !important; 
-        left: 0 !important; 
-        top: 0 !important; 
-        background: transparent !important; 
-        width: 210mm !important; 
-        height: 297mm !important; 
-        display: block !important; 
-    }
-    
-    .preview-modal-body-canvas { 
-        background: transparent !important; 
-        padding: 0 !important; 
-        width: 210mm !important; 
-        height: 287mm !important; 
-    }
-    
-    #a4-wrapper-element { 
-        transform: scale(1) !important; 
-        width: 202mm !important; 
-        height: 280mm !important; 
-        max-width: 210 !important;
-        margin: 0 !important; 
-        position: absolute !important; 
-        left: 0 !important; 
-        top: 0 !important; 
-        box-shadow: none !important; 
-        padding: 15mm !important;
+
+    /* Fit the A4 wrapper element properly */
+    #a4-wrapper-element {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 10px !important;
+        box-shadow: none !important;
+        border: none !important;
         page-break-after: avoid;
     }
-    
-    .preview-modal-toolbar, 
-    .sidebar, 
-    .top-bar, 
-    .no-print, 
-    .btn { 
-        display: none !important; 
+
+    /* Prevent table rows from splitting across pages */
+    table {
+        page-break-inside: auto;
+    }
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
     }
 
-    .editable-preview-input, .editable-cell {
+    /* Hide unwanted elements during print */
+    .no-print {
+        display: none !important;
+    }
+}
+@media print {
+    @page {
+        size: A4;
+        margin: 5mm; 
+    }
+
+    body, html {
+        width: 100%;
+        height: auto;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    #a4-wrapper-element, #a4-wrapper-element * {
+        visibility: visible;
+    }
+
+    #a4-wrapper-element {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        box-shadow: none !important;
         border: none !important;
-        background: transparent !important;
+        background: white !important;
+        page-break-after: avoid;
+    }
+
+    table {
+        page-break-inside: auto;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    .no-print {
+        display: none !important;
     }
 }

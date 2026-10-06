@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function exitWelcomeScreen() {
+window.exitWelcomeScreen = function() {
     const welcome = document.getElementById('welcome-screen');
     if (!welcome) return;
     welcome.style.opacity = '0';
@@ -16,23 +16,23 @@ function exitWelcomeScreen() {
     }, 400);
 }
 
-function handleLogin(e) {
+window.handleLogin = function(e) {
     if (e) e.preventDefault();
     document.getElementById('auth-container').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
     switchTab('dashboard');
 }
 
-function handleLogout() {
+window.handleLogout = function() {
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('auth-container').style.display = 'flex';
 }
 
-function toggleSidebar() {
+window.toggleSidebar = function() {
     document.getElementById('sidebar').classList.toggle('collapsed');
 }
 
-function switchTab(tabId) {
+window.switchTab = function(tabId) {
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
     
@@ -79,7 +79,7 @@ function renderDashboardStats() {
 
     (state.documents || []).forEach(doc => {
         let created = doc.createdDate || '';
-        let total = parseFloat(doc.totalAmt) || 0;
+        let total = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
 
         if (created.startsWith(currentMonthStr)) monthlyTotal += total;
         if (created.startsWith(currentYearStr)) annualTotal += total;
@@ -114,7 +114,7 @@ function renderClientsTable() {
     `).join('');
 }
 
-function openClientModal(id) {
+window.openClientModal = function(id) {
     let cl = null;
     if (id && state.clients) cl = state.clients.find(c => c.id === id);
 
@@ -125,11 +125,11 @@ function openClientModal(id) {
     document.getElementById('client-modal').style.display = 'flex';
 }
 
-function closeClientModal() {
+window.closeClientModal = function() {
     document.getElementById('client-modal').style.display = 'none';
 }
 
-function saveClientModalData() {
+window.saveClientModalData = function() {
     const id = document.getElementById('cl-modal-id').value || db.ref('clients').push().key;
     const companyName = document.getElementById('cl-input-company-name').value.trim();
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
@@ -147,7 +147,7 @@ function saveClientModalData() {
     });
 }
 
-function deleteClientAccount(id) {
+window.deleteClientAccount = function(id) {
     if (typeof showCustomModal === 'function') {
         showCustomModal('Confirm Delete', 'Delete this client profile?', `
             <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
@@ -156,7 +156,7 @@ function deleteClientAccount(id) {
     }
 }
 
-function viewClientDetail(clientId) {
+window.viewClientDetail = function(clientId) {
     state.activeViewingClientId = clientId;
     const client = (state.clients || []).find(c => c.id === clientId);
     if (!client) return;
@@ -177,7 +177,7 @@ function viewClientDetail(clientId) {
                 <td><strong>${d.refCode}</strong></td>
                 <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
                 <td>${d.visaExpiryDate || '-'}</td>
-                <td>AED ${(parseFloat(d.totalAmt) || 0).toFixed(2)}</td>
+                <td>AED ${(parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0).toFixed(2)}</td>
                 <td style="text-align: center;">
                     <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
                 </td>
@@ -216,12 +216,12 @@ function renderWorksTable() {
     `).join('');
 }
 
-function openWorksDetailView(companyName) {
+window.openWorksDetailView = function(companyName) {
     state.activeViewingCompanyWorksName = companyName;
     switchTab('works-detail');
 }
 
-function switchWorksBranch(branch) {
+window.switchWorksBranch = function(branch) {
     state.activeWorksBranch = branch;
     renderWorksDetailView();
 }
@@ -256,7 +256,7 @@ function renderWorksDetailView() {
             <td>${d.companyName || '-'}</td>
             <td>${d.contactPerson || '-'}</td>
             <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
-            <td>AED ${(parseFloat(d.totalAmt) || 0).toFixed(2)}</td>
+            <td>AED ${(parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0).toFixed(2)}</td>
             <td style="text-align: center;">
                 <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
                 <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
@@ -277,7 +277,11 @@ function renderDocumentsTable() {
                (d.companyName || '').toLowerCase().includes(searchVal);
     });
 
-    let totalVolume = filtered.reduce((acc, curr) => acc + (parseFloat(curr.totalAmt) || 0), 0);
+    let totalVolume = filtered.reduce((acc, curr) => {
+        const amt = parseFloat(curr.totalAmt) || parseFloat(curr.total) || parseFloat(curr.amount) || 0;
+        return acc + amt;
+    }, 0);
+
     const ledgerTotal = document.getElementById('ledger-total-amount');
     if (ledgerTotal) {
         ledgerTotal.innerText = `AED ${totalVolume.toFixed(2)}`;
@@ -288,7 +292,9 @@ function renderDocumentsTable() {
         return;
     }
 
-    tbody.innerHTML = filtered.map(d => `
+    tbody.innerHTML = filtered.map(d => {
+        const rowTotal = parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        return `
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
             <td><strong>${d.refCode}</strong></td>
@@ -302,21 +308,22 @@ function renderDocumentsTable() {
                 <button onclick="deleteSingleDocument('${d.refCode}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
-function updateBatchDeleteButtonState() {
+window.updateBatchDeleteButtonState = function() {
     const selected = document.querySelectorAll('.doc-row-checkbox:checked');
     const btn = document.getElementById('btn-batch-delete');
     if (btn) btn.disabled = selected.length === 0;
 }
 
-function toggleSelectAllDocuments(master) {
+window.toggleSelectAllDocuments = function(master) {
     document.querySelectorAll('.doc-row-checkbox').forEach(cb => cb.checked = master.checked);
     updateBatchDeleteButtonState();
 }
 
-function deleteSingleDocument(refCode) {
+window.deleteSingleDocument = function(refCode) {
     if (typeof showCustomModal === 'function') {
         showCustomModal('Confirm Delete', `Delete entry ${refCode}?`, `
             <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
@@ -326,7 +333,7 @@ function deleteSingleDocument(refCode) {
 }
 
 let pendingBatchDeleteKeys = [];
-function deleteSelectedDocuments() {
+window.deleteSelectedDocuments = function() {
     pendingBatchDeleteKeys = Array.from(document.querySelectorAll('.doc-row-checkbox:checked')).map(cb => cb.value);
     if (typeof showCustomModal === 'function') {
         showCustomModal('Batch Delete', `Delete ${pendingBatchDeleteKeys.length} selected entries?`, `
@@ -341,7 +348,7 @@ function executeBatchDelete() {
     pendingBatchDeleteKeys = [];
 }
 
-function previewInvoiceDocument(refCode) {
+window.previewInvoiceDocument = function(refCode) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
 
@@ -355,14 +362,20 @@ function previewInvoiceDocument(refCode) {
         docTitle.innerHTML = `${(doc.type || 'INVOICE').toUpperCase()} / <span style="font-family: 'Amiri', serif;">${doc.type === 'Quotation' ? 'عرض سعر' : 'فاتورة'}</span>`;
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
-    if (clientName) clientName.innerText = doc.clientName || doc.companyName || 'N/A';
+    
+    // കമ്പനി/ക്ലയന്റ് പേര് സെറ്റ് ചെയ്യുന്നു
+    const compName = doc.clientName || doc.companyName || 'N/A';
+    if (clientName) clientName.innerText = compName;
     if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
 
     let arName = '';
-    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName);
-    if (matchedClient) arName = matchedClient.nameAr || '';
-    if (!arName && doc.companyName && typeof autoTranslateToArabic === 'function') {
-        arName = autoTranslateToArabic(doc.companyName);
+    // ഇവിടെ companyName അല്ലെങ്കിൽ clientName വെച്ച് clients ലിസ്റ്റിൽ പരതുന്നു
+    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
+    if (matchedClient) {
+        arName = matchedClient.nameAr || '';
+    }
+    if (!arName && compName && typeof autoTranslateToArabic === 'function') {
+        arName = autoTranslateToArabic(compName);
     }
 
     if (clientNameAr) {
@@ -372,21 +385,75 @@ function previewInvoiceDocument(refCode) {
     const tbody = document.getElementById('p-table-body');
     if (tbody) {
         const items = doc.items || [];
-        tbody.innerHTML = items.map((item, idx) => `
-            <tr>
-                <td style="text-align: center;">${idx + 1}</td>
-                <td>${item.d || 'Service Record'}</td>
-                <td style="text-align: center;">${item.q || 1}</td>
-                <td style="text-align: right;">${((parseFloat(item.p) || 0) * (parseFloat(item.q) || 1)).toFixed(2)}</td>
-            </tr>
-        `).join('') + `
+        
+        let docTotal = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
+        if (docTotal === 0 && items.length > 0) {
+            docTotal = items.reduce((sum, item) => {
+                const p = parseFloat(item.p || item.price) || 0;
+                const q = parseFloat(item.q || item.quantity) || 1;
+                return sum + (p * q);
+            }, 0);
+        }
+
+        tbody.innerHTML = items.map((item, idx) => {
+            const p = parseFloat(item.p || item.price) || 0;
+            const q = parseFloat(item.q || item.quantity) || 1;
+            return `
+                <tr>
+                    <td style="text-align: center;">${idx + 1}</td>
+                    <td>${item.d || item.description || 'Service Record'}</td>
+                    <td style="text-align: center;">${q}</td>
+                    <td style="text-align: right;">${(p * q).toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('') + `
             <tr style="font-weight: bold; background: #f8fafc;">
                 <td colspan="3" style="text-align: right;">Total Amount / المبلغ الإجمالي</td>
-                <td style="text-align: right; color: #b58f46;">AED ${(parseFloat(doc.totalAmt) || 0).toFixed(2)}</td>
+                <td style="text-align: right; color: #b58f46;">AED ${docTotal.toFixed(2)}</td>
             </tr>
         `;
     }
 
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
-}
+};
+
+window.saveAsPDF = function() {
+    // ബോർഡറും സിഗ്നേച്ചറും അടങ്ങിയ മുഴുവൻ A4 പേജ് എലമെന്റിന്റെ ID ഇവിടെ നൽകുക
+    const element = document.getElementById('a4-wrapper-element') || document.getElementById('document-preview-print-area');
+    
+    if (!element) {
+        if (typeof showCustomModal === 'function') {
+            showCustomModal('Error', 'Preview element not found for PDF export.');
+        } else {
+            alert('Preview element not found!');
+        }
+        return;
+    }
+
+    const invNoElement = document.getElementById('p-doc-ref');
+    const invText = invNoElement ? invNoElement.innerText.trim() : 'Invoice';
+    const cleanFilename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
+
+    const opt = {
+        margin:       [5, 5, 5, 5], // മുകളിലും താഴെയും വശങ്ങളിലും ഉള്ള മാർജിൻ ക്രമീകരിക്കാം
+        filename:     cleanFilename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            letterRendering: true 
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().from(element).set(opt).save().catch(err => {
+            console.error("PDF generation error:", err);
+            alert("Failed to generate PDF. Check console for details.");
+        });
+    } else {
+        alert("html2pdf library is not loaded properly.");
+    }
+};
