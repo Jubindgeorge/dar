@@ -5,7 +5,7 @@ window.translateCompanyName = async function(englishName) {
     if (!englishName || !englishName.trim()) return '';
 
     // Fetch API key dynamically when the function runs
-    const apiKey = localStorage.getItem('AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ');
+    const apiKey = localStorage.setItem('gemini_api_key','AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ');
     if (!apiKey) {
         console.error("Gemini API key is missing. Please set 'gemini_api_key' in localStorage.");
         return '';
