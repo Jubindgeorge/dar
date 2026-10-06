@@ -4,8 +4,12 @@ import { GoogleGenAI } from "@google/genai";
 window.translateCompanyName = async function(englishName) {
     if (!englishName || !englishName.trim()) return '';
 
-    // Fetch API key dynamically when the function runs
-    const apiKey = localStorage.setItem('gemini_api_key','AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ');
+    // 1. Ensure the key is saved (you can keep this here or set it once)
+    localStorage.setItem('gemini_api_key', 'AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ');
+
+    // 2. Fetch the API key properly using .getItem()
+    const apiKey = localStorage.getItem('gemini_api_key');
+    
     if (!apiKey) {
         console.error("Gemini API key is missing. Please set 'gemini_api_key' in localStorage.");
         return '';
