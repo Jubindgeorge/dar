@@ -22,10 +22,9 @@ function closeCustomModal() {
     if (modal) modal.style.display = 'none';
 }
 
-// Updated to async to support Gemini & Glossary lookup
+// Asynchronous Arabic translation handler with Gemini fallback
 async function autoTranslateToArabic(text) {
     if (!text) return '';
-    // If window.autoTranslateToArabic is attached by translator.js module, use it
     if (window._geminiTranslate && typeof window._geminiTranslate === 'function') {
         return await window._geminiTranslate(text);
     }
