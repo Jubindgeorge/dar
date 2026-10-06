@@ -28,9 +28,13 @@ window.handleLogout = function() {
     document.getElementById('auth-container').style.display = 'flex';
 };
 
-window.toggleSidebar = function() {
-    document.getElementById('sidebar').classList.toggle('collapsed');
-};
+function toggleSidebar() {
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) {
+        appContainer.classList.toggle('sidebar-collapsed');
+    }
+}
+
 
 window.switchTab = function(tabId) {
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
