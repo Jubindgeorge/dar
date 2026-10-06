@@ -363,7 +363,6 @@ window.previewInvoiceDocument = function(refCode) {
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     
-    // കമ്പനി/ക്ലയന്റ് പേര് സെറ്റ് ചെയ്യുന്നു
     const compName = doc.clientName || doc.companyName || 'N/A';
     if (clientName) clientName.innerText = compName;
     if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
@@ -419,7 +418,6 @@ window.previewInvoiceDocument = function(refCode) {
 };
 
 window.saveAsPDF = function() {
-    // ബോർഡറും സിഗ്നേച്ചറും അടങ്ങിയ മുഴുവൻ A4 പേജ് എലമെന്റിന്റെ ID ഇവിടെ നൽകുക
     const element = document.getElementById('a4-wrapper-element') || document.getElementById('document-preview-print-area');
     
     if (!element) {
@@ -436,7 +434,7 @@ window.saveAsPDF = function() {
     const cleanFilename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
 
     const opt = {
-        margin:       [5, 5, 5, 5], // മുകളിലും താഴെയും വശങ്ങളിലും ഉള്ള മാർജിൻ ക്രമീകരിക്കാം
+        margin:       [5, 5, 5, 5], 
         filename:     cleanFilename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
@@ -455,5 +453,11 @@ window.saveAsPDF = function() {
         });
     } else {
         alert("html2pdf library is not loaded properly.");
+    }
+};
+window.closePreviewModal = function() {
+    const modal = document.getElementById('document-preview-modal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 };
