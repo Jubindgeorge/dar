@@ -5,7 +5,7 @@ window.translateCompanyName = async function(englishName) {
     if (!englishName || !englishName.trim()) return '';
 
     // 1. Ensure the key is saved (you can keep this here or set it once)
-    localStorage.setItem('gemini_api_key', 'AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ');
+    localStorage.setItem('gemini_api_key', 'AQ.Ab8RN6K8t67hkSiuqdM8rsYApg-Kfy27wH39AdR17r0i60IZ5Q');
 
     // 2. Fetch the API key properly using .getItem()
     const apiKey = localStorage.getItem('gemini_api_key');
