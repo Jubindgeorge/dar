@@ -1,4 +1,42 @@
-// app.js - Harmonized with ledger.js properties
+// app.js - Security-refactored; preserves existing global entry points
+
+// Security helpers: never interpolate untrusted database values into executable HTML.
+const appEscapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[ch]));
+const appGetState = () => (typeof state !== 'undefined' && state && typeof state === 'object') ? state : { clients: [], documents: [] };
+const appGetDb = () => (typeof db !== 'undefined' && db && typeof db.ref === 'function') ? db : null;
+const appNotifyError = (message, error) => {
+    console.error(message, error || '');
+    if (typeof showCustomModal === 'function') showCustomModal('Error', message);
+    else if (typeof alert === 'function') alert(message);
+};
+let appPendingDelete = null;
+
+// Delegated handlers replace dynamically generated inline onclick/onchange code.
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+    const id = button.dataset.id || '';
+    try {
+        switch (action) {
+            case 'view-client': window.viewClientDetail(id); break;
+            case 'edit-client': window.openClientModal(id); break;
+            case 'delete-client': window.deleteClientAccount(id); break;
+            case 'open-company': window.openWorksDetailView(button.dataset.company || ''); break;
+            case 'preview-document': await window.previewInvoiceDocument(id); break;
+            case 'edit-document': if (typeof window.openStudio === 'function') window.openStudio('Invoice', id); break;
+            case 'delete-document': window.deleteSingleDocument(id); break;
+            case 'confirm-delete': await appExecutePendingDelete(); if (typeof window.closeCustomModal === 'function') window.closeCustomModal(); break;
+            case 'cancel-delete': if (typeof window.closeCustomModal === 'function') window.closeCustomModal(); appPendingDelete = null; break;
+        }
+    } catch (error) { appNotifyError('The requested action failed. Please try again.', error); }
+});
+document.addEventListener('change', (event) => {
+    if (event.target.matches('.doc-row-checkbox')) window.updateBatchDeleteButtonState();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof initFirebaseListeners === 'function') {
         initFirebaseListeners();
@@ -18,25 +56,27 @@ window.exitWelcomeScreen = function() {
 
 window.handleLogin = function(e) {
     if (e) e.preventDefault();
-    document.getElementById('auth-container').style.display = 'none';
-    document.getElementById('app-container').style.display = 'flex';
+    const auth = document.getElementById('auth-container'); if (auth) auth.style.display = 'none';
+    const app = document.getElementById('app-container'); if (app) app.style.display = 'flex';
     switchTab('dashboard');
 };
 
 window.handleLogout = function() {
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('auth-container').style.display = 'flex';
+    const app = document.getElementById('app-container'); if (app) app.style.display = 'none';
+    const auth = document.getElementById('auth-container'); if (auth) auth.style.display = 'flex';
 };
 
-function toggleSidebar() {
+window.toggleSidebar = function() {
     const appContainer = document.getElementById('app-container');
     if (appContainer) {
         appContainer.classList.toggle('sidebar-collapsed');
     }
-}
+};
 
 
 window.switchTab = function(tabId) {
+    const allowedTabs = new Set(['dashboard', 'clients', 'works', 'works-detail', 'client-detail', 'services-config', 'documents', 'accounts-ledger', 'studio']);
+    if (!allowedTabs.has(tabId)) return;
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
     
@@ -72,17 +112,18 @@ window.switchTab = function(tabId) {
 function renderDashboardStats() {
     const clientsCount = document.getElementById('dash-client-count');
     const worksCount = document.getElementById('dash-works-count');
-    if (clientsCount) clientsCount.innerText = (state.clients || []).length;
-    if (worksCount) worksCount.innerText = (state.documents || []).length;
+    if (clientsCount) clientsCount.innerText = (appGetState().clients || []).length;
+    if (worksCount) worksCount.innerText = (appGetState().documents || []).length;
 
-    let currentMonthStr = new Date().toISOString().slice(0, 7);
-    let currentYearStr = new Date().getFullYear().toString();
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentYearStr = String(now.getFullYear());
 
     let monthlyTotal = 0;
     let annualTotal = 0;
 
-    (state.documents || []).forEach(doc => {
-        let created = doc.createdDate || '';
+    (appGetState().documents || []).forEach(doc => {
+        const created = String(doc.createdDate || '');
         let total = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
 
         if (created.startsWith(currentMonthStr)) monthlyTotal += total;
@@ -99,20 +140,20 @@ function renderClientsTable() {
     const tbody = document.getElementById('client-table-body');
     if (!tbody) return;
 
-    if (!state.clients || state.clients.length === 0) {
+    if (!(appGetState().clients || []).length) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No corporate client accounts found.</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = state.clients.map(cl => `
+    tbody.innerHTML = (appGetState().clients || []).map(cl => `
         <tr>
-            <td><strong>${cl.companyName || '-'}</strong></td>
-            <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${cl.nameAr || '-'}</td>
-            <td>${cl.contactPerson || '-'}</td>
+            <td><strong>${appEscapeHTML(cl.companyName || '-')}</strong></td>
+            <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${appEscapeHTML(cl.nameAr || '-')}</td>
+            <td>${appEscapeHTML(cl.contactPerson || '-')}</td>
             <td style="text-align: center;">
-                <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
-                <button onclick="openClientModal('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteClientAccount('${cl.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                <button data-action="view-client" data-id="${appEscapeHTML(cl.id)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
+                <button data-action="edit-client" data-id="${appEscapeHTML(cl.id)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button data-action="delete-client" data-id="${appEscapeHTML(cl.id)}" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
     `).join('');
@@ -120,24 +161,34 @@ function renderClientsTable() {
 
 window.openClientModal = function(id) {
     let cl = null;
-    if (id && state.clients) cl = state.clients.find(c => c.id === id);
+    if (id) cl = (appGetState().clients || []).find(c => c.id === id);
 
-    document.getElementById('cl-modal-id').value = id || '';
-    document.getElementById('cl-input-company-name').value = cl ? cl.companyName : '';
-    document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
-    document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
-    document.getElementById('client-modal').style.display = 'flex';
+    const modal = document.getElementById('client-modal');
+    const idInput = document.getElementById('cl-modal-id');
+    const companyInput = document.getElementById('cl-input-company-name');
+    const arabicInput = document.getElementById('cl-input-name-ar');
+    const contactInput = document.getElementById('cl-input-contact-person');
+    if (idInput) idInput.value = id || '';
+    if (companyInput) companyInput.value = cl?.companyName || '';
+    if (arabicInput) arabicInput.value = cl?.nameAr || '';
+    if (contactInput) contactInput.value = cl?.contactPerson || '';
+    if (modal) modal.style.display = 'flex';
 };
 
 window.closeClientModal = function() {
-    document.getElementById('client-modal').style.display = 'none';
+    const modal = document.getElementById('client-modal');
+    if (modal) modal.style.display = 'none';
 };
 
 window.saveClientModalData = async function() {
-    const id = document.getElementById('cl-modal-id').value || db.ref('clients').push().key;
-    const companyName = document.getElementById('cl-input-company-name').value.trim();
-    let nameAr = document.getElementById('cl-input-name-ar').value.trim();
-    const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
+    const database = appGetDb();
+    if (!database) return appNotifyError('Database is unavailable. Please reload and try again.');
+    const idField = document.getElementById('cl-modal-id');
+    const id = (idField && idField.value) || database.ref('clients').push().key;
+    if (!id) return appNotifyError('Unable to create a client record ID.');
+    const companyName = (document.getElementById('cl-input-company-name')?.value || '').trim();
+    let nameAr = (document.getElementById('cl-input-name-ar')?.value || '').trim();
+    const contactPerson = (document.getElementById('cl-input-contact-person')?.value || '').trim();
 
     if (!companyName) {
         if (typeof showCustomModal === 'function') showCustomModal('Warning', 'Company Name is required.');
@@ -148,23 +199,43 @@ window.saveClientModalData = async function() {
         nameAr = await autoTranslateToArabic(companyName);
     }
 
-    db.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson }, (err) => {
-        if (!err) closeClientModal();
-    });
+    try {
+        await database.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson });
+        window.closeClientModal();
+    } catch (error) { appNotifyError('Unable to save the client. Check your connection and permissions.', error); }
 };
 
 window.deleteClientAccount = function(id) {
-    if (typeof showCustomModal === 'function') {
-        showCustomModal('Confirm Delete', 'Delete this client profile?', `
-            <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
-            <button onclick="db.ref('clients/${id}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
-        `);
-    }
+    if (!id || typeof showCustomModal !== 'function') return;
+    appPendingDelete = { type: 'client', id: String(id) };
+    showCustomModal('Confirm Delete', 'Delete this client profile?', `
+        <button type="button" data-action="cancel-delete" class="btn btn-secondary">Cancel</button>
+        <button type="button" data-action="confirm-delete" class="btn btn-danger">Delete</button>
+    `);
 };
 
+async function appExecutePendingDelete() {
+    const pending = appPendingDelete;
+    appPendingDelete = null;
+    const database = appGetDb();
+    if (!pending || !database) throw new Error('No pending action or database unavailable.');
+    const safeId = String(pending.id);
+    const validKey = (key) => typeof key === 'string' && key.length > 0 && !/[.#$\[\]\/]/.test(key);
+    if (pending.type === 'client' && !validKey(safeId)) throw new Error('Invalid client key.');
+    if (pending.type === 'document' && !validKey(safeId)) throw new Error('Invalid document key.');
+    if (pending.type === 'client') await database.ref(`clients/${safeId}`).remove();
+    else if (pending.type === 'document') await database.ref(`documents/${safeId}`).remove();
+    else if (pending.type === 'documents') {
+        const updates = {};
+        pending.ids.forEach((key) => { if (validKey(String(key))) updates[`documents/${key}`] = null; });
+        if (!Object.keys(updates).length) throw new Error('No valid document keys selected.');
+        await database.ref().update(updates);
+    }
+}
+
 window.viewClientDetail = function(clientId) {
-    state.activeViewingClientId = clientId;
-    const client = (state.clients || []).find(c => c.id === clientId);
+    if (typeof state !== 'undefined') state.activeViewingClientId = clientId;
+    const client = (appGetState().clients || []).find(c => c.id === clientId);
     if (!client) return;
 
     document.getElementById('cd-client-name').innerText = client.companyName || '-';
@@ -172,8 +243,9 @@ window.viewClientDetail = function(clientId) {
     document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
     document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
 
-    const clientDocs = (state.documents || []).filter(d => d.companyName === client.companyName || d.clientName === client.companyName);
+    const clientDocs = (appGetState().documents || []).filter(d => d.companyName === client.companyName || d.clientName === client.companyName);
     const tbody = document.getElementById('client-detail-records-body');
+    if (!tbody) return;
     
     if (clientDocs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
@@ -182,12 +254,12 @@ window.viewClientDetail = function(clientId) {
             const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
             return `
                 <tr>
-                    <td><strong>${d.refCode}</strong></td>
-                    <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
-                    <td>${d.visaExpiryDate || '-'}</td>
+                    <td><strong>${appEscapeHTML(d.refCode)}</strong></td>
+                    <td>${appEscapeHTML((d.items || []).map(i => i.d).join(', ') || 'Service Record')}</td>
+                    <td>${appEscapeHTML(d.visaExpiryDate || '-')}</td>
                     <td>AED ${amt.toFixed(2)}</td>
                     <td style="text-align: center;">
-                        <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
+                        <button data-action="preview-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
                     </td>
                 </tr>
             `;
@@ -202,7 +274,7 @@ function renderWorksTable() {
     if (!tbody) return;
 
     const companyMap = {};
-    (state.documents || []).forEach(doc => {
+    (appGetState().documents || []).forEach(doc => {
         let key = doc.companyName || doc.clientName || 'Unassigned / Direct Clients';
         if (!companyMap[key]) companyMap[key] = [];
         companyMap[key].push(doc);
@@ -216,31 +288,31 @@ function renderWorksTable() {
 
     tbody.innerHTML = keys.map(comp => `
         <tr>
-            <td><strong>${comp}</strong></td>
+            <td><strong>${appEscapeHTML(comp)}</strong></td>
             <td>${companyMap[comp].length} Invoices</td>
             <td style="text-align: center;">
-                <button onclick="openWorksDetailView('${comp}')" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
+                <button data-action="open-company" data-company="${appEscapeHTML(comp)}" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
             </td>
         </tr>
     `).join('');
 }
 
 window.openWorksDetailView = function(companyName) {
-    state.activeViewingCompanyWorksName = companyName;
+    if (typeof state !== 'undefined') state.activeViewingCompanyWorksName = companyName;
     switchTab('works-detail');
 };
 
 window.switchWorksBranch = function(branch) {
-    state.activeWorksBranch = branch;
+    if (typeof state !== 'undefined') state.activeWorksBranch = branch;
     renderWorksDetailView();
 };
 
 function renderWorksDetailView() {
-    const companyName = state.activeViewingCompanyWorksName;
+    const companyName = typeof state !== 'undefined' ? state.activeViewingCompanyWorksName : '';
     const titleEl = document.getElementById('works-detail-company-title');
     if (titleEl) titleEl.innerText = companyName || '-';
 
-    const allCompanyDocs = (state.documents || []).filter(d => (d.companyName || d.clientName || 'Unassigned / Direct Clients') === companyName);
+    const allCompanyDocs = (appGetState().documents || []).filter(d => (d.companyName || d.clientName || 'Unassigned / Direct Clients') === companyName);
     const companyWorks = allCompanyDocs.filter(d => d.branchTag !== 'staff');
     const staffWorks = allCompanyDocs.filter(d => d.branchTag === 'staff');
 
@@ -249,7 +321,7 @@ function renderWorksDetailView() {
     if (countCompany) countCompany.innerText = companyWorks.length;
     if (countStaff) countStaff.innerText = staffWorks.length;
 
-    const activeDocs = state.activeWorksBranch === 'staff' ? staffWorks : companyWorks;
+    const activeDocs = (typeof state !== 'undefined' && state.activeWorksBranch === 'staff') ? staffWorks : companyWorks;
     const tbody = document.getElementById('works-detail-records-body');
     if (!tbody) return;
 
@@ -262,15 +334,15 @@ function renderWorksDetailView() {
         const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
         return `
             <tr>
-                <td><strong>${d.refCode}</strong></td>
-                <td>${d.clientName || '-'}</td>
-                <td>${d.companyName || '-'}</td>
-                <td>${d.contactPerson || '-'}</td>
-                <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+                <td><strong>${appEscapeHTML(d.refCode)}</strong></td>
+                <td>${appEscapeHTML(d.clientName || '-')}</td>
+                <td>${appEscapeHTML(d.companyName || '-')}</td>
+                <td>${appEscapeHTML(d.contactPerson || '-')}</td>
+                <td>${appEscapeHTML((d.items || []).map(i => i.d).join(', ') || 'Service Record')}</td>
                 <td>AED ${amt.toFixed(2)}</td>
                 <td style="text-align: center;">
-                    <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
-                    <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                    <button data-action="preview-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                    <button data-action="edit-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
                 </td>
             </tr>
         `;
@@ -283,7 +355,7 @@ function renderDocumentsTable() {
 
     const searchVal = (document.getElementById('doc-search-input')?.value || '').toLowerCase();
     
-    let filtered = (state.documents || []).filter(d => {
+    let filtered = (appGetState().documents || []).filter(d => {
         return (d.refCode || '').toLowerCase().includes(searchVal) ||
                (d.clientName || '').toLowerCase().includes(searchVal) ||
                (d.companyName || '').toLowerCase().includes(searchVal);
@@ -308,17 +380,17 @@ function renderDocumentsTable() {
         const rowTotal = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
         return `
         <tr>
-            <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
-            <td><strong>${d.refCode}</strong></td>
-            <td>${d.clientName || '-'}</td>
-            <td>${d.companyName || '-'}</td>
-            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${d.branchTag || 'company'}</span></td>
-            <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+            <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${appEscapeHTML(d.refCode)}"  ></td>
+            <td><strong>${appEscapeHTML(d.refCode)}</strong></td>
+            <td>${appEscapeHTML(d.clientName || '-')}</td>
+            <td>${appEscapeHTML(d.companyName || '-')}</td>
+            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${appEscapeHTML(d.branchTag || 'company')}</span></td>
+            <td>${appEscapeHTML((d.items || []).map(i => i.d).join(', ') || 'Service Record')}</td>
             <td>AED ${rowTotal.toFixed(2)}</td>
             <td style="text-align: center;">
-                <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
-                <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteSingleDocument('${d.refCode}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                <button data-action="preview-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                <button data-action="edit-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button data-action="delete-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
     `;
@@ -337,32 +409,33 @@ window.toggleSelectAllDocuments = function(master) {
 };
 
 window.deleteSingleDocument = function(refCode) {
-    if (typeof showCustomModal === 'function') {
-        showCustomModal('Confirm Delete', `Delete entry ${refCode}?`, `
-            <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
-            <button onclick="db.ref('documents/${refCode}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
-        `);
-    }
+    if (!refCode || typeof showCustomModal !== 'function') return;
+    appPendingDelete = { type: 'document', id: String(refCode) };
+    showCustomModal('Confirm Delete', 'Delete this invoice entry?', `
+        <button type="button" data-action="cancel-delete" class="btn btn-secondary">Cancel</button>
+        <button type="button" data-action="confirm-delete" class="btn btn-danger">Delete</button>
+    `);
 };
 
-let pendingBatchDeleteKeys = [];
 window.deleteSelectedDocuments = function() {
-    pendingBatchDeleteKeys = Array.from(document.querySelectorAll('.doc-row-checkbox:checked')).map(cb => cb.value);
-    if (typeof showCustomModal === 'function') {
-        showCustomModal('Batch Delete', `Delete ${pendingBatchDeleteKeys.length} selected entries?`, `
-            <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
-            <button onclick="executeBatchDelete(); closeCustomModal();" class="btn btn-danger">Delete All</button>
-        `);
-    }
+    const ids = Array.from(document.querySelectorAll('.doc-row-checkbox:checked')).map(cb => cb.value).filter(Boolean);
+    if (!ids.length || typeof showCustomModal !== 'function') return;
+    appPendingDelete = { type: 'documents', ids };
+    showCustomModal('Batch Delete', `Delete ${ids.length} selected entries?`, `
+        <button type="button" data-action="cancel-delete" class="btn btn-secondary">Cancel</button>
+        <button type="button" data-action="confirm-delete" class="btn btn-danger">Delete All</button>
+    `);
 };
 
 function executeBatchDelete() {
-    pendingBatchDeleteKeys.forEach(k => db.ref(`documents/${k}`).remove());
-    pendingBatchDeleteKeys = [];
+    const ids = Array.from(document.querySelectorAll('.doc-row-checkbox:checked')).map(cb => cb.value).filter(Boolean);
+    if (!ids.length) return;
+    appPendingDelete = { type: 'documents', ids };
+    return appExecutePendingDelete().catch(error => appNotifyError('Unable to delete selected records.', error));
 }
 
 window.previewInvoiceDocument = async function(refCode) {
-    const doc = (state.documents || []).find(d => d.refCode === refCode);
+    const doc = (appGetState().documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
 
     const docRef = document.getElementById('p-doc-ref');
@@ -372,7 +445,11 @@ window.previewInvoiceDocument = async function(refCode) {
     const docTitle = document.getElementById('p-doc-title');
 
     if (docTitle) {
-        docTitle.innerHTML = `${(doc.type || 'INVOICE').toUpperCase()} / <span style="font-family: 'Amiri', serif;">${doc.type === 'Quotation' ? 'عرض سعر' : 'فاتورة'}</span>`;
+        docTitle.replaceChildren(document.createTextNode(`${String(doc.type || 'INVOICE').toUpperCase()} / `));
+        const arabicTitle = document.createElement('span');
+        arabicTitle.style.fontFamily = "'Amiri', serif";
+        arabicTitle.textContent = doc.type === 'Quotation' ? 'عرض سعر' : 'فاتورة';
+        docTitle.appendChild(arabicTitle);
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     
@@ -381,7 +458,7 @@ window.previewInvoiceDocument = async function(refCode) {
     if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
 
     let arName = '';
-    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
+    const matchedClient = (appGetState().clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
     if (matchedClient) {
         arName = matchedClient.nameAr || '';
     }
@@ -412,7 +489,7 @@ window.previewInvoiceDocument = async function(refCode) {
             return `
                 <tr>
                     <td style="text-align: center;">${idx + 1}</td>
-                    <td>${item.d || item.description || 'Service Record'}</td>
+                    <td>${appEscapeHTML(item.d || item.description || 'Service Record')}</td>
                     <td style="text-align: center;">${q}</td>
                     <td style="text-align: right;">${(p * q).toFixed(2)}</td>
                 </tr>
