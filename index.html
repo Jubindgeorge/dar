@@ -3,9 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dar Al Shams | ERP Portal</title>
     
     <!-- FontAwesome Icons -->
@@ -412,6 +410,7 @@
                                 <option value="Quotation">Quotation</option>
                             </select>
                         </div>
+
                         <div>
                             <label>⚡ Service Injector Preset</label>
                             <select id="st-service-injector" onchange="injectServicePresetToItems()">
@@ -610,109 +609,109 @@
         </div>
     </div>
 
-    <!-- Document Print / PDF Preview Modal -->
-    <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
-        <div class="preview-modal-toolbar">
-            <div>
-                <h3 id="preview-modal-heading" style="color: var(--primary); font-size: 1rem; margin: 0;">Service Invoice / Record Preview</h3>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">Client-Facing Document View</span>
-            </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button onclick="saveAsPDF()" class="btn btn-primary"><i class="fa-solid fa-download"></i> Save PDF</button>
-                <button onclick="window.print()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> Print</button>
-                <button onclick="closePreviewModal()" class="btn btn-secondary">Close</button>
-            </div>
+<!-- Document Print / PDF Preview Modal -->
+<div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
+    <div class="preview-modal-toolbar">
+        <div>
+            <h3 id="preview-modal-heading" style="color: var(--primary); font-size: 1rem; margin: 0;">Service Invoice / Record Preview</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Client-Facing Document View</span>
         </div>
-
-        <div class="preview-modal-body-canvas" style="padding: 24px; overflow-y: auto;">
-            <!-- A4 Page Container -->
-            <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 45px 40px; max-width: 800px; margin: auto; box-sizing: border-box; border: 3px double #b8860b; position: relative;">
-                
-                <!-- Header Section -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #b8860b; padding-bottom: 16px; margin-bottom: 24px;">
-                    <!-- Left: Logo -->
-                    <div style="flex-shrink: 0; width: 110px;">
-                        <img src="logo white .png" alt="Dar Al Shams Logo" style="width: 105px; height: auto; object-fit: contain;" onerror="this.style.display='none'">
-                    </div>
-
-                    <!-- Right: Header Titles -->
-                    <div style="text-align: right; flex-grow: 1;">
-                        <h1 style="margin: 0; font-size: 26px; font-weight: bold; color: #1c365d; font-family: 'Amiri', serif; line-height: 1.3;">
-                            دار الشمس لخدمات تخليص المعاملات
-                        </h1>
-                        <h2 style="margin: 6px 0 3px 0; font-size: 13px; font-weight: 800; color: #1c365d; letter-spacing: 0.6px;">
-                            DAR AL SHAMS DOCUMENTS CLEARING SERVICES
-                        </h2>
-                        <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
-                            Tel: <a href="tel:+97142367006" style="color: #0284c7; text-decoration: none; font-weight: 600;">+971 4 236 7006</a> | Office # 227, Dubai, UAE
-                        </p>
-                        <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
-                            Email: info@daralshams.ae
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Centered Document Title -->
-                <div style="text-align: center; margin-bottom: 28px;">
-                    <h3 id="p-doc-title" style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: 1px; text-transform: uppercase;">
-                        INVOICE / <span style="font-family: 'Amiri', serif;">فاتورة</span>
-                    </h3>
-                </div>
-
-                <!-- Metadata Info Section -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; font-size: 12.5px; line-height: 1.7; color: #0f172a;">
-                    <div>
-                        <div><strong style="color: #475569;">M/s:</strong> <span id="p-client-name" style="font-weight: 700; color: #0f172a;">-</span></div>
-                        <div id="p-client-name-ar" style="font-family: 'Amiri', serif; font-size: 14.5px; font-weight: bold; color: #1c365d; margin-top: 3px;"></div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div><strong id="p-doc-ref" style="font-weight: 700; color: #0f172a;">Invoice No: -</strong></div>
-                        <div id="p-created-date" style="color: #475569;">Date: -</div>
-                    </div>
-                </div>
-
-                <!-- Enhanced Table Container -->
-                <div id="p-content-container" style="position: relative; margin-bottom: 40px; min-height: 260px;">
-                    <!-- Faded Watermark -->
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.06; pointer-events: none; text-align: center; width: 60%;">
-                        <img src="logo white .png" alt="Watermark" style="width: 280px; height: auto;" onerror="this.style.display='none'">
-                    </div>
-
-                    <!-- Styled Data Table -->
-                    <table style="width: 100%; border-collapse: separate; border-spacing: 8px; font-size: 12px; position: relative; z-index: 1; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
-                        <thead>
-                            <tr style="background: transparent; color: #000000;">
-                                <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 8%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">S.No</th>
-                                <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; text-align: left; font-weight: 700; letter-spacing: 0.5px;">
-                                    Description / <span style="font-family: 'Amiri', serif; font-weight: normal;">التفاصيل</span>
-                                </th>
-                                <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 10%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">Qty</th>
-                                <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; width: 22%; text-align: right; font-weight: 700; letter-spacing: 0.5px;">
-                                    Amount (Dhs)<br><span style="font-family: 'Amiri', serif; font-size: 11px; font-weight: normal;">المبلغ</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="p-table-body">
-                            <!-- Populated dynamically via ui.js -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Signature Line Footer -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; font-size: 11.5px; color: #334155;">
-                    <div style="text-align: center; width: 38%;">
-                        <div style="border-bottom: 1px solid #64748b; margin-bottom: 8px;"></div>
-                        <span>Receiver's Sign / <span style="font-family: 'Amiri', serif;">توقيع المستلم</span></span>
-                    </div>
-                    <div style="text-align: center; width: 38%;">
-                        <div style="border-bottom: 1px solid #64748b; margin-bottom: 8px;"></div>
-                        <span>Authorized Signature / <span style="font-family: 'Amiri', serif;">التوقيع</span></span>
-                    </div>
-                </div>
-
-            </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="saveAsPDF()" class="btn btn-primary"><i class="fa-solid fa-download"></i> Save PDF</button>
+            <button onclick="window.print()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> Print</button>
+            <button onclick="closePreviewModal()" class="btn btn-secondary">Close</button>
         </div>
     </div>
+
+    <div class="preview-modal-body-canvas" style="padding: 24px; overflow-y: auto;">
+        <!-- A4 Page Container -->
+        <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 45px 40px; max-width: 800px; margin: auto; box-sizing: border-box; border: 3px double #b8860b; position: relative;">
+            
+            <!-- Header Section -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #b8860b; padding-bottom: 16px; margin-bottom: 24px;">
+                <!-- Left: Logo -->
+                <div style="flex-shrink: 0; width: 110px;">
+                    <img src="logo white .png" alt="Dar Al Shams Logo" style="width: 105px; height: auto; object-fit: contain;" onerror="this.style.display='none'">
+                </div>
+
+                <!-- Right: Header Titles -->
+                <div style="text-align: right; flex-grow: 1;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: bold; color: #1c365d; font-family: 'Amiri', serif; line-height: 1.3;">
+                        دار الشمس لخدمات تخليص المعاملات
+                    </h1>
+                    <h2 style="margin: 6px 0 3px 0; font-size: 13px; font-weight: 800; color: #1c365d; letter-spacing: 0.6px;">
+                        DAR AL SHAMS DOCUMENTS CLEARING SERVICES
+                    </h2>
+                    <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
+                        Tel: <a href="tel:+97142367006" style="color: #0284c7; text-decoration: none; font-weight: 600;">+971 4 236 7006</a> | Office # 227, Dubai, UAE
+                    </p>
+                    <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
+                        Email: info@daralshams.ae
+                    </p>
+                </div>
+            </div>
+
+            <!-- Centered Document Title -->
+            <div style="text-align: center; margin-bottom: 28px;">
+                <h3 id="p-doc-title" style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: 1px; text-transform: uppercase;">
+                    INVOICE / <span style="font-family: 'Amiri', serif;">فاتورة</span>
+                </h3>
+            </div>
+
+            <!-- Metadata Info Section -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; font-size: 12.5px; line-height: 1.7; color: #0f172a;">
+                <div>
+                    <div><strong style="color: #475569;">M/s:</strong> <span id="p-client-name" style="font-weight: 700; color: #0f172a;">-</span></div>
+                    <div id="p-client-name-ar" style="font-family: 'Amiri', serif; font-size: 14.5px; font-weight: bold; color: #1c365d; margin-top: 3px;"></div>
+                </div>
+                <div style="text-align: right;">
+                    <div><strong id="p-doc-ref" style="font-weight: 700; color: #0f172a;">Invoice No: -</strong></div>
+                    <div id="p-created-date" style="color: #475569;">Date: -</div>
+                </div>
+            </div>
+
+            <!-- Enhanced Table Container -->
+            <div id="p-content-container" style="position: relative; margin-bottom: 40px; min-height: 260px;">
+                <!-- Faded Watermark -->
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.06; pointer-events: none; text-align: center; width: 60%;">
+                    <img src="logo white .png" alt="Watermark" style="width: 280px; height: auto;" onerror="this.style.display='none'">
+                </div>
+
+                <!-- Styled Data Table -->
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; position: relative; z-index: 1; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: linear-gradient(180deg, #b8860b 0%, #966d08 100%); color: #ffffff;">
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 8%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">S.No</th>
+                            <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; text-align: left; font-weight: 700; letter-spacing: 0.5px;">
+                                Description / <span style="font-family: 'Amiri', serif; font-weight: normal;">التفاصيل</span>
+                            </th>
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 10%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">Qty</th>
+                            <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; width: 22%; text-align: right; font-weight: 700; letter-spacing: 0.5px;">
+                                Amount (Dhs)<br><span style="font-family: 'Amiri', serif; font-size: 11px; font-weight: normal;">المبلغ</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="p-table-body">
+                        <!-- Populated dynamically via ui.js -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Signature Line Footer -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; font-size: 11.5px; color: #334155;">
+                <div style="text-align: center; width: 38%;">
+                    <div style="border-bottom: 1px solid #64748b; margin-bottom: 8px;"></div>
+                    <span>Receiver's Sign / <span style="font-family: 'Amiri', serif;">توقيع المستلم</span></span>
+                </div>
+                <div style="text-align: center; width: 38%;">
+                    <div style="border-bottom: 1px solid #64748b; margin-bottom: 8px;"></div>
+                    <span>Authorized Signature / <span style="font-family: 'Amiri', serif;">التوقيع</span></span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 
     <!-- Fallback Global Definition for openStudio -->
     <script>
@@ -720,16 +719,7 @@
             if (typeof switchTab === 'function') switchTab('studio');
         };
     </script>
-    
-    <!-- Google GenAI SDK for Browser -->
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/genai": "https://esm.run/@google/genai"
-        }
-      }
-    </script>
-    
+
     <!-- System JavaScript Modules -->
     <script src="config.js"></script>
     <script src="state.js"></script>
@@ -738,6 +728,5 @@
     <script src="services.js"></script>
     <script src="ledger.js"></script>
     <script src="app.js"></script>
-    <script type="module" src="translator.js"></script>
 </body>
 </html>

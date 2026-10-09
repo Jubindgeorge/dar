@@ -1,230 +1,456 @@
-// Application Global State
-const state = {
-    currentTab: 'dashboard',
-    documents: [
-        { id: 'DAS-2026-001', type: 'invoice', clientName: 'Al Barsha Trading LLC', service: 'Trade License Renewal', total: 4500, date: '2026-10-01', status: 'Completed' },
-        { id: 'DAS-2026-002', type: 'quotation', clientName: 'Emirates Logistics', service: 'New Company Formation', total: 12500, date: '2026-10-04', status: 'Pending' }
-    ],
-    clients: [
-        { id: 'C-01', name: 'Al Barsha Trading LLC', trn: '100293847500003', phone: '+971 50 123 4567', email: 'contact@albarsha.ae' },
-        { id: 'C-02', name: 'Emirates Logistics', trn: '100987654300003', phone: '+971 55 987 6543', email: 'info@emirateslogistics.ae' }
-    ],
-    works: [
-        { id: 'W-101', client: 'Al Barsha Trading LLC', service: 'Trade License Renewal', status: 'Completed', amount: 4500 },
-        { id: 'W-102', client: 'Emirates Logistics', service: 'New Company Formation', status: 'In Progress', amount: 12500 }
-    ],
-    services: [
-        { id: 'S-1', name: 'Trade License Renewal', price: 3500, govtFee: 2500 },
-        { id: 'S-2', name: 'New Company Formation', price: 9500, govtFee: 6500 },
-        { id: 'S-3', name: 'Visa Stamping & Emirates ID', price: 1800, govtFee: 1200 }
-    ]
-};
+// app.js
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initFirebaseListeners === 'function') {
+        initFirebaseListeners();
+    }
+});
 
-// Tab Router
-function switchTab(tabId) {
-    state.currentTab = tabId;
-    const sections = ['dashboard', 'studio', 'works', 'clients', 'ledger', 'services'];
+window.exitWelcomeScreen = function() {
+    const welcome = document.getElementById('welcome-screen');
+    if (!welcome) return;
+    welcome.style.opacity = '0';
+    setTimeout(() => { 
+        welcome.style.display = 'none'; 
+        const auth = document.getElementById('auth-container');
+        if (auth) auth.style.display = 'flex';
+    }, 400);
+}
+
+window.handleLogin = function(e) {
+    if (e) e.preventDefault();
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('app-container').style.display = 'flex';
+    switchTab('dashboard');
+}
+
+window.handleLogout = function() {
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('auth-container').style.display = 'flex';
+}
+
+window.toggleSidebar = function() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+window.switchTab = function(tabId) {
+    document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
     
-    sections.forEach(sec => {
-        const el = document.getElementById(`view-${sec}`);
-        const nav = document.getElementById(`nav-${sec}`);
-        if (sec === tabId) {
-            if (el) el.classList.remove('hidden');
-            if (nav) {
-                nav.className = 'w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition bg-amber-500 text-slate-900 shadow-sm';
-            }
-        } else {
-            if (el) el.classList.add('hidden');
-            if (nav) {
-                nav.className = 'w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition hover:bg-slate-800 text-slate-300';
-            }
-        }
+    const target = document.getElementById(`tab-${tabId}`);
+    if (target) target.classList.add('active');
+    
+    const menuBtn = document.querySelector(`.sidebar-menu li[data-target="${tabId}"]`);
+    if (menuBtn) menuBtn.classList.add('active');
+
+    const titles = {
+        'dashboard': 'Dashboard Overview',
+        'clients': 'Clients',
+        'works': 'Works Directory',
+        'works-detail': 'Company Works Branch Dossier',
+        'client-detail': 'Client Specific Dossier',
+        'services-config': 'Services & Tariffs Catalog',
+        'documents': 'Financial Ledger & Records',
+        'accounts-ledger': 'Accounts & Advance Ledger',
+        'studio': 'Service Entry Studio'
+    };
+    const titleElem = document.getElementById('topbar-title');
+    if (titleElem) titleElem.innerText = titles[tabId] || 'Portal Workspace';
+
+    if (tabId === 'dashboard' && typeof renderDashboardStats === 'function') renderDashboardStats();
+    if (tabId === 'clients' && typeof renderClientsTable === 'function') renderClientsTable();
+    if (tabId === 'works' && typeof renderWorksTable === 'function') renderWorksTable();
+    if (tabId === 'works-detail' && typeof renderWorksDetailView === 'function') renderWorksDetailView();
+    if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
+    if (tabId === 'documents' && typeof renderDocumentsTable === 'function') renderDocumentsTable();
+    if (tabId === 'accounts-ledger' && typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
+}
+
+function renderDashboardStats() {
+    const clientsCount = document.getElementById('dash-client-count');
+    const worksCount = document.getElementById('dash-works-count');
+    if (clientsCount) clientsCount.innerText = (state.clients || []).length;
+    if (worksCount) worksCount.innerText = (state.documents || []).length;
+
+    let currentMonthStr = new Date().toISOString().slice(0, 7);
+    let currentYearStr = new Date().getFullYear().toString();
+
+    let monthlyTotal = 0;
+    let annualTotal = 0;
+
+    (state.documents || []).forEach(doc => {
+        let created = doc.createdDate || '';
+        let total = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
+
+        if (created.startsWith(currentMonthStr)) monthlyTotal += total;
+        if (created.startsWith(currentYearStr)) annualTotal += total;
     });
 
-    // Update Topbar Title
-    const titles = {
-        dashboard: 'Dashboard Overview',
-        studio: 'Studio Invoice & Quotation Creator',
-        works: 'Works & Case Directory',
-        clients: 'Client Dossiers',
-        ledger: 'Accounts & Profit Ledger',
-        services: 'Service Catalog & Presets'
-    };
-    document.getElementById('topbar-title').innerText = titles[tabId] || 'Portal';
-
-    // Trigger specific render hooks
-    if (tabId === 'dashboard') renderDashboard();
-    if (tabId === 'studio') renderStudioClientOptions();
-    if (tabId === 'works') renderWorksTable();
-    if (tabId === 'clients') renderClientsGrid();
-    if (tabId === 'ledger') renderLedgerView();
-    if (tabId === 'services') renderServiceCatalog();
+    const monthlyPayout = document.getElementById('dash-monthly-payout');
+    const annualPayout = document.getElementById('dash-annual-payout');
+    if (monthlyPayout) monthlyPayout.innerText = `AED ${monthlyTotal.toFixed(2)}`;
+    if (annualPayout) annualPayout.innerText = `AED ${annualTotal.toFixed(2)}`;
 }
 
-// Dashboard Renderer
-function renderDashboard() {
-    const totalRev = state.documents.reduce((sum, d) => sum + Number(d.total), 0);
-    document.getElementById('kpi-monthly-revenue').innerText = `AED ${totalRev.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-    document.getElementById('kpi-active-docs').innerText = state.documents.length;
-    document.getElementById('kpi-total-clients').innerText = state.clients.length;
+function renderClientsTable() {
+    const tbody = document.getElementById('client-table-body');
+    if (!tbody) return;
 
-    // Net profit calculation via Ledger helper
-    if (typeof computeLedgerFinancials === 'function') {
-        const fin = computeLedgerFinancials();
-        document.getElementById('kpi-net-profit').innerText = `AED ${fin.netProfit.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+    if (!state.clients || state.clients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No corporate client accounts found.</td></tr>`;
+        return;
     }
 
-    const tbody = document.getElementById('dashboard-activity-tbody');
-    tbody.innerHTML = state.documents.map(d => `
-        <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
-            <td class="py-3 px-4 font-semibold text-slate-800">${d.id}</td>
-            <td class="py-3 px-4 text-slate-600">${d.clientName}</td>
-            <td class="py-3 px-4 text-slate-600">${d.service}</td>
-            <td class="py-3 px-4 font-bold text-slate-900">AED ${Number(d.total).toLocaleString()}</td>
-            <td class="py-3 px-4"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold">${d.status}</span></td>
-        </tr>
-    `).join('');
-}
-
-// Client Management Modals & Renderers
-function renderClientsGrid() {
-    const container = document.getElementById('clients-grid-container');
-    container.innerHTML = state.clients.map(c => `
-        <div class="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
-            <div class="flex justify-between items-start">
-                <h4 class="font-bold text-slate-800 text-base">${c.name}</h4>
-                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${c.id}</span>
-            </div>
-            <p class="text-xs text-slate-500">TRN: ${c.trn || 'N/A'}</p>
-            <p class="text-xs text-slate-600"><i class="fa-solid fa-phone mr-1.5 text-amber-500"></i> ${c.phone}</p>
-            <p class="text-xs text-slate-600"><i class="fa-solid fa-envelope mr-1.5 text-amber-500"></i> ${c.email}</p>
-        </div>
-    `).join('');
-}
-
-function openNewClientModal() {
-    showCustomModal(`
-        <h3 class="font-bold text-lg text-slate-800">Add New Client</h3>
-        <div class="space-y-3">
-            <input type="text" id="modal-client-name" placeholder="Company Name" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-            <input type="text" id="modal-client-trn" placeholder="TRN Number" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-            <input type="text" id="modal-client-phone" placeholder="Phone Number" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-            <input type="email" id="modal-client-email" placeholder="Email Address" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-        </div>
-        <div class="flex space-x-3 pt-2">
-            <button onclick="saveNewClient()" class="flex-1 bg-amber-500 text-slate-900 font-semibold py-2 rounded-xl text-sm">Save Client</button>
-            <button onclick="closeCustomModal()" class="flex-1 bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-sm">Cancel</button>
-        </div>
-    `);
-}
-
-function saveNewClient() {
-    const name = document.getElementById('modal-client-name').value;
-    const trn = document.getElementById('modal-client-trn').value;
-    const phone = document.getElementById('modal-client-phone').value;
-    const email = document.getElementById('modal-client-email').value;
-    if (!name) return alert('Please enter client name');
-    state.clients.push({ id: `C-0${state.clients.length + 1}`, name, trn, phone, email });
-    closeCustomModal();
-    renderClientsGrid();
-    showToast('Client added successfully');
-}
-
-// Works Directory Renderer
-function renderWorksTable() {
-    const tbody = document.getElementById('works-table-tbody');
-    tbody.innerHTML = state.works.map(w => `
-        <tr class="border-b border-slate-50 hover:bg-slate-50">
-            <td class="py-3 px-4 font-semibold text-slate-800">${w.id}</td>
-            <td class="py-3 px-4 text-slate-600">${w.client}</td>
-            <td class="py-3 px-4 text-slate-600">${w.service}</td>
-            <td class="py-3 px-4"><span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">${w.status}</span></td>
-            <td class="py-3 px-4 font-bold text-slate-900">AED ${Number(w.amount).toLocaleString()}</td>
-            <td class="py-3 px-4 text-right">
-                <button onclick="updateWorkStatus('${w.id}')" class="text-xs text-indigo-600 font-semibold hover:underline">Toggle Status</button>
+    tbody.innerHTML = state.clients.map(cl => `
+        <tr>
+            <td><strong>${cl.companyName || '-'}</strong></td>
+            <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${cl.nameAr || '-'}</td>
+            <td>${cl.contactPerson || '-'}</td>
+            <td style="text-align: center;">
+                <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
+                <button onclick="openClientModal('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteClientAccount('${cl.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
     `).join('');
 }
 
-function openNewWorkModal() {
-    const clientOpts = state.clients.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-    showCustomModal(`
-        <h3 class="font-bold text-lg text-slate-800">New Work Record</h3>
-        <div class="space-y-3">
-            <select id="mw-client" class="w-full border rounded-xl px-3 py-2 text-sm">${clientOpts}</select>
-            <input type="text" id="mw-service" placeholder="Service Description" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-            <input type="number" id="mw-amount" placeholder="Total Amount (AED)" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-        </div>
-        <div class="flex space-x-3 pt-2">
-            <button onclick="saveNewWork()" class="flex-1 bg-amber-500 text-slate-900 font-semibold py-2 rounded-xl text-sm">Save Work</button>
-            <button onclick="closeCustomModal()" class="flex-1 bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-sm">Cancel</button>
-        </div>
-    `);
+window.openClientModal = function(id) {
+    let cl = null;
+    if (id && state.clients) cl = state.clients.find(c => c.id === id);
+
+    document.getElementById('cl-modal-id').value = id || '';
+    document.getElementById('cl-input-company-name').value = cl ? cl.companyName : '';
+    document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
+    document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
+    document.getElementById('client-modal').style.display = 'flex';
 }
 
-function saveNewWork() {
-    const client = document.getElementById('mw-client').value;
-    const service = document.getElementById('mw-service').value;
-    const amount = Number(document.getElementById('mw-amount').value);
-    if (!service || !amount) return alert('Fill all required fields');
-    state.works.push({ id: `W-10${state.works.length + 1}`, client, service, status: 'In Progress', amount });
-    closeCustomModal();
-    renderWorksTable();
-    showToast('Work record created');
+window.closeClientModal = function() {
+    document.getElementById('client-modal').style.display = 'none';
 }
 
-function updateWorkStatus(id) {
-    const work = state.works.find(w => w.id === id);
-    if (work) {
-        work.status = work.status === 'Completed' ? 'In Progress' : 'Completed';
-        renderWorksTable();
-        showToast('Work status updated');
+window.saveClientModalData = function() {
+    const id = document.getElementById('cl-modal-id').value || db.ref('clients').push().key;
+    const companyName = document.getElementById('cl-input-company-name').value.trim();
+    let nameAr = document.getElementById('cl-input-name-ar').value.trim();
+    const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
+
+    if (!companyName) {
+        if (typeof showCustomModal === 'function') showCustomModal('Warning', 'Company Name is required.');
+        return;
+    }
+
+    if (!nameAr && typeof autoTranslateToArabic === 'function') nameAr = autoTranslateToArabic(companyName);
+
+    db.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson }, (err) => {
+        if (!err) closeClientModal();
+    });
+}
+
+window.deleteClientAccount = function(id) {
+    if (typeof showCustomModal === 'function') {
+        showCustomModal('Confirm Delete', 'Delete this client profile?', `
+            <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
+            <button onclick="db.ref('clients/${id}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
+        `);
     }
 }
 
-// Service Catalog Renderer
-function renderServiceCatalog() {
-    const container = document.getElementById('service-catalog-container');
-    container.innerHTML = state.services.map(s => `
-        <div class="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-2">
-            <h4 class="font-bold text-slate-800">${s.name}</h4>
-            <p class="text-xs text-slate-500 font-mono">ID: ${s.id}</p>
-            <div class="flex justify-between text-sm pt-2 border-t">
-                <span class="text-slate-500">Price: <strong class="text-slate-800">AED ${s.price}</strong></span>
-                <span class="text-slate-500">Govt Fee: <strong class="text-rose-600">AED ${s.govtFee}</strong></span>
-            </div>
-        </div>
+window.viewClientDetail = function(clientId) {
+    state.activeViewingClientId = clientId;
+    const client = (state.clients || []).find(c => c.id === clientId);
+    if (!client) return;
+
+    document.getElementById('cd-client-name').innerText = client.companyName || '-';
+    document.getElementById('cd-company-name').innerText = client.companyName || '-';
+    document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
+    document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
+
+    const clientDocs = (state.documents || []).filter(d => d.companyName === client.companyName || d.clientName === client.companyName);
+    const tbody = document.getElementById('client-detail-records-body');
+    
+    if (clientDocs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
+    } else {
+        tbody.innerHTML = clientDocs.map(d => `
+            <tr>
+                <td><strong>${d.refCode}</strong></td>
+               <td><strong>${d.packageName || d.serviceTitle || (d.items && d.items[0] ? d.items[0].d : 'Service Record')}</strong></td>                <td>${d.visaExpiryDate || '-'}</td>
+                <td>AED ${(parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0).toFixed(2)}</td>
+                <td style="text-align: center;">
+                    <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    switchTab('client-detail');
+}
+
+function renderWorksTable() {
+    const tbody = document.getElementById('works-table-body');
+    if (!tbody) return;
+
+    const companyMap = {};
+    (state.documents || []).forEach(doc => {
+        let key = doc.companyName || 'Unassigned / Direct Clients';
+        if (!companyMap[key]) companyMap[key] = [];
+        companyMap[key].push(doc);
+    });
+
+    const keys = Object.keys(companyMap);
+    if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = keys.map(comp => `
+        <tr>
+            <td><strong>${comp}</strong></td>
+            <td>${companyMap[comp].length} Invoices</td>
+            <td style="text-align: center;">
+                <button onclick="openWorksDetailView('${comp}')" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
+            </td>
+        </tr>
     `).join('');
 }
 
-function openNewServiceModal() {
-    showCustomModal(`
-        <h3 class="font-bold text-lg text-slate-800">Add Service Preset</h3>
-        <div class="space-y-3">
-            <input type="text" id="ms-name" placeholder="Service Name" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-            <input type="number" id="ms-price" placeholder="Client Price (AED)" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-            <input type="number" id="ms-govt" placeholder="Government Fee (AED)" class="w-full border rounded-xl px-3 py-2 text-sm outline-none">
-        </div>
-        <div class="flex space-x-3 pt-2">
-            <button onclick="saveNewService()" class="flex-1 bg-amber-500 text-slate-900 font-semibold py-2 rounded-xl text-sm">Save Preset</button>
-            <button onclick="closeCustomModal()" class="flex-1 bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-sm">Cancel</button>
-        </div>
-    `);
+window.openWorksDetailView = function(companyName) {
+    state.activeViewingCompanyWorksName = companyName;
+    switchTab('works-detail');
 }
 
-function saveNewService() {
-    const name = document.getElementById('ms-name').value;
-    const price = Number(document.getElementById('ms-price').value);
-    const govtFee = Number(document.getElementById('ms-govt').value);
-    if (!name || !price) return alert('Enter name and price');
-    state.services.push({ id: `S-${state.services.length + 1}`, name, price, govtFee });
-    closeCustomModal();
-    renderServiceCatalog();
-    showToast('Service preset added');
+window.switchWorksBranch = function(branch) {
+    state.activeWorksBranch = branch;
+    renderWorksDetailView();
 }
 
-// Initialize on load
-window.addEventListener('DOMContentLoaded', () => {
-    switchTab('dashboard');
-});
+function renderWorksDetailView() {
+    const companyName = state.activeViewingCompanyWorksName;
+    const titleEl = document.getElementById('works-detail-company-title');
+    if (titleEl) titleEl.innerText = companyName || '-';
+
+    const allCompanyDocs = (state.documents || []).filter(d => (d.companyName || 'Unassigned / Direct Clients') === companyName);
+    const companyWorks = allCompanyDocs.filter(d => d.branchTag !== 'staff');
+    const staffWorks = allCompanyDocs.filter(d => d.branchTag === 'staff');
+
+    const countCompany = document.getElementById('count-company-works');
+    const countStaff = document.getElementById('count-staff-works');
+    if (countCompany) countCompany.innerText = companyWorks.length;
+    if (countStaff) countStaff.innerText = staffWorks.length;
+
+    const activeDocs = state.activeWorksBranch === 'staff' ? staffWorks : companyWorks;
+    const tbody = document.getElementById('works-detail-records-body');
+    if (!tbody) return;
+
+    if (activeDocs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No invoice records found in this branch.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = activeDocs.map(d => `
+        <tr>
+            <td><strong>${d.refCode}</strong></td>
+            <td>${d.clientName || '-'}</td>
+            <td>${d.companyName || '-'}</td>
+            <td>${d.contactPerson || '-'}</td>
+  <td><strong>${d.packageName || d.serviceTitle || (d.items && d.items[0] ? d.items[0].d : 'Service Record')}</strong></td>            <td>AED ${(parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0).toFixed(2)}</td>
+            <td style="text-align: center;">
+                <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderDocumentsTable() {
+    const tbody = document.getElementById('doc-table-body');
+    if (!tbody) return;
+
+    const searchVal = (document.getElementById('doc-search-input')?.value || '').toLowerCase();
+    
+    let filtered = (state.documents || []).filter(d => {
+        return (d.refCode || '').toLowerCase().includes(searchVal) ||
+               (d.clientName || '').toLowerCase().includes(searchVal) ||
+               (d.companyName || '').toLowerCase().includes(searchVal);
+    });
+
+    let totalVolume = filtered.reduce((acc, curr) => {
+        const amt = parseFloat(curr.totalAmt) || parseFloat(curr.total) || parseFloat(curr.amount) || 0;
+        return acc + amt;
+    }, 0);
+
+    const ledgerTotal = document.getElementById('ledger-total-amount');
+    if (ledgerTotal) {
+        ledgerTotal.innerText = `AED ${totalVolume.toFixed(2)}`;
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No financial records found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(d => {
+        const rowTotal = parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        return `
+        <tr>
+            <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
+            <td><strong>${d.refCode}</strong></td>
+            <td>${d.clientName || '-'}</td>
+            <td>${d.companyName || '-'}</td>
+            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${d.branchTag || 'company'}</span></td>
+            <td><strong>${d.packageName || d.serviceTitle || (d.items && d.items[0] ? d.items[0].d : 'Service Record')}</strong></td>            <td style="text-align: center;">
+                <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteSingleDocument('${d.refCode}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        </tr>
+    `;
+    }).join('');
+}
+
+window.updateBatchDeleteButtonState = function() {
+    const selected = document.querySelectorAll('.doc-row-checkbox:checked');
+    const btn = document.getElementById('btn-batch-delete');
+    if (btn) btn.disabled = selected.length === 0;
+}
+
+window.toggleSelectAllDocuments = function(master) {
+    document.querySelectorAll('.doc-row-checkbox').forEach(cb => cb.checked = master.checked);
+    updateBatchDeleteButtonState();
+}
+
+window.deleteSingleDocument = function(refCode) {
+    if (typeof showCustomModal === 'function') {
+        showCustomModal('Confirm Delete', `Delete entry ${refCode}?`, `
+            <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
+            <button onclick="db.ref('documents/${refCode}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
+        `);
+    }
+}
+
+let pendingBatchDeleteKeys = [];
+window.deleteSelectedDocuments = function() {
+    pendingBatchDeleteKeys = Array.from(document.querySelectorAll('.doc-row-checkbox:checked')).map(cb => cb.value);
+    if (typeof showCustomModal === 'function') {
+        showCustomModal('Batch Delete', `Delete ${pendingBatchDeleteKeys.length} selected entries?`, `
+            <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
+            <button onclick="executeBatchDelete(); closeCustomModal();" class="btn btn-danger">Delete All</button>
+        `);
+    }
+}
+
+function executeBatchDelete() {
+    pendingBatchDeleteKeys.forEach(k => db.ref(`documents/${k}`).remove());
+    pendingBatchDeleteKeys = [];
+}
+
+window.previewInvoiceDocument = function(refCode) {
+    const doc = (state.documents || []).find(d => d.refCode === refCode);
+    if (!doc) return;
+
+    const docRef = document.getElementById('p-doc-ref');
+    const clientName = document.getElementById('p-client-name');
+    const createdDate = document.getElementById('p-created-date');
+    const clientNameAr = document.getElementById('p-client-name-ar');
+    const docTitle = document.getElementById('p-doc-title');
+
+    if (docTitle) {
+        docTitle.innerHTML = `${(doc.type || 'INVOICE').toUpperCase()} / <span style="font-family: 'Amiri', serif;">${doc.type === 'Quotation' ? 'عرض سعر' : 'فاتورة'}</span>`;
+    }
+    if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
+    
+    // കമ്പനി/ക്ലയന്റ് പേര് സെറ്റ് ചെയ്യുന്നു
+    const compName = doc.clientName || doc.companyName || 'N/A';
+    if (clientName) clientName.innerText = compName;
+    if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
+
+    let arName = '';
+    // ഇവിടെ companyName അല്ലെങ്കിൽ clientName വെച്ച് clients ലിസ്റ്റിൽ പരതുന്നു
+    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
+    if (matchedClient) {
+        arName = matchedClient.nameAr || '';
+    }
+    if (!arName && compName && typeof autoTranslateToArabic === 'function') {
+        arName = autoTranslateToArabic(compName);
+    }
+
+    if (clientNameAr) {
+        clientNameAr.innerText = arName ? `السيد / ${arName}` : '';
+    }
+
+    const tbody = document.getElementById('p-table-body');
+    if (tbody) {
+        const items = doc.items || [];
+        
+        let docTotal = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
+        if (docTotal === 0 && items.length > 0) {
+            docTotal = items.reduce((sum, item) => {
+                const p = parseFloat(item.p || item.price) || 0;
+                const q = parseFloat(item.q || item.quantity) || 1;
+                return sum + (p * q);
+            }, 0);
+        }
+
+        tbody.innerHTML = items.map((item, idx) => {
+            const p = parseFloat(item.p || item.price) || 0;
+            const q = parseFloat(item.q || item.quantity) || 1;
+            return `
+                <tr>
+                    <td style="text-align: center;">${idx + 1}</td>
+                    <td>${item.d || item.description || 'Service Record'}</td>
+                    <td style="text-align: center;">${q}</td>
+                    <td style="text-align: right;">${(p * q).toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('') + `
+            <tr style="font-weight: bold; background: #f8fafc;">
+                <td colspan="3" style="text-align: right;">Total Amount / المبلغ الإجمالي</td>
+                <td style="text-align: right; color: #b58f46;">AED ${docTotal.toFixed(2)}</td>
+            </tr>
+        `;
+    }
+
+    const modal = document.getElementById('document-preview-modal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.saveAsPDF = function() {
+    // ബോർഡറും സിഗ്നേച്ചറും അടങ്ങിയ മുഴുവൻ A4 പേജ് എലമെന്റിന്റെ ID ഇവിടെ നൽകുക
+    const element = document.getElementById('a4-wrapper-element') || document.getElementById('document-preview-print-area');
+    
+    if (!element) {
+        if (typeof showCustomModal === 'function') {
+            showCustomModal('Error', 'Preview element not found for PDF export.');
+        } else {
+            alert('Preview element not found!');
+        }
+        return;
+    }
+
+    const invNoElement = document.getElementById('p-doc-ref');
+    const invText = invNoElement ? invNoElement.innerText.trim() : 'Invoice';
+    const cleanFilename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
+
+    const opt = {
+        margin:       [5, 5, 5, 5], // മുകളിലും താഴെയും വശങ്ങളിലും ഉള്ള മാർജിൻ ക്രമീകരിക്കാം
+        filename:     cleanFilename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            letterRendering: true 
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().from(element).set(opt).save().catch(err => {
+            console.error("PDF generation error:", err);
+            alert("Failed to generate PDF. Check console for details.");
+        });
+    } else {
+        alert("html2pdf library is not loaded properly.");
+    }
+};
