@@ -338,7 +338,11 @@ function renderWorksDetailView() {
                 <td>${appEscapeHTML(d.clientName || '-')}</td>
                 <td>${appEscapeHTML(d.companyName || '-')}</td>
                 <td>${appEscapeHTML(d.contactPerson || '-')}</td>
-                <td>${appEscapeHTML((d.items || []).map(i => i.d).join(', ') || 'Service Record')}</td>
+              // Example table cell rendering for documents
+<td>
+    <strong>${doc.packageName || (doc.items && doc.items[0] ? doc.items[0].d : 'Service Record')}</strong>
+    ${doc.packageName && doc.items && doc.items.length > 0 ? `<br><small style="color: var(--text-muted);">${doc.items.map(i => i.d).join(', ')}</small>` : ''}
+</td>
                 <td>AED ${amt.toFixed(2)}</td>
                 <td style="text-align: center;">
                     <button data-action="preview-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
@@ -385,7 +389,11 @@ function renderDocumentsTable() {
             <td>${appEscapeHTML(d.clientName || '-')}</td>
             <td>${appEscapeHTML(d.companyName || '-')}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${appEscapeHTML(d.branchTag || 'company')}</span></td>
-            <td>${appEscapeHTML((d.items || []).map(i => i.d).join(', ') || 'Service Record')}</td>
+            // Example table cell rendering for documents
+<td>
+    <strong>${doc.packageName || (doc.items && doc.items[0] ? doc.items[0].d : 'Service Record')}</strong>
+    ${doc.packageName && doc.items && doc.items.length > 0 ? `<br><small style="color: var(--text-muted);">${doc.items.map(i => i.d).join(', ')}</small>` : ''}
+</td>
             <td>AED ${rowTotal.toFixed(2)}</td>
             <td style="text-align: center;">
                 <button data-action="preview-document" data-id="${appEscapeHTML(d.refCode)}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
