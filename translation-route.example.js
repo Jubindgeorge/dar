@@ -7,7 +7,7 @@ import express from 'express';
 import { GoogleGenAI } from '@google/genai';
 
 const router = express.Router();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.AQ.Ab8RN6K8t67hkSiuqdM8rsYApg-Kfy27wH39AdR17r0i60IZ5Q });
 
 router.post('/api/translate-company-name', express.json({ limit: '8kb' }), async (req, res) => {
     const companyName = typeof req.body?.companyName === 'string' ? req.body.companyName.trim() : '';
