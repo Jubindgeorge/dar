@@ -1,0 +1,743 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Dar Al Shams | ERP Portal</title>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- html2pdf.js, jsPDF and html2canvas for Document Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Firebase App (Compat) & Realtime Database SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Welcome Screen with BAG.png -->
+    <div id="welcome-screen">
+        <div class="welcome-content">
+            <button class="welcome-arrow-btn" onclick="exitWelcomeScreen()" title="Proceed to Authentication">➔</button>
+        </div>
+    </div>
+
+    <!-- Authentication View -->
+    <div id="auth-container" style="display:none;">
+        <div class="login-card">
+            <h2>DAR AL SHAMS</h2>
+            <p>Enterprise Financial & Document Studio</p>
+            <form id="login-form" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="text-align: left;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">USERNAME</label>
+                    <input type="text" id="login-user" value="admin" required>
+                </div>
+                <div style="text-align: left;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">PASSWORD</label>
+                    <input type="password" id="login-pin" value="1234" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 5px;">Authenticate</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main System App Container -->
+    <div id="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>DAR AL SHAMS</h3>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">ERP & Financial Studio</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li onclick="switchTab('dashboard')" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
+                <li onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-users"></i><span>Clients</span></li>
+                <li onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works</span></li>
+                <li onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
+                <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Financial Records</span></li>
+                <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts Ledger</span></li>
+                
+                <!-- Studio Quick Actions -->
+                <li onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
+                <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
+            </ul>
+            <div class="sidebar-footer">
+                <button onclick="handleLogout()" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;">Exit Portal</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <header class="top-bar">
+                <div class="top-bar-title-section">
+                    <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                    <div style="display: inline-block; cursor: pointer; margin-left: 10px;" onclick="switchTab('dashboard')">
+                        <h2 style="font-size: 1.1rem; color: var(--primary);" id="topbar-title">Dashboard Overview</h2>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Secure Cloud Connected</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="user-profile-badge">Session: <strong>Administrator</strong></div>
+                </div>
+            </header>
+
+            <main class="view-space">
+
+                <!-- TAB 1: DASHBOARD -->
+                <section id="tab-dashboard" class="view-panel active">
+                    <div class="dashboard-grid">
+                        <div class="metric-card">
+                            <div>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Saved Clients</p>
+                                <h3 id="dash-client-count" style="font-size: 1.8rem; color: var(--primary); margin-top: 5px;">0</h3>
+                            </div>
+                            <i class="fa-solid fa-users fa-2x" style="color: rgba(203,163,88,0.3);"></i>
+                        </div>
+                        <div class="metric-card">
+                            <div>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Monthly Payouts</p>
+                                <h3 id="dash-monthly-payout" style="font-size: 1.8rem; color: var(--accent-green); margin-top: 5px;">AED 0</h3>
+                            </div>
+                            <i class="fa-solid fa-wallet fa-2x" style="color: rgba(34,197,94,0.3);"></i>
+                        </div>
+                        <div class="metric-card">
+                            <div>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Annual Payouts</p>
+                                <h3 id="dash-annual-payout" style="font-size: 1.8rem; color: var(--accent-blue); margin-top: 5px;">AED 0</h3>
+                            </div>
+                            <i class="fa-solid fa-chart-line fa-2x" style="color: rgba(56,189,248,0.3);"></i>
+                        </div>
+                        <div class="metric-card">
+                            <div>
+                                <p style="font-size: 0.85rem; color: var(--text-muted);">Total Works Logged</p>
+                                <h3 id="dash-works-count" style="font-size: 1.8rem; color: #f59e0b; margin-top: 5px;">0</h3>
+                            </div>
+                            <i class="fa-solid fa-clipboard-check fa-2x" style="color: rgba(245,158,11,0.3);"></i>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: CLIENTS -->
+                <section id="tab-clients" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Corporate Accounts & Dossiers</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Manage client names, company names, and contact details.</p>
+                        </div>
+                        <button onclick="openClientModal(false)" class="btn btn-primary">+ Add New Company</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th style="text-align: right;">Arabic Names</th>
+                                    <th>Contact</th>
+                                    <th style="text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-table-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB 2.2: WORKS PAGE -->
+                <section id="tab-works" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Company Works Directory</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Browse company invoices categorized by Company Works & Staff Works branches.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th>Client Name</th>
+                                    <th>Total Invoices</th>
+                                    <th style="text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="works-table-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB 2.3: WORKS BRANCH DETAIL -->
+                <section id="tab-works-detail" class="view-panel">
+                    <button onclick="switchTab('works')" class="btn btn-secondary" style="margin-bottom: 15px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Works Directory</button>
+                    
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Company Folder</span>
+                        <h2 id="works-detail-company-title" style="color: var(--primary); font-size: 1.4rem;">-</h2>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button id="btn-branch-company" onclick="switchWorksBranch('company')" class="btn btn-primary" style="flex: 1; padding: 12px;"><i class="fa-solid fa-building"></i> Company Works (<span id="count-company-works">0</span>)</button>
+                        <button id="btn-branch-staff" onclick="switchWorksBranch('staff')" class="btn btn-secondary" style="flex: 1; padding: 12px;"><i class="fa-solid fa-users"></i> Staff Works (<span id="count-staff-works">0</span>)</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference ID</th>
+                                    <th>Client Name</th>
+                                    <th>Company Name</th>
+                                    <th>Contact Person</th>
+                                    <th>Work Details</th>
+                                    <th>Total Amount</th>
+                                    <th style="text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="works-detail-records-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB 2.5: CLIENT SPECIFIC DOSSIER -->
+                <section id="tab-client-detail" class="view-panel">
+                    <button onclick="switchTab('clients')" class="btn btn-secondary" style="margin-bottom: 15px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Clients</button>
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                        <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Client Name</span><strong id="cd-client-name" style="font-size: 1rem;">-</strong></div>
+                        <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Company Name</span><strong id="cd-company-name" style="font-size: 1rem; color: var(--primary);">-</strong></div>
+                        <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Contact Person</span><strong id="cd-contact-person" style="font-size: 1rem;">-</strong></div>
+                        <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Arabic Title</span><strong id="cd-name-ar" style="font-size: 1rem; direction: rtl; display: block;">-</strong></div>
+                        <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Phone</span><strong id="cd-phone" style="font-size: 1rem;">-</strong></div>
+                    </div>
+                    <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 1.1rem;">Associated Records</h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference ID</th>
+                                    <th>Specific Work Details</th>
+                                    <th>Visa Expiry</th>
+                                    <th>Total Amount</th>
+                                    <th style="text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-detail-records-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB 3: SERVICES & TARIFFS -->
+                <section id="tab-services-config" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Service Catalogs & Tariffs</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Configure government packages, fee breakdowns, and profit structures.</p>
+                        </div>
+                        <button onclick="openServiceModal(false)" class="btn btn-primary">+ Create Package Entry</button>
+                    </div>
+                    <div id="services-cards-wrapper" class="services-grid"></div>
+                </section>
+
+                <!-- TAB 4: FINANCIAL & DOCUMENT RECORDS -->
+                <section id="tab-documents" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Financial Ledger & Records</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Track client invoices, statements, and expiry schedules.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="btn-batch-delete" disabled onclick="deleteSelectedDocuments()" class="btn btn-danger">Delete Selected</button>
+                            <button onclick="openStudio('Invoice')" class="btn btn-primary">+ Add New Service Entry</button>
+                        </div>
+                    </div>
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Total Ledger Amount: <strong id="ledger-total-amount" style="color: var(--accent-green);">AED 0.00</strong></span>
+                            <input type="text" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." style="max-width: 300px;">
+                        </div>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;"><input type="checkbox" id="th-select-all" onclick="toggleSelectAllDocuments(this)"></th>
+                                        <th>Doc Reference</th>
+                                        <th>Client Name</th>
+                                        <th>Company Name</th>
+                                        <th>Folder Branch</th>
+                                        <th>Work Details</th>
+                                        <th style="text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="doc-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
+                <section id="tab-accounts-ledger" class="view-panel">
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="color: var(--primary); font-size: 1.4rem;">Accounts & Profit Management Ledger</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Track balances, expense distributions, payments, and invoice profits.</p>
+                    </div>
+
+                    <!-- Named Monthly Expenses Management Section -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <h3 style="color: var(--primary); font-size: 1.1rem;"><i class="fa-solid fa-receipt"></i> Monthly Operating Expenses</h3>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">Expenses added here are equally distributed across all invoices created in the target month.</p>
+                            </div>
+                            <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Monthly Expense</button>
+                        </div>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Month / Year</th>
+                                        <th>Expense Title</th>
+                                        <th>Expense Amount (AED)</th>
+                                        <th style="text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthly-expenses-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Selector & Actions Bar -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
+                            <label for="acc-invoice-select" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Select Invoice Reference:</label>
+                            <select id="acc-invoice-select" onchange="renderAccountsLedgerDetail(this.value)" style="max-width: 350px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; color: white;">
+                                <option value="">-- No Invoices Available --</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="openAddPaymentModal()" class="btn btn-primary"><i class="fa-solid fa-hand-holding-dollar"></i> Add Payment</button>
+                            <button onclick="printPaymentStatusStatement()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> Print Payment Status</button>
+                        </div>
+                    </div>
+
+                    <!-- Selected Invoice Financial Breakdown Cards -->
+                    <div id="acc-selected-summary-card" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Total Amount</span>
+                            <h3 id="acc-card-total" style="font-size: 1.5rem; color: var(--text-main);">AED 0.00</h3>
+                        </div>
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Advance Paid</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3 id="acc-card-advance" style="font-size: 1.5rem; color: var(--accent-green);">AED 0.00</h3>
+                                <button onclick="promptEditAdvance()" class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;">Edit</button>
+                            </div>
+                        </div>
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Total Payments</span>
+                            <h3 id="acc-card-payments" style="font-size: 1.5rem; color: var(--accent-blue);">AED 0.00</h3>
+                        </div>
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Remaining Balance</span>
+                            <h3 id="acc-card-remaining" style="font-size: 1.5rem; color: var(--accent-red);">AED 0.00</h3>
+                        </div>
+                        <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Invoice Calculated Profit</span>
+                            <h3 id="acc-card-profit" style="font-size: 1.5rem; color: var(--primary);">AED 0.00</h3>
+                        </div>
+                    </div>
+
+                    <!-- Payment Logs Table for Selected Invoice -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                        <h3 style="color: var(--primary); font-size: 1rem; margin-bottom: 12px;"><i class="fa-solid fa-clock-rotate-left"></i> Recorded Payment Logs</h3>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount Paid (AED)</th>
+                                        <th>Payment Note / Remarks</th>
+                                        <th style="text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="acc-payment-logs-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- All Accounts Full Table Ledger -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+                        <h3 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 15px;">Complete Accounts Ledger Master View</h3>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice Ref</th>
+                                        <th>Client Name</th>
+                                        <th>Govt Fees (AED)</th>
+                                        <th>Monthly Expense Share (AED)</th>
+                                        <th>Total Amount (AED)</th>
+                                        <th>Total Paid (AED)</th>
+                                        <th>Balance (AED)</th>
+                                        <th style="color: var(--primary);">Calculated Profit (AED)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="acc-full-ledger-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: SERVICE ENTRY STUDIO -->
+                <section id="tab-studio" class="view-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 id="studio-mode-title" style="color: var(--primary); font-size: 1.4rem;">Service Entry Studio</h2>
+                        <button onclick="switchTab('documents')" class="btn btn-secondary" style="font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Records</button>
+                    </div>
+
+                    <div class="studio-horizontal-meta">
+                        <div>
+                            <label>Document Type</label>
+                            <select id="st-doc-type" onchange="switchStudioDocType(this.value)">
+                                <option value="Invoice">Invoice</option>
+                                <option value="Quotation">Quotation</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>⚡ Service Injector Preset</label>
+                            <select id="st-service-injector" onchange="injectServicePresetToItems()">
+                                <option value="">-- Choose Preset Catalog --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Reference / ID</label>
+                            <input type="text" id="st-ref-code" placeholder="INV-2026-001 / QTN-2026-001">
+                        </div>
+                        <div>
+                            <label>Creation Date</label>
+                            <input type="date" id="st-created-date">
+                        </div>
+                        <div>
+                            <label>Valid Until / Expiry Date</label>
+                            <input type="date" id="st-expiry-date">
+                        </div>
+                    </div>
+
+                    <div class="studio-editor" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="color: var(--primary); font-size: 1rem;">Target Account Details</h4>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Autofill Client:</label>
+                                <select id="st-client-selector" onchange="autofillStudioClient(this.value)" style="display: inline-block; width: auto; font-size: 0.85rem; padding: 6px;">
+                                    <option value="">-- Select Registered Client --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+                            <div>
+                                <label>Client Name</label>
+                                <input type="text" id="st-client-name" placeholder="Primary Account Holder">
+                            </div>
+                            <div>
+                                <label>Company Name</label>
+                                <input type="text" id="st-company-name" placeholder="Alpha Logistics FZ">
+                            </div>
+                            <div>
+                                <label>Contact Person Name</label>
+                                <input type="text" id="st-contact-person" placeholder="John Doe">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="studio-editor" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                        <div>
+                            <label>Govt. Fees (AED)</label>
+                            <input type="number" id="st-govt-amt" value="0" oninput="recalculateStudioTotals()" style="font-weight: bold; color: var(--primary);">
+                        </div>
+                        <div>
+                            <label>Total Amount (AED)</label>
+                            <input type="number" id="st-total-amt" value="0" style="font-weight: bold; color: var(--accent-green);">
+                        </div>
+                        <div>
+                            <label>Advance Payment Received (AED)</label>
+                            <input type="number" id="st-advance-amt" value="0" style="font-weight: bold; color: var(--accent-blue);">
+                        </div>
+                    </div>
+
+                    <div class="studio-editor">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="color: var(--primary); font-size: 1rem;">Specific Work Breakdown Items</h4>
+                            <button onclick="addStudioRow(true)" class="btn btn-secondary" style="font-size: 0.8rem;">+ Append Row</button>
+                        </div>
+                        <div class="table-responsive" style="margin-top: 0;">
+                            <table class="studio-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px; text-align: center;">#</th>
+                                        <th>Work / Service Description</th>
+                                        <th style="width: 90px; text-align: center;">Qty</th>
+                                        <th style="width: 140px; text-align: right;">Price (AED)</th>
+                                        <th style="width: 70px; text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="st-spreadsheet-body"></tbody>
+                            </table>
+                        </div>
+                        <button onclick="commitDocumentToMemory()" class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 14px;">Save Entry & Generate Document Preview</button>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Custom Notification/Confirm Modal -->
+    <div id="custom-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content">
+            <h3 id="modal-title">Notification</h3>
+            <p id="modal-message"></p>
+            <div class="custom-modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <!-- Client Registration Modal -->
+    <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
+            <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Add New Company</h3>
+            <input type="hidden" id="cl-modal-id">
+            <div class="form-group">
+                <label>Company Name (EN)</label>
+                <input type="text" id="cl-input-company-name" placeholder="Alpha Logistics FZ">
+            </div>
+            <div class="form-group">
+                <label>Arabic Company Name (AR) - Blank for Auto</label>
+                <input type="text" id="cl-input-name-ar" placeholder="Arabic Translation" style="direction: rtl; font-family: 'Amiri', serif;">
+            </div>
+            <div class="form-group">
+                <label>Contact Person / Phone</label>
+                <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
+            </div>
+            <div class="custom-modal-actions">
+                <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Package Config Modal -->
+    <div id="service-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align: left; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+            <h3 id="service-modal-title" style="text-align: center; margin-bottom: 20px;">Manage Service Package</h3>
+            <input type="hidden" id="srv-modal-id">
+            <div class="form-group">
+                <label>Package Category Title</label>
+                <input type="text" id="srv-input-title" placeholder="Employment Visa Processing">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Government Fee (AED)</label>
+                    <input type="number" id="srv-input-govt" value="0" oninput="recalculateSrvModalProfit()">
+                </div>
+                <div class="form-group">
+                    <label style="color: var(--accent-green);">Net Profit (AED)</label>
+                    <input type="text" id="srv-input-profit" disabled value="0 AED" style="color: var(--accent-green); font-weight: bold;">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Sub-items Cost Table Setup</label>
+                <div id="srv-modal-items-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; background: var(--bg-dark); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);"></div>
+            </div>
+            <button onclick="addSrvModalRow()" class="btn btn-secondary" style="width: 100%; margin-bottom: 15px; font-size: 0.8rem;">+ Append Sub-item Row</button>
+            <div class="custom-modal-actions">
+                <button onclick="closeServiceModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveServiceModalData()" class="btn btn-primary">Save Catalog</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Monthly Expense Modal -->
+    <div id="monthly-expense-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align: left; max-width: 420px;">
+            <h3 style="text-align: center; margin-bottom: 20px;">Add Monthly Operating Expense</h3>
+            <div class="form-group">
+                <label>Target Month & Year</label>
+                <input type="month" id="exp-input-month" value="2026-09">
+            </div>
+            <div class="form-group">
+                <label>Expense Name / Title</label>
+                <input type="text" id="exp-input-title" placeholder="Office Rent, Utilities, Software Subscription">
+            </div>
+            <div class="form-group">
+                <label>Total Amount (AED)</label>
+                <input type="number" id="exp-input-amount" placeholder="1000">
+            </div>
+            <div class="custom-modal-actions">
+                <button onclick="closeMonthlyExpenseModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveMonthlyExpenseData()" class="btn btn-primary">Save Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Post-Advance Payment Modal -->
+    <div id="payment-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align: left; max-width: 420px;">
+            <h3 style="text-align: center; margin-bottom: 20px;">Record Invoice Payment</h3>
+            <div class="form-group">
+                <label>Payment Date</label>
+                <input type="date" id="pay-input-date">
+            </div>
+            <div class="form-group">
+                <label>Amount Received (AED)</label>
+                <input type="number" id="pay-input-amount" placeholder="200">
+            </div>
+            <div class="form-group">
+                <label>Note / Payment Ref</label>
+                <input type="text" id="pay-input-note" placeholder="Bank Transfer / Cash / Cheque #">
+            </div>
+            <div class="custom-modal-actions">
+                <button onclick="closeAddPaymentModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="savePaymentLogData()" class="btn btn-primary">Save Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Print / PDF Preview Modal -->
+    <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
+        <div class="preview-modal-toolbar">
+            <div>
+                <h3 id="preview-modal-heading" style="color: var(--primary); font-size: 1rem; margin: 0;">Service Invoice / Record Preview</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Client-Facing Document View</span>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="saveAsPDF()" class="btn btn-primary"><i class="fa-solid fa-download"></i> Save PDF</button>
+                <button onclick="window.print()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> Print</button>
+                <button onclick="closePreviewModal()" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+
+        <div class="preview-modal-body-canvas" style="padding: 24px; overflow-y: auto;">
+            <!-- A4 Page Container -->
+            <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 45px 40px; max-width: 800px; margin: auto; box-sizing: border-box; border: 3px double #b8860b; position: relative;">
+                
+                <!-- Header Section -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #b8860b; padding-bottom: 16px; margin-bottom: 24px;">
+                    <!-- Left: Logo -->
+                    <div style="flex-shrink: 0; width: 110px;">
+                        <img src="logo white .png" alt="Dar Al Shams Logo" style="width: 105px; height: auto; object-fit: contain;" onerror="this.style.display='none'">
+                    </div>
+
+                    <!-- Right: Header Titles -->
+                    <div style="text-align: right; flex-grow: 1;">
+                        <h1 style="margin: 0; font-size: 26px; font-weight: bold; color: #1c365d; font-family: 'Amiri', serif; line-height: 1.3;">
+                            دار الشمس لخدمات تخليص المعاملات
+                        </h1>
+                        <h2 style="margin: 6px 0 3px 0; font-size: 13px; font-weight: 800; color: #1c365d; letter-spacing: 0.6px;">
+                            DAR AL SHAMS DOCUMENTS CLEARING SERVICES
+                        </h2>
+                        <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
+                            Tel: <a href="tel:+97142367006" style="color: #0284c7; text-decoration: none; font-weight: 600;">+971 4 236 7006</a> | Office # 227, Dubai, UAE
+                        </p>
+                        <p style="margin: 0; font-size: 11px; color: #475569; line-height: 1.5;">
+                            Email: info@daralshams.ae
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Centered Document Title -->
+                <div style="text-align: center; margin-bottom: 28px;">
+                    <h3 id="p-doc-title" style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: 1px; text-transform: uppercase;">
+                        INVOICE / <span style="font-family: 'Amiri', serif;">فاتورة</span>
+                    </h3>
+                </div>
+
+                <!-- Metadata Info Section -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; font-size: 12.5px; line-height: 1.7; color: #0f172a;">
+                    <div>
+                        <div><strong style="color: #475569;">M/s:</strong> <span id="p-client-name" style="font-weight: 700; color: #0f172a;">-</span></div>
+                        <div id="p-client-name-ar" style="font-family: 'Amiri', serif; font-size: 14.5px; font-weight: bold; color: #1c365d; margin-top: 3px;"></div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div><strong id="p-doc-ref" style="font-weight: 700; color: #0f172a;">Invoice No: -</strong></div>
+                        <div id="p-created-date" style="color: #475569;">Date: -</div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Table Container -->
+                <div id="p-content-container" style="position: relative; margin-bottom: 40px; min-height: 260px;">
+                    <!-- Faded Watermark -->
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.06; pointer-events: none; text-align: center; width: 60%;">
+                        <img src="logo white .png" alt="Watermark" style="width: 280px; height: auto;" onerror="this.style.display='none'">
+                    </div>
+
+                    <!-- Styled Data Table -->
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 8px; font-size: 12px; position: relative; z-index: 1; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+                        <thead>
+                            <tr style="background: transparent; color: #000000;">
+                                <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 8%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">S.No</th>
+                                <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; text-align: left; font-weight: 700; letter-spacing: 0.5px;">
+                                    Description / <span style="font-family: 'Amiri', serif; font-weight: normal;">التفاصيل</span>
+                                </th>
+                                <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 10%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">Qty</th>
+                                <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; width: 22%; text-align: right; font-weight: 700; letter-spacing: 0.5px;">
+                                    Amount (Dhs)<br><span style="font-family: 'Amiri', serif; font-size: 11px; font-weight: normal;">المبلغ</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="p-table-body">
+                            <!-- Populated dynamically via ui.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Signature Line Footer -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; font-size: 11.5px; color: #334155;">
+                    <div style="text-align: center; width: 38%;">
+                        <div style="border-bottom: 1px solid #64748b; margin-bottom: 8px;"></div>
+                        <span>Receiver's Sign / <span style="font-family: 'Amiri', serif;">توقيع المستلم</span></span>
+                    </div>
+                    <div style="text-align: center; width: 38%;">
+                        <div style="border-bottom: 1px solid #64748b; margin-bottom: 8px;"></div>
+                        <span>Authorized Signature / <span style="font-family: 'Amiri', serif;">التوقيع</span></span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Fallback Global Definition for openStudio -->
+    <script>
+        window.openStudio = window.openStudio || function(type) {
+            if (typeof switchTab === 'function') switchTab('studio');
+        };
+    </script>
+    
+    <!-- Google GenAI SDK for Browser -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/genai": "https://esm.run/@google/genai"
+        }
+      }
+    </script>
+    
+    <!-- System JavaScript Modules -->
+    <script src="config.js"></script>
+    <script src="state.js"></script>
+    <script src="ui.js"></script>
+    <script src="studio.js"></script>
+    <script src="services.js"></script>
+    <script src="ledger.js"></script>
+    <script src="app.js"></script>
+    <script type="module" src="translator.js"></script>
+</body>
+</html>
