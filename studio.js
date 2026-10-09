@@ -1,8 +1,6 @@
 // studio.js - Service Entry Studio Logic
-
 function openStudio(type, editRefCode = null) {
     switchTab('studio');
-    
     const titleEl = document.getElementById('studio-mode-title');
     if (titleEl) titleEl.innerText = editRefCode ? `Edit ${type} - ${editRefCode}` : `Create New ${type}`;
 
@@ -25,14 +23,29 @@ function openStudio(type, editRefCode = null) {
             if (editRefEl) editRefEl.value = doc.refCode || '';
             if (dateEl) dateEl.value = doc.createdDate || new Date().toISOString().split('T')[0];
             
-            setElementValue('st-expiry-date', doc.visaExpiryDate || '');
-            setElementValue('st-client-selector', doc.companyName || doc.clientName || '');
-            setElementValue('st-client-name', doc.clientName || '');
-            setElementValue('st-company-name', doc.companyName || '');
-            setElementValue('st-contact-person', doc.contactPerson || '');
-            setElementValue('st-govt-amt', doc.govtAmt || 0);
-            setElementValue('st-total-amt', doc.totalAmt || doc.total || 0);
-            setElementValue('st-advance-amt', doc.advanceAmt || 0);
+            const expiryEl = document.getElementById('st-expiry-date');
+            if (expiryEl) expiryEl.value = doc.visaExpiryDate || '';
+
+            const clientSel = document.getElementById('st-client-selector');
+            if (clientSel) clientSel.value = doc.companyName || doc.clientName || '';
+
+            const clientNameInput = document.getElementById('st-client-name');
+            if (clientNameInput) clientNameInput.value = doc.clientName || '';
+
+            const compNameInput = document.getElementById('st-company-name');
+            if (compNameInput) compNameInput.value = doc.companyName || '';
+
+            const contactInput = document.getElementById('st-contact-person');
+            if (contactInput) contactInput.value = doc.contactPerson || '';
+
+            const govtInput = document.getElementById('st-govt-amt');
+            if (govtInput) govtInput.value = doc.govtAmt || 0;
+
+            const totalInput = document.getElementById('st-total-amt');
+            if (totalInput) totalInput.value = doc.totalAmt || doc.total || 0;
+
+            const advanceInput = document.getElementById('st-advance-amt');
+            if (advanceInput) advanceInput.value = doc.advanceAmt || 0;
 
             const tbody = document.getElementById('st-spreadsheet-body');
             if (tbody && doc.items) {
@@ -48,23 +61,26 @@ function openStudio(type, editRefCode = null) {
             }
         }
     } else {
-        setElementValue('st-expiry-date', '');
-        setElementValue('st-client-selector', '');
-        setElementValue('st-client-name', '');
-        setElementValue('st-company-name', '');
-        setElementValue('st-contact-person', '');
-        setElementValue('st-govt-amt', 0);
-        setElementValue('st-total-amt', 0);
-        setElementValue('st-advance-amt', 0);
+        const expiryEl = document.getElementById('st-expiry-date');
+        if (expiryEl) expiryEl.value = '';
+        const clientSel = document.getElementById('st-client-selector');
+        if (clientSel) clientSel.value = '';
+        const clientNameInput = document.getElementById('st-client-name');
+        if (clientNameInput) clientNameInput.value = '';
+        const compNameInput = document.getElementById('st-company-name');
+        if (compNameInput) compNameInput.value = '';
+        const contactInput = document.getElementById('st-contact-person');
+        if (contactInput) contactInput.value = '';
+        const govtInput = document.getElementById('st-govt-amt');
+        if (govtInput) govtInput.value = 0;
+        const totalInput = document.getElementById('st-total-amt');
+        if (totalInput) totalInput.value = 0;
+        const advanceInput = document.getElementById('st-advance-amt');
+        if (advanceInput) advanceInput.value = 0;
 
         addStudioRow(false);
     }
     recalculateStudioTotals();
-}
-
-function setElementValue(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
 }
 
 function populateStudioClientDropdown() {
@@ -85,9 +101,12 @@ function autofillStudioClient(companyName) {
     if (!companyName) return;
     const client = (state.clients || []).find(c => c.companyName === companyName);
     if (client) {
-        setElementValue('st-company-name', client.companyName || '');
-        setElementValue('st-client-name', client.companyName || '');
-        setElementValue('st-contact-person', client.contactPerson || '');
+        const compInput = document.getElementById('st-company-name');
+        if (compInput) compInput.value = client.companyName || '';
+        const clientInput = document.getElementById('st-client-name');
+        if (clientInput) clientInput.value = client.companyName || '';
+        const contactInput = document.getElementById('st-contact-person');
+        if (contactInput) contactInput.value = client.contactPerson || '';
     }
 }
 
@@ -97,22 +116,21 @@ function injectServicePresetToItems() {
     const srv = (state.services || []).find(s => s.id === srvId);
     if (!srv) return;
 
+    const govtInput = document.getElementById('st-govt-amt');
+    if (govtInput) govtInput.value = srv.govtAmt || 0;
+
     const tbody = document.getElementById('st-spreadsheet-body');
-    if (tbody) tbody.dataset.packageName = srv.title;
+    if (!tbody) return;
 
-    setElementValue('st-govt-amt', srv.govtAmt || 0);
-
-    if (tbody) {
-        tbody.innerHTML = (srv.items || []).map((item, idx) => `
-            <tr>
-                <td style="text-align: center;">${idx + 1}</td>
-                <td><input type="text" class="st-item-desc" value="${item.d || ''}" placeholder="Service description"></td>
-                <td style="text-align: center;"><input type="number" class="st-item-qty" value="${item.q || 1}" oninput="recalculateStudioTotals()"></td>
-                <td style="text-align: right;"><input type="number" class="st-item-price" value="${item.p || 0}" oninput="recalculateStudioTotals()"></td>
-                <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
-            </tr>
-        `).join('');
-    }
+    tbody.innerHTML = (srv.items || []).map((item, idx) => `
+        <tr>
+            <td style="text-align: center;">${idx + 1}</td>
+            <td><input type="text" class="st-item-desc" value="${item.d || ''}" placeholder="Service description"></td>
+            <td style="text-align: center;"><input type="number" class="st-item-qty" value="${item.q || 1}" oninput="recalculateStudioTotals()"></td>
+            <td style="text-align: right;"><input type="number" class="st-item-price" value="${item.p || 0}" oninput="recalculateStudioTotals()"></td>
+            <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
+        </tr>
+    `).join('');
 
     recalculateStudioTotals();
 }
@@ -143,7 +161,8 @@ function recalculateStudioTotals() {
         sumTotal += (q * p);
     });
 
-    setElementValue('st-total-amt', sumTotal.toFixed(2));
+    const totalInput = document.getElementById('st-total-amt');
+    if (totalInput) totalInput.value = sumTotal.toFixed(2);
 }
 
 function commitDocumentToMemory() {
@@ -174,13 +193,9 @@ function commitDocumentToMemory() {
         });
     });
 
-    const tbody = document.getElementById('st-spreadsheet-body');
-    const packageName = tbody?.dataset.packageName || '';
-
     const payload = {
         refCode,
         type,
-        packageName,
         clientName: clientName || companyName || 'Direct Client',
         companyName: companyName || clientName || 'Direct Client',
         contactPerson,

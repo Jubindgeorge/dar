@@ -1,51 +1,41 @@
-// translator.js — secure client-side bridge to a server-side translation endpoint.
-// Configure /api/translate-company-name on your server; keep Gemini credentials server-side.
+// translator.js
+import { GoogleGenAI } from "@google/genai";
 
-window.translateCompanyName = async function translateCompanyName(englishName) {
-    const name = String(englishName ?? '').trim();
-    if (!name) return '';
-    if (name.length > 300) {
-        console.warn('Company name is too long to translate.');
+window.translateCompanyName = async function(englishName) {
+    if (!englishName || !englishName.trim()) return '';
+
+    // Fixed: Look up the storage key properly (or fallback to your key if needed)
+    const apiKey = localStorage.getItem('gemini_api_key') || 'AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ';
+    if (!apiKey) {
+        console.error("Gemini API key is missing. Please set 'gemini_api_key' in localStorage.");
         return '';
     }
 
     try {
-        const response = await fetch('/api/translate-company-name', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ companyName: name })
+        const ai = new GoogleGenAI({ apiKey: apiKey });
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Translate the following company or client name into official, professional Arabic business terminology used in UAE commercial registries. Return ONLY the translated Arabic text with no extra conversational remarks, explanations, or quotes: "${englishName}"`
         });
-        if (!response.ok) {
-            console.error('Translation endpoint returned HTTP', response.status);
-            return '';
-        }
-        const payload = await response.json();
-        const translated = typeof payload?.translation === 'string' ? payload.translation.trim() : '';
-        return translated.slice(0, 300);
+        const translated = response.text ? response.text.trim() : '';
+        return translated;
     } catch (error) {
-        console.error('Company-name translation failed.', error);
+        console.error("Gemini Translation Error:", error);
         return '';
     }
 };
 
-// Compatibility aliases used by existing UI code.
+// Bridge for ui.js autoTranslateToArabic compatibility
 window._geminiTranslate = window.translateCompanyName;
-window.autoTranslateToArabic = window.translateCompanyName;
 
-window.batchUpdateAllArabicNames = async function batchUpdateAllArabicNames() {
-    const currentState = (typeof state !== 'undefined' && state && typeof state === 'object') ? state : null;
-    if (!currentState || !Array.isArray(currentState.clients) || currentState.clients.length === 0) return;
-
-    let changed = false;
-    for (const client of currentState.clients) {
-        if (!client?.companyName || String(client.nameAr || '').trim()) continue;
-        const translated = await window.translateCompanyName(client.companyName);
-        if (translated) { client.nameAr = translated; changed = true; }
+window.batchUpdateAllArabicNames = async function() {
+    if (!state.clients || state.clients.length === 0) return;
+    for (let client of state.clients) {
+        if (client.companyName && (!client.nameAr || client.nameAr === '')) {
+            client.nameAr = await window.translateCompanyName(client.companyName);
+        }
     }
-    if (changed && typeof saveStateToFirebase === 'function') {
-        try { await saveStateToFirebase(); }
-        catch (error) { console.error('Unable to save translated company names.', error); }
-    }
-    if (changed && typeof renderClientsTable === 'function') renderClientsTable();
+    if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
+    if (typeof renderClientsTable === 'function') renderClientsTable();
 };

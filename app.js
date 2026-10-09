@@ -1,4 +1,4 @@
-// app.js
+// app.js - Harmonized with ledger.js properties
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof initFirebaseListeners === 'function') {
         initFirebaseListeners();
@@ -14,23 +14,27 @@ window.exitWelcomeScreen = function() {
         const auth = document.getElementById('auth-container');
         if (auth) auth.style.display = 'flex';
     }, 400);
-}
+};
 
 window.handleLogin = function(e) {
     if (e) e.preventDefault();
     document.getElementById('auth-container').style.display = 'none';
     document.getElementById('app-container').style.display = 'flex';
     switchTab('dashboard');
-}
+};
 
 window.handleLogout = function() {
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('auth-container').style.display = 'flex';
+};
+
+function toggleSidebar() {
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) {
+        appContainer.classList.toggle('sidebar-collapsed');
+    }
 }
 
-window.toggleSidebar = function() {
-    document.getElementById('sidebar').classList.toggle('collapsed');
-}
 
 window.switchTab = function(tabId) {
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
@@ -63,7 +67,7 @@ window.switchTab = function(tabId) {
     if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
     if (tabId === 'documents' && typeof renderDocumentsTable === 'function') renderDocumentsTable();
     if (tabId === 'accounts-ledger' && typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
-}
+};
 
 function renderDashboardStats() {
     const clientsCount = document.getElementById('dash-client-count');
@@ -79,7 +83,7 @@ function renderDashboardStats() {
 
     (state.documents || []).forEach(doc => {
         let created = doc.createdDate || '';
-        let total = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
+        let total = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
 
         if (created.startsWith(currentMonthStr)) monthlyTotal += total;
         if (created.startsWith(currentYearStr)) annualTotal += total;
@@ -123,13 +127,13 @@ window.openClientModal = function(id) {
     document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
     document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
     document.getElementById('client-modal').style.display = 'flex';
-}
+};
 
 window.closeClientModal = function() {
     document.getElementById('client-modal').style.display = 'none';
-}
+};
 
-window.saveClientModalData = function() {
+window.saveClientModalData = async function() {
     const id = document.getElementById('cl-modal-id').value || db.ref('clients').push().key;
     const companyName = document.getElementById('cl-input-company-name').value.trim();
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
@@ -140,12 +144,14 @@ window.saveClientModalData = function() {
         return;
     }
 
-    if (!nameAr && typeof autoTranslateToArabic === 'function') nameAr = autoTranslateToArabic(companyName);
+    if (!nameAr && typeof autoTranslateToArabic === 'function') {
+        nameAr = await autoTranslateToArabic(companyName);
+    }
 
     db.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson }, (err) => {
         if (!err) closeClientModal();
     });
-}
+};
 
 window.deleteClientAccount = function(id) {
     if (typeof showCustomModal === 'function') {
@@ -154,7 +160,7 @@ window.deleteClientAccount = function(id) {
             <button onclick="db.ref('clients/${id}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
         `);
     }
-}
+};
 
 window.viewClientDetail = function(clientId) {
     state.activeViewingClientId = clientId;
@@ -172,20 +178,24 @@ window.viewClientDetail = function(clientId) {
     if (clientDocs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
     } else {
-        tbody.innerHTML = clientDocs.map(d => `
-            <tr>
-                <td><strong>${d.refCode}</strong></td>
-               <td><strong>${d.packageName || d.serviceTitle || (d.items && d.items[0] ? d.items[0].d : 'Service Record')}</strong></td>                <td>${d.visaExpiryDate || '-'}</td>
-                <td>AED ${(parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0).toFixed(2)}</td>
-                <td style="text-align: center;">
-                    <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = clientDocs.map(d => {
+            const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+            return `
+                <tr>
+                    <td><strong>${d.refCode}</strong></td>
+                    <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+                    <td>${d.visaExpiryDate || '-'}</td>
+                    <td>AED ${amt.toFixed(2)}</td>
+                    <td style="text-align: center;">
+                        <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     switchTab('client-detail');
-}
+};
 
 function renderWorksTable() {
     const tbody = document.getElementById('works-table-body');
@@ -193,7 +203,7 @@ function renderWorksTable() {
 
     const companyMap = {};
     (state.documents || []).forEach(doc => {
-        let key = doc.companyName || 'Unassigned / Direct Clients';
+        let key = doc.companyName || doc.clientName || 'Unassigned / Direct Clients';
         if (!companyMap[key]) companyMap[key] = [];
         companyMap[key].push(doc);
     });
@@ -218,19 +228,19 @@ function renderWorksTable() {
 window.openWorksDetailView = function(companyName) {
     state.activeViewingCompanyWorksName = companyName;
     switchTab('works-detail');
-}
+};
 
 window.switchWorksBranch = function(branch) {
     state.activeWorksBranch = branch;
     renderWorksDetailView();
-}
+};
 
 function renderWorksDetailView() {
     const companyName = state.activeViewingCompanyWorksName;
     const titleEl = document.getElementById('works-detail-company-title');
     if (titleEl) titleEl.innerText = companyName || '-';
 
-    const allCompanyDocs = (state.documents || []).filter(d => (d.companyName || 'Unassigned / Direct Clients') === companyName);
+    const allCompanyDocs = (state.documents || []).filter(d => (d.companyName || d.clientName || 'Unassigned / Direct Clients') === companyName);
     const companyWorks = allCompanyDocs.filter(d => d.branchTag !== 'staff');
     const staffWorks = allCompanyDocs.filter(d => d.branchTag === 'staff');
 
@@ -248,19 +258,23 @@ function renderWorksDetailView() {
         return;
     }
 
-    tbody.innerHTML = activeDocs.map(d => `
-        <tr>
-            <td><strong>${d.refCode}</strong></td>
-            <td>${d.clientName || '-'}</td>
-            <td>${d.companyName || '-'}</td>
-            <td>${d.contactPerson || '-'}</td>
-  <td><strong>${d.packageName || d.serviceTitle || (d.items && d.items[0] ? d.items[0].d : 'Service Record')}</strong></td>            <td>AED ${(parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0).toFixed(2)}</td>
-            <td style="text-align: center;">
-                <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
-                <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = activeDocs.map(d => {
+        const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        return `
+            <tr>
+                <td><strong>${d.refCode}</strong></td>
+                <td>${d.clientName || '-'}</td>
+                <td>${d.companyName || '-'}</td>
+                <td>${d.contactPerson || '-'}</td>
+                <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+                <td>AED ${amt.toFixed(2)}</td>
+                <td style="text-align: center;">
+                    <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                    <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderDocumentsTable() {
@@ -276,7 +290,7 @@ function renderDocumentsTable() {
     });
 
     let totalVolume = filtered.reduce((acc, curr) => {
-        const amt = parseFloat(curr.totalAmt) || parseFloat(curr.total) || parseFloat(curr.amount) || 0;
+        const amt = parseFloat(curr.totalAmount) || parseFloat(curr.totalAmt) || parseFloat(curr.total) || parseFloat(curr.amount) || 0;
         return acc + amt;
     }, 0);
 
@@ -291,7 +305,7 @@ function renderDocumentsTable() {
     }
 
     tbody.innerHTML = filtered.map(d => {
-        const rowTotal = parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        const rowTotal = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
         return `
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
@@ -299,7 +313,9 @@ function renderDocumentsTable() {
             <td>${d.clientName || '-'}</td>
             <td>${d.companyName || '-'}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${d.branchTag || 'company'}</span></td>
-            <td><strong>${d.packageName || d.serviceTitle || (d.items && d.items[0] ? d.items[0].d : 'Service Record')}</strong></td>            <td style="text-align: center;">
+            <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+            <td>AED ${rowTotal.toFixed(2)}</td>
+            <td style="text-align: center;">
                 <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
                 <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
                 <button onclick="deleteSingleDocument('${d.refCode}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
@@ -313,12 +329,12 @@ window.updateBatchDeleteButtonState = function() {
     const selected = document.querySelectorAll('.doc-row-checkbox:checked');
     const btn = document.getElementById('btn-batch-delete');
     if (btn) btn.disabled = selected.length === 0;
-}
+};
 
 window.toggleSelectAllDocuments = function(master) {
     document.querySelectorAll('.doc-row-checkbox').forEach(cb => cb.checked = master.checked);
     updateBatchDeleteButtonState();
-}
+};
 
 window.deleteSingleDocument = function(refCode) {
     if (typeof showCustomModal === 'function') {
@@ -327,7 +343,7 @@ window.deleteSingleDocument = function(refCode) {
             <button onclick="db.ref('documents/${refCode}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
         `);
     }
-}
+};
 
 let pendingBatchDeleteKeys = [];
 window.deleteSelectedDocuments = function() {
@@ -338,14 +354,14 @@ window.deleteSelectedDocuments = function() {
             <button onclick="executeBatchDelete(); closeCustomModal();" class="btn btn-danger">Delete All</button>
         `);
     }
-}
+};
 
 function executeBatchDelete() {
     pendingBatchDeleteKeys.forEach(k => db.ref(`documents/${k}`).remove());
     pendingBatchDeleteKeys = [];
 }
 
-window.previewInvoiceDocument = function(refCode) {
+window.previewInvoiceDocument = async function(refCode) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
 
@@ -360,19 +376,17 @@ window.previewInvoiceDocument = function(refCode) {
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     
-    // കമ്പനി/ക്ലയന്റ് പേര് സെറ്റ് ചെയ്യുന്നു
     const compName = doc.clientName || doc.companyName || 'N/A';
     if (clientName) clientName.innerText = compName;
     if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
 
     let arName = '';
-    // ഇവിടെ companyName അല്ലെങ്കിൽ clientName വെച്ച് clients ലിസ്റ്റിൽ പരതുന്നു
     const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
     if (matchedClient) {
         arName = matchedClient.nameAr || '';
     }
     if (!arName && compName && typeof autoTranslateToArabic === 'function') {
-        arName = autoTranslateToArabic(compName);
+        arName = await autoTranslateToArabic(compName);
     }
 
     if (clientNameAr) {
@@ -383,7 +397,7 @@ window.previewInvoiceDocument = function(refCode) {
     if (tbody) {
         const items = doc.items || [];
         
-        let docTotal = parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
+        let docTotal = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
         if (docTotal === 0 && items.length > 0) {
             docTotal = items.reduce((sum, item) => {
                 const p = parseFloat(item.p || item.price) || 0;
@@ -416,7 +430,6 @@ window.previewInvoiceDocument = function(refCode) {
 };
 
 window.saveAsPDF = function() {
-    // ബോർഡറും സിഗ്നേച്ചറും അടങ്ങിയ മുഴുവൻ A4 പേജ് എലമെന്റിന്റെ ID ഇവിടെ നൽകുക
     const element = document.getElementById('a4-wrapper-element') || document.getElementById('document-preview-print-area');
     
     if (!element) {
@@ -433,7 +446,7 @@ window.saveAsPDF = function() {
     const cleanFilename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
 
     const opt = {
-        margin:       [5, 5, 5, 5], // മുകളിലും താഴെയും വശങ്ങളിലും ഉള്ള മാർജിൻ ക്രമീകരിക്കാം
+        margin:       [5, 5, 5, 5],
         filename:     cleanFilename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
@@ -452,5 +465,12 @@ window.saveAsPDF = function() {
         });
     } else {
         alert("html2pdf library is not loaded properly.");
+    }
+};
+
+window.closePreviewModal = function() {
+    const modal = document.getElementById('document-preview-modal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 };
