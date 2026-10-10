@@ -513,26 +513,18 @@ window.saveAsPDF = function() {
         filename:     cleanFilename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
-            scale: 2,
-            useCORS: true,
+            scale: 2, 
+            useCORS: true, 
             logging: false,
-            letterRendering: true,
-            backgroundColor: '#ffffff',
-            windowWidth: Math.max(element.scrollWidth || 0, 794)
+            letterRendering: true 
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     if (typeof html2pdf !== 'undefined') {
-        const pdfButton = document.querySelector('#document-preview-modal button[onclick="saveAsPDF()"]');
-        if (pdfButton) { pdfButton.disabled = true; pdfButton.dataset.originalText = pdfButton.innerHTML; pdfButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating…'; }
-        html2pdf().from(element).set(opt).save().then(() => {
-            if (pdfButton) pdfButton.innerHTML = pdfButton.dataset.originalText || 'Save PDF';
-        }).catch(err => {
-            console.error('PDF generation error:', err);
-            showCustomModal('PDF export failed', 'The PDF could not be generated. Please keep the preview open and try again.');
-        }).finally(() => {
-            if (pdfButton) { pdfButton.disabled = false; pdfButton.innerHTML = pdfButton.dataset.originalText || '<i class="fa-solid fa-download"></i> Save PDF'; }
+        html2pdf().from(element).set(opt).save().catch(err => {
+            console.error("PDF generation error:", err);
+            alert("Failed to generate PDF. Check console for details.");
         });
     } else {
         alert("html2pdf library is not loaded properly.");
