@@ -4,7 +4,7 @@ function showCustomModal(title, message, customActionsHTML = '') {
     if (!modal) return;
 
     document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-message').innerHTML = message;
+    document.getElementById('modal-message').textContent = String(message == null ? '' : message);
     
     const actionsContainer = document.getElementById('modal-actions');
     if (actionsContainer) {

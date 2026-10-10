@@ -1,8 +1,42 @@
-// app.js - Harmonized with ledger.js properties
+// app.js - Harmonized with ledger.js properties and main service names
+function localISODate() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+// Strictly target only explicit package/service titles
+function getWorkItemDescription(item) {
+    if (!item || typeof item !== 'object') return '';
+    return String(item.serviceName ?? item.title ?? item.packageName ?? '').trim();
+}
+
+function getDocumentWorkDescription(doc) {
+    // Only check document-level package name or title; ignore descriptions entirely
+    return String(doc?.serviceName ?? doc?.title ?? doc?.packageName ?? '').trim();
+}
+
+function workDescriptionCell(doc) {
+    // Grab the document's main name first; if not found, grab only the first item's package title
+    const mainTitle = getDocumentWorkDescription(doc);
+    if (mainTitle) return escapeHtml(mainTitle);
+
+    const items = Array.isArray(doc?.items) ? doc.items : [];
+    if (items.length > 0) {
+        const firstItemTitle = getWorkItemDescription(items[0]);
+        if (firstItemTitle) return escapeHtml(firstItemTitle);
+    }
+
+    return 'Service Record';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    const expenseMonth = document.getElementById('exp-input-month');
+    if (expenseMonth && !expenseMonth.value) expenseMonth.value = localISODate().slice(0, 7);
     if (typeof initFirebaseListeners === 'function') {
         initFirebaseListeners();
     }
+    const requestedTab = (window.location.hash || '').replace(/^#/, '');
+    if (requestedTab && document.getElementById(`tab-${requestedTab}`)) switchTab(requestedTab);
 });
 
 window.exitWelcomeScreen = function() {
@@ -18,14 +52,18 @@ window.exitWelcomeScreen = function() {
 
 window.handleLogin = function(e) {
     if (e) e.preventDefault();
-    document.getElementById('auth-container').style.display = 'none';
-    document.getElementById('app-container').style.display = 'flex';
+    const auth = document.getElementById('auth-container');
+    const app = document.getElementById('app-container');
+    if (auth) auth.style.display = 'none';
+    if (app) app.style.display = 'flex';
     switchTab('dashboard');
 };
 
 window.handleLogout = function() {
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('auth-container').style.display = 'flex';
+    const app = document.getElementById('app-container');
+    const auth = document.getElementById('auth-container');
+    if (app) app.style.display = 'none';
+    if (auth) auth.style.display = 'flex';
 };
 
 function toggleSidebar() {
@@ -34,7 +72,6 @@ function toggleSidebar() {
         appContainer.classList.toggle('sidebar-collapsed');
     }
 }
-
 
 window.switchTab = function(tabId) {
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
@@ -50,7 +87,7 @@ window.switchTab = function(tabId) {
         'dashboard': 'Dashboard Overview',
         'clients': 'Clients',
         'works': 'Works Directory',
-        'works-detail': 'Company Works Branch Dossier',
+        'works-detail': 'Business / Staff Works Folder',
         'client-detail': 'Client Specific Dossier',
         'services-config': 'Services & Tariffs Catalog',
         'documents': 'Financial Ledger & Records',
@@ -75,8 +112,9 @@ function renderDashboardStats() {
     if (clientsCount) clientsCount.innerText = (state.clients || []).length;
     if (worksCount) worksCount.innerText = (state.documents || []).length;
 
-    let currentMonthStr = new Date().toISOString().slice(0, 7);
-    let currentYearStr = new Date().getFullYear().toString();
+    const now = new Date();
+    let currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    let currentYearStr = now.getFullYear().toString();
 
     let monthlyTotal = 0;
     let annualTotal = 0;
@@ -95,6 +133,10 @@ function renderDashboardStats() {
     if (annualPayout) annualPayout.innerText = `AED ${annualTotal.toFixed(2)}`;
 }
 
+function normalizeCompanyFolderKey(value) {
+    return String(value || 'Direct Clients').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+}
+
 function renderClientsTable() {
     const tbody = document.getElementById('client-table-body');
     if (!tbody) return;
@@ -104,7 +146,15 @@ function renderClientsTable() {
         return;
     }
 
-    tbody.innerHTML = state.clients.map(cl => `
+    const uniqueClients = [];
+    const seenCompanies = new Set();
+    state.clients.forEach(cl => {
+        const key = (cl.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+        if (!key || seenCompanies.has(key)) return;
+        seenCompanies.add(key);
+        uniqueClients.push(cl);
+    });
+    tbody.innerHTML = uniqueClients.map(cl => `
         <tr>
             <td><strong>${cl.companyName || '-'}</strong></td>
             <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${cl.nameAr || '-'}</td>
@@ -134,10 +184,17 @@ window.closeClientModal = function() {
 };
 
 window.saveClientModalData = async function() {
-    const id = document.getElementById('cl-modal-id').value || db.ref('clients').push().key;
+    if (!db) { showCustomModal('Connection unavailable', 'Firebase is not connected. Client changes were not saved.'); return; }
+    let id = document.getElementById('cl-modal-id').value || '';
     const companyName = document.getElementById('cl-input-company-name').value.trim();
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
     const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
+    if (!id && companyName) {
+        const normalized = companyName.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+        const duplicate = (state.clients || []).find(c => (c.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim() === normalized);
+        if (duplicate) id = duplicate.id;
+    }
+    if (!id) id = db.ref('clients').push().key;
 
     if (!companyName) {
         if (typeof showCustomModal === 'function') showCustomModal('Warning', 'Company Name is required.');
@@ -145,11 +202,12 @@ window.saveClientModalData = async function() {
     }
 
     if (!nameAr && typeof autoTranslateToArabic === 'function') {
-        nameAr = await autoTranslateToArabic(companyName);
+        try { nameAr = await autoTranslateToArabic(companyName); } catch (error) { console.warn('Arabic translation failed:', error); }
     }
 
     db.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson }, (err) => {
-        if (!err) closeClientModal();
+        if (!err) { closeClientModal(); }
+        else showCustomModal('Save failed', 'Client details could not be saved. Check Firebase permissions and your connection.');
     });
 };
 
@@ -172,7 +230,7 @@ window.viewClientDetail = function(clientId) {
     document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
     document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
 
-    const clientDocs = (state.documents || []).filter(d => d.companyName === client.companyName || d.clientName === client.companyName);
+    const clientDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Direct Clients') === normalizeCompanyFolderKey(client.companyName));
     const tbody = document.getElementById('client-detail-records-body');
     
     if (clientDocs.length === 0) {
@@ -183,7 +241,7 @@ window.viewClientDetail = function(clientId) {
             return `
                 <tr>
                     <td><strong>${d.refCode}</strong></td>
-                    <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+                    <td>${workDescriptionCell(d)}</td>
                     <td>${d.visaExpiryDate || '-'}</td>
                     <td>AED ${amt.toFixed(2)}</td>
                     <td style="text-align: center;">
@@ -202,9 +260,11 @@ function renderWorksTable() {
     if (!tbody) return;
 
     const companyMap = {};
+    const companyLabels = {};
     (state.documents || []).forEach(doc => {
-        let key = doc.companyName || doc.clientName || 'Unassigned / Direct Clients';
-        if (!companyMap[key]) companyMap[key] = [];
+        const label = (doc.companyName || 'Direct Clients').trim();
+        const key = normalizeCompanyFolderKey(label);
+        if (!companyMap[key]) { companyMap[key] = []; companyLabels[key] = label; }
         companyMap[key].push(doc);
     });
 
@@ -216,10 +276,10 @@ function renderWorksTable() {
 
     tbody.innerHTML = keys.map(comp => `
         <tr>
-            <td><strong>${comp}</strong></td>
+            <td><strong>${escapeHtml(companyLabels[comp])}</strong></td>
             <td>${companyMap[comp].length} Invoices</td>
             <td style="text-align: center;">
-                <button onclick="openWorksDetailView('${comp}')" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
+                <button onclick="openWorksDetailView('${escapeHtml(companyLabels[comp]).replace(/'/g, '&#39;')}')" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
             </td>
         </tr>
     `).join('');
@@ -240,7 +300,7 @@ function renderWorksDetailView() {
     const titleEl = document.getElementById('works-detail-company-title');
     if (titleEl) titleEl.innerText = companyName || '-';
 
-    const allCompanyDocs = (state.documents || []).filter(d => (d.companyName || d.clientName || 'Unassigned / Direct Clients') === companyName);
+    const allCompanyDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Direct Clients') === normalizeCompanyFolderKey(companyName));
     const companyWorks = allCompanyDocs.filter(d => d.branchTag !== 'staff');
     const staffWorks = allCompanyDocs.filter(d => d.branchTag === 'staff');
 
@@ -266,7 +326,7 @@ function renderWorksDetailView() {
                 <td>${d.clientName || '-'}</td>
                 <td>${d.companyName || '-'}</td>
                 <td>${d.contactPerson || '-'}</td>
-                <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+                <td>${workDescriptionCell(d)}</td>
                 <td>AED ${amt.toFixed(2)}</td>
                 <td style="text-align: center;">
                     <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
@@ -312,8 +372,8 @@ function renderDocumentsTable() {
             <td><strong>${d.refCode}</strong></td>
             <td>${d.clientName || '-'}</td>
             <td>${d.companyName || '-'}</td>
-            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${d.branchTag || 'company'}</span></td>
-            <td>${(d.items || []).map(i => i.d).join(', ') || 'Service Record'}</td>
+            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${d.branchTag === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
+            <td>${workDescriptionCell(d)}</td>
             <td>AED ${rowTotal.toFixed(2)}</td>
             <td style="text-align: center;">
                 <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
@@ -367,6 +427,7 @@ window.previewInvoiceDocument = async function(refCode) {
 
     const docRef = document.getElementById('p-doc-ref');
     const clientName = document.getElementById('p-client-name');
+    const companyNameEl = document.getElementById('p-company-name');
     const createdDate = document.getElementById('p-created-date');
     const clientNameAr = document.getElementById('p-client-name-ar');
     const docTitle = document.getElementById('p-doc-title');
@@ -378,6 +439,7 @@ window.previewInvoiceDocument = async function(refCode) {
     
     const compName = doc.clientName || doc.companyName || 'N/A';
     if (clientName) clientName.innerText = compName;
+    if (companyNameEl) companyNameEl.innerText = doc.companyName || doc.clientName || '-';
     if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
 
     let arName = '';
@@ -406,13 +468,14 @@ window.previewInvoiceDocument = async function(refCode) {
             }, 0);
         }
 
-        tbody.innerHTML = items.map((item, idx) => {
-            const p = parseFloat(item.p || item.price) || 0;
-            const q = parseFloat(item.q || item.quantity) || 1;
+        const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
+        tbody.innerHTML = normalizedItems.map((item, idx) => {
+            const p = parseFloat(item.p ?? item.price) || 0;
+            const q = parseFloat(item.q ?? item.quantity) || 1;
             return `
                 <tr>
                     <td style="text-align: center;">${idx + 1}</td>
-                    <td>${item.d || item.description || 'Service Record'}</td>
+                    <td style="white-space: pre-wrap; overflow-wrap: anywhere;">${escapeHtml(getWorkItemDescription(item) || 'Service Record')}</td>
                     <td style="text-align: center;">${q}</td>
                     <td style="text-align: right;">${(p * q).toFixed(2)}</td>
                 </tr>
@@ -450,18 +513,26 @@ window.saveAsPDF = function() {
         filename:     cleanFilename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
-            scale: 2, 
-            useCORS: true, 
+            scale: 2,
+            useCORS: true,
             logging: false,
-            letterRendering: true 
+            letterRendering: true,
+            backgroundColor: '#ffffff',
+            windowWidth: Math.max(element.scrollWidth || 0, 794)
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     if (typeof html2pdf !== 'undefined') {
-        html2pdf().from(element).set(opt).save().catch(err => {
-            console.error("PDF generation error:", err);
-            alert("Failed to generate PDF. Check console for details.");
+        const pdfButton = document.querySelector('#document-preview-modal button[onclick="saveAsPDF()"]');
+        if (pdfButton) { pdfButton.disabled = true; pdfButton.dataset.originalText = pdfButton.innerHTML; pdfButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating…'; }
+        html2pdf().from(element).set(opt).save().then(() => {
+            if (pdfButton) pdfButton.innerHTML = pdfButton.dataset.originalText || 'Save PDF';
+        }).catch(err => {
+            console.error('PDF generation error:', err);
+            showCustomModal('PDF export failed', 'The PDF could not be generated. Please keep the preview open and try again.');
+        }).finally(() => {
+            if (pdfButton) { pdfButton.disabled = false; pdfButton.innerHTML = pdfButton.dataset.originalText || '<i class="fa-solid fa-download"></i> Save PDF'; }
         });
     } else {
         alert("html2pdf library is not loaded properly.");

@@ -1,41 +1,50 @@
-// translator.js
-import { GoogleGenAI } from "@google/genai";
+// translator.js — browser client for the server-side translation endpoint.
+// Keep the public function names used by the existing UI.
+(function () {
+    const translationEndpoint = '/api/translate-company-name';
 
-window.translateCompanyName = async function(englishName) {
-    if (!englishName || !englishName.trim()) return '';
-
-    // Fixed: Look up the storage key properly (or fallback to your key if needed)
-    const apiKey = localStorage.getItem('gemini_api_key') || 'AQ.Ab8RN6JkRhWjGB2-AxyzJIS_4HadUntkx8ksOcbi9biG7IcdiQ';
-    if (!apiKey) {
-        console.error("Gemini API key is missing. Please set 'gemini_api_key' in localStorage.");
-        return '';
+    function fallbackArabic(companyName) {
+        const words = String(companyName || '').trim().split(/\s+/).filter(Boolean);
+        if (!words.length) return '';
+        return words.map(word => {
+            const key = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (translationGlossary && translationGlossary[key]) return translationGlossary[key];
+            return word.split('').map(ch => (phoneticMap && phoneticMap[ch.toLowerCase()]) || ch).join('');
+        }).join(' ');
     }
 
-    try {
-        const ai = new GoogleGenAI({ apiKey: apiKey });
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Translate the following company or client name into official, professional Arabic business terminology used in UAE commercial registries. Return ONLY the translated Arabic text with no extra conversational remarks, explanations, or quotes: "${englishName}"`
-        });
-        const translated = response.text ? response.text.trim() : '';
-        return translated;
-    } catch (error) {
-        console.error("Gemini Translation Error:", error);
-        return '';
-    }
-};
-
-// Bridge for ui.js autoTranslateToArabic compatibility
-window._geminiTranslate = window.translateCompanyName;
-
-window.batchUpdateAllArabicNames = async function() {
-    if (!state.clients || state.clients.length === 0) return;
-    for (let client of state.clients) {
-        if (client.companyName && (!client.nameAr || client.nameAr === '')) {
-            client.nameAr = await window.translateCompanyName(client.companyName);
+    window.translateCompanyName = async function (englishName) {
+        const cleanName = String(englishName || '').trim();
+        if (!cleanName) return '';
+        try {
+            const response = await fetch(translationEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ companyName: cleanName })
+            });
+            if (!response.ok) throw new Error(`Translation endpoint returned ${response.status}`);
+            const data = await response.json();
+            const translated = String(data.translation || '').trim();
+            return translated || fallbackArabic(cleanName);
+        } catch (error) {
+            console.warn('Arabic translation endpoint unavailable; using local phonetic fallback.', error);
+            return fallbackArabic(cleanName);
         }
-    }
-    if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
-    if (typeof renderClientsTable === 'function') renderClientsTable();
-};
+    };
+
+    window._geminiTranslate = window.translateCompanyName;
+
+    window.batchUpdateAllArabicNames = async function () {
+        if (!Array.isArray(state.clients) || state.clients.length === 0) return;
+        let changed = 0;
+        for (const client of state.clients) {
+            if (client.companyName && !String(client.nameAr || '').trim()) {
+                client.nameAr = await window.translateCompanyName(client.companyName);
+                if (client.nameAr) changed++;
+            }
+        }
+        if (changed && typeof saveStateToFirebase === 'function') await saveStateToFirebase();
+        if (typeof renderClientsTable === 'function') renderClientsTable();
+        if (typeof showCustomModal === 'function') showCustomModal('Arabic names updated', `${changed} client name(s) processed. Please review phonetic fallback results before official use.`);
+    };
+})();

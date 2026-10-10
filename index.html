@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Dar Al Shams | ERP Portal</title>
@@ -39,14 +39,15 @@
         <div class="login-card">
             <h2>DAR AL SHAMS</h2>
             <p>Enterprise Financial & Document Studio</p>
+            <p class="security-notice">Demo access screen only. Protect production data with Firebase Authentication and database rules.</p>
             <form id="login-form" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 15px;">
                 <div style="text-align: left;">
                     <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">USERNAME</label>
-                    <input type="text" id="login-user" value="admin" required>
+                    <input type="text" id="login-user" autocomplete="username" required>
                 </div>
                 <div style="text-align: left;">
                     <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">PASSWORD</label>
-                    <input type="password" id="login-pin" value="1234" required>
+                    <input type="password" id="login-pin" autocomplete="current-password" required>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 5px;">Authenticate</button>
             </form>
@@ -570,7 +571,7 @@
             <h3 style="text-align: center; margin-bottom: 20px;">Add Monthly Operating Expense</h3>
             <div class="form-group">
                 <label>Target Month & Year</label>
-                <input type="month" id="exp-input-month" value="2026-09">
+                <input type="month" id="exp-input-month">
             </div>
             <div class="form-group">
                 <label>Expense Name / Title</label>
@@ -722,15 +723,6 @@
         };
     </script>
     
-    <!-- Google GenAI SDK for Browser -->
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/genai": "https://esm.run/@google/genai"
-        }
-      }
-    </script>
-    
     <!-- System JavaScript Modules -->
     <script src="config.js"></script>
     <script src="state.js"></script>
@@ -739,6 +731,6 @@
     <script src="services.js"></script>
     <script src="ledger.js"></script>
     <script src="app.js"></script>
-    <script type="module" src="translator.js"></script>
+    <script src="translator.js"></script>
 </body>
 </html>

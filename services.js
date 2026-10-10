@@ -17,7 +17,7 @@ function renderServicesCatalog() {
         return `
             <div class="service-card">
                 <h4>
-                    <span>${s.title}</span>
+                    <span>${escapeHtml(s.title)}</span>
                     <div>
                         <button onclick="openServiceModal('${s.id}')" class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
                         <button onclick="deleteServiceCatalog('${s.id}')" class="btn btn-danger" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
@@ -26,7 +26,7 @@ function renderServicesCatalog() {
                 <div style="margin-bottom: 10px;">
                     ${items.map(i => `
                         <div class="service-item-row">
-                            <span>${i.d || 'Sub-item'}</span>
+                            <span>${escapeHtml(i.d || 'Sub-item')}</span>
                             <strong>AED ${((parseFloat(i.p) || 0) * (parseFloat(i.q) || 1)).toFixed(2)}</strong>
                         </div>
                     `).join('')}
@@ -72,7 +72,7 @@ function addSrvModalRow(d = '', q = 1, p = 0) {
     row.style.gap = '8px';
     row.style.alignItems = 'center';
     row.innerHTML = `
-        <input type="text" placeholder="Description" class="srv-row-d" value="${d}" style="flex: 2;" oninput="recalculateSrvModalProfit()">
+        <input type="text" placeholder="Description" class="srv-row-d" value="${escapeHtml(d)}" style="flex: 2;" oninput="recalculateSrvModalProfit()">
         <input type="number" placeholder="Qty" class="srv-row-q" value="${q}" style="width: 60px;" oninput="recalculateSrvModalProfit()">
         <input type="number" placeholder="Price" class="srv-row-p" value="${p}" style="width: 90px;" oninput="recalculateSrvModalProfit()">
         <button onclick="this.parentElement.remove(); recalculateSrvModalProfit();" class="btn btn-danger" style="padding: 4px 8px;">×</button>

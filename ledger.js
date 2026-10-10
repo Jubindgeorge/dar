@@ -35,7 +35,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
 
-    doc.advanceAmount = Number(doc.advanceAmount || doc.advance || 0);
+    doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
     doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
     doc.paymentLogs = doc.paymentLogs || [];
 
@@ -51,7 +51,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
     const totalInvoicesInMonth = (state.documents || []).filter(d => (d.createdDate || '').startsWith(docMonth)).length || 1;
     const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
-    const govtFee = Number(doc.govtFee || 0);
+    const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
     const calculatedProfit = doc.totalAmount - govtFee - expenseShare;
 
     // Update UI Summary Cards safely
@@ -141,9 +141,9 @@ window.renderFullLedgerTableBody = function() {
         const totalInvoicesInMonth = docs.filter(d => (d.createdDate || '').startsWith(docMonth)).length || 1;
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
-        const govtFee = Number(doc.govtFee || 0);
+        const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
         const totalAmt = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-        const advance = Number(doc.advanceAmount || doc.advance || 0);
+        const advance = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
         const logsTotal = (doc.paymentLogs || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
         const totalPaid = advance + logsTotal;
         const balance = Math.max(0, totalAmt - totalPaid);
@@ -175,7 +175,7 @@ window.printPaymentStatusStatement = function() {
     const doc = (state.documents || []).find(d => d.refCode === select.value);
     if (!doc) return;
 
-    doc.advanceAmount = Number(doc.advanceAmount || doc.advance || 0);
+    doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
     doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
     doc.paymentLogs = doc.paymentLogs || [];
 
@@ -250,8 +250,14 @@ window.savePaymentLogData = function() {
     const amount = Number(document.getElementById('pay-input-amount').value);
     const note = document.getElementById('pay-input-note').value;
 
-    if (!amount || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
         alert("Please enter a valid payment amount.");
+        return;
+    }
+    const invoiceTotal = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
+    const alreadyPaid = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) + (doc.paymentLogs || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    if (amount > Math.max(0, invoiceTotal - alreadyPaid)) {
+        alert('This payment is greater than the remaining balance. Please check the amount.');
         return;
     }
 
@@ -295,7 +301,10 @@ window.saveMonthlyExpenseData = function() {
     }
 
     state.monthlyExpenses = state.monthlyExpenses || [];
-    state.monthlyExpenses.push({ month, title, amount });
+    if (!month) { alert('Please select the expense month.'); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter an expense amount greater than zero.'); return; }
+    const id = db && db.ref('monthlyExpenses').push().key;
+    state.monthlyExpenses.push({ id, month, title: title.trim(), amount });
 
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
     closeMonthlyExpenseModal();
@@ -328,6 +337,8 @@ window.renderMonthlyExpensesTable = function() {
 
 window.deleteMonthlyExpense = function(index) {
     if (state.monthlyExpenses) {
+        const removed = state.monthlyExpenses[index];
+        if (removed && removed.id && db) db.ref(`monthlyExpenses/${removed.id}`).remove();
         state.monthlyExpenses.splice(index, 1);
         if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
         renderMonthlyExpensesTable();
@@ -342,12 +353,19 @@ window.promptEditAdvance = function() {
     const doc = (state.documents || []).find(d => d.refCode === select.value);
     if (!doc) return;
 
-    const currentAdv = doc.advanceAmount || doc.advance || 0;
+    const currentAdv = doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0;
     const newAdvance = prompt("Enter new Advance Payment amount (AED):", currentAdv);
     if (newAdvance !== null && !isNaN(newAdvance)) {
+        if (Number(newAdvance) < 0) { alert('Advance payment cannot be negative.'); return; }
         doc.advanceAmount = Number(newAdvance);
+        doc.advanceAmt = Number(newAdvance);
         if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
         renderAccountsLedgerDetail(doc.refCode);
         renderFullLedgerTableBody();
     }
+};
+
+window.initAccountsLedgerView = window.initAccountsLedgerView || function () {
+    if (typeof initFirebaseListeners === 'function') initFirebaseListeners();
+    if (typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
 };

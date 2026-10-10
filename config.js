@@ -30,3 +30,38 @@ const phoneticMap = {
     'j': 'ج', 'k': 'ك', 'l': 'ل', 'm': 'م', 'n': 'ن', 'o': 'و', 'p': 'ب', 'q': 'ق', 'r': 'ر', 
     's': 'س', 't': 'ت', 'u': 'و', 'v': 'ف', 'w': 'و', 'x': 'اكس', 'y': 'ي', 'z': 'ز'
 };
+
+// Shared helpers: preserve existing database keys and legacy field names.
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+}
+
+function saveStateToFirebase() {
+    if (!db) {
+        console.error('Firebase is not initialized; changes could not be saved.');
+        if (typeof showCustomModal === 'function') showCustomModal('Connection unavailable', 'Firebase is not connected. Your changes were not saved.');
+        return Promise.reject(new Error('Firebase is not initialized'));
+    }
+    const writes = [];
+    // Update records by their existing keys; never replace entire collections.
+    (state.clients || []).forEach(item => {
+        if (item && item.id) { const copy = {...item}; delete copy.id; writes.push(db.ref(`clients/${item.id}`).update(copy)); }
+    });
+    (state.documents || []).forEach(item => {
+        const key = item && (item.refCode || item.id);
+        if (key) { const copy = {...item}; delete copy.id; writes.push(db.ref(`documents/${key}`).update(copy)); }
+    });
+    (state.monthlyExpenses || []).forEach(item => {
+        if (!item) return;
+        if (!item.id) item.id = db.ref('monthlyExpenses').push().key;
+        const copy = {...item}; delete copy.id;
+        writes.push(db.ref(`monthlyExpenses/${item.id}`).update(copy));
+    });
+    return Promise.all(writes).catch(error => {
+        console.error('Firebase save failed:', error);
+        if (typeof showCustomModal === 'function') showCustomModal('Save failed', 'Your changes could not be saved. Check your connection and Firebase permissions, then try again.');
+        return false;
+    });
+}
