@@ -492,42 +492,42 @@ window.previewInvoiceDocument = async function(refCode) {
     if (modal) modal.style.display = 'flex';
 };
 
-window.saveAsPDF = function() {
+// Export the existing invoice design as one correctly fitted A4 page.
+// Capture the original desktop-width invoice, not the scaled mobile preview.
+window.saveAsPDF = async function() {
     const element = document.getElementById('a4-wrapper-element') || document.getElementById('document-preview-print-area');
-    
-    if (!element) {
-        if (typeof showCustomModal === 'function') {
-            showCustomModal('Error', 'Preview element not found for PDF export.');
-        } else {
-            alert('Preview element not found!');
-        }
+    if (!element || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
+        alert('PDF export is unavailable. Please reload the page and try again.');
         return;
     }
-
-    const invNoElement = document.getElementById('p-doc-ref');
-    const invText = invNoElement ? invNoElement.innerText.trim() : 'Invoice';
-    const cleanFilename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
-
-    const opt = {
-        margin:       [5, 5, 5, 5],
-        filename:     cleanFilename,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-            scale: 2, 
-            useCORS: true, 
-            logging: false,
-            letterRendering: true 
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    if (typeof html2pdf !== 'undefined') {
-        html2pdf().from(element).set(opt).save().catch(err => {
-            console.error("PDF generation error:", err);
-            alert("Failed to generate PDF. Check console for details.");
+    const invText = document.getElementById('p-doc-ref')?.innerText.trim() || 'Invoice';
+    const filename = invText.replace(/[^a-zA-Z0-9-_]/g, '_') + '.pdf';
+    try {
+        await document.fonts?.ready;
+        const canvas = await html2canvas(element, {
+            scale: Math.min(2, window.devicePixelRatio || 2),
+            useCORS: true, backgroundColor: '#ffffff', logging: false,
+            windowWidth: Math.max(document.documentElement.clientWidth, 900),
+            onclone: clonedDocument => {
+                const copy = clonedDocument.getElementById(element.id);
+                if (copy) {
+                    copy.style.transform = 'none';
+                    copy.style.width = '800px';
+                    copy.style.maxWidth = '800px';
+                    copy.style.margin = '0';
+                }
+            }
         });
-    } else {
-        alert("html2pdf library is not loaded properly.");
+        if (!canvas.width || !canvas.height) throw new Error('Empty invoice canvas');
+        const pdf = new window.jspdf.jsPDF({orientation: 'portrait', unit: 'mm', format: 'a4'});
+        const margin = 5, pageW = 210 - margin * 2, pageH = 297 - margin * 2;
+        const scale = Math.min(pageW / canvas.width, pageH / canvas.height);
+        const width = canvas.width * scale, height = canvas.height * scale;
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', margin + (pageW-width)/2, margin, width, height);
+        pdf.save(filename);
+    } catch (error) {
+        console.error('PDF generation failed:', error);
+        alert('PDF generation failed. Please try again.');
     }
 };
 
