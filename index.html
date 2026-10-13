@@ -39,23 +39,29 @@
     <div id="auth-container" style="display:none;">
         <div class="login-card">
             <h2>DAR AL SHAMS</h2>
-            <p>Enterprise Financial & Document Studio</p>
-            <p class="security-notice">Administrator sign-in required.</p>
-            <form id="login-form" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 15px;">
-                <div style="text-align: left;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">EMAIL</label>
-                    <input type="email" id="login-user" autocomplete="username" required>
-                </div>
-                <div style="text-align: left;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">PASSWORD</label>
-                    <input type="password" id="login-pin" autocomplete="current-password" required>
-                </div>
+            <p>Enterprise Financial &amp; Document Studio</p>
+            <p class="security-notice">Verified accounts require administrator approval.</p>
+            <form id="login-form" onsubmit="handleLogin(event)" style="display:flex;flex-direction:column;gap:15px;">
+                <div style="text-align:left;"><label for="login-user">EMAIL</label><input type="email" id="login-user" autocomplete="username" required></div>
+                <div style="text-align:left;"><label for="login-pin">PASSWORD</label><input type="password" id="login-pin" autocomplete="current-password" required></div>
                 <label style="display:flex;gap:8px;align-items:center;font-size:0.85rem;"><input type="checkbox" id="remember-device"> Remember this device</label>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 5px;">Authenticate</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Sign in</button>
             </form>
+            <button type="button" onclick="toggleSignup(true)" style="margin-top:14px;">Create an account</button>
+            <form id="signup-form" onsubmit="handleSignup(event)" style="display:none;flex-direction:column;gap:12px;margin-top:15px;">
+                <label for="signup-email">Email</label><input id="signup-email" type="email" autocomplete="email" required>
+                <label for="signup-password">Password (minimum 8 characters)</label><input id="signup-password" type="password" autocomplete="new-password" minlength="8" required>
+                <button class="btn btn-primary" type="submit">Sign up &amp; verify email</button>
+                <button type="button" onclick="toggleSignup(false)">Back to sign in</button>
+            </form>
+            <p id="auth-status" role="status" aria-live="polite" style="margin-top:12px;"></p>
         </div>
     </div>
 
+    <!-- Administrator approval interface, hidden for all other accounts -->
+    <section id="admin-approvals" style="display:none;position:fixed;right:14px;bottom:14px;z-index:1000;max-width:340px;max-height:50vh;overflow:auto;padding:16px;background:var(--card-bg,#fff);color:var(--text-primary,#111);border:1px solid #94a3b8;border-radius:12px;box-shadow:0 8px 28px #0002;">
+      <h3>New user approvals</h3><div id="approval-list">Loading requests...</div>
+    </section>
     <!-- Main System App Container -->
     <div id="app-container">
         
