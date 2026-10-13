@@ -120,14 +120,41 @@ window.handleLogout = async function() {
     await firebase.auth().signOut();
 };
 
-function toggleSidebar() {
-    const appContainer = document.getElementById('app-container');
-    if (appContainer) {
-        appContainer.classList.toggle('sidebar-collapsed');
-    }
+function isDarMobileLayout() {
+    return window.matchMedia('(max-width: 767px)').matches;
 }
+function syncDarMobileMenu() {
+    const app = document.getElementById('app-container');
+    const open = !!app && isDarMobileLayout() && app.classList.contains('mobile-menu-open');
+    const backdrop = document.getElementById('dar-mobile-menu-backdrop');
+    if (backdrop) backdrop.hidden = !open;
+    const toggle = document.querySelector('.sidebar-toggle-btn');
+    if (toggle) toggle.setAttribute('aria-expanded', String(open));
+}
+window.closeDarMobileMenu = function() {
+    document.getElementById('app-container')?.classList.remove('mobile-menu-open');
+    syncDarMobileMenu();
+};
+function toggleSidebar() {
+    const app = document.getElementById('app-container');
+    if (!app) return;
+    if (isDarMobileLayout()) {
+        app.classList.toggle('mobile-menu-open');
+    } else {
+        app.classList.toggle('sidebar-collapsed');
+    }
+    syncDarMobileMenu();
+}
+window.addEventListener('resize', () => {
+    if (!isDarMobileLayout()) closeDarMobileMenu();
+    else syncDarMobileMenu();
+});
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeDarMobileMenu();
+});
 
 window.switchTab = function(tabId) {
+    if (isDarMobileLayout()) closeDarMobileMenu();
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
     
