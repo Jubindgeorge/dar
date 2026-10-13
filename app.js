@@ -269,7 +269,7 @@ window.deleteClientAccount = function(id) {
     if (typeof showCustomModal === 'function') {
         showCustomModal('Confirm Delete', 'Delete this client profile?', `
             <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
-            <button onclick="db.ref('clients/${id}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
+            <button onclick="safeDeleteDarRecord('clients', '${id}'); closeCustomModal();" class="btn btn-danger">Delete</button>
         `);
     }
 };
@@ -454,7 +454,7 @@ window.deleteSingleDocument = function(refCode) {
     if (typeof showCustomModal === 'function') {
         showCustomModal('Confirm Delete', `Delete entry ${refCode}?`, `
             <button onclick="closeCustomModal()" class="btn btn-secondary">Cancel</button>
-            <button onclick="db.ref('documents/${refCode}').remove(); closeCustomModal();" class="btn btn-danger">Delete</button>
+            <button onclick="safeDeleteDarRecord('documents', '${refCode}'); closeCustomModal();" class="btn btn-danger">Delete</button>
         `);
     }
 };
@@ -471,8 +471,11 @@ window.deleteSelectedDocuments = function() {
 };
 
 function executeBatchDelete() {
-    pendingBatchDeleteKeys.forEach(k => db.ref(`documents/${k}`).remove());
+    const keys = [...pendingBatchDeleteKeys];
     pendingBatchDeleteKeys = [];
+    Promise.allSettled(keys.map(k => safeDeleteDarRecord('documents', k))).then(results => {
+        if (results.some(result => result.status === 'rejected')) alert('Some records could not be deleted. Review the error and retry.');
+    });
 }
 
 window.previewInvoiceDocument = async function(refCode) {
@@ -590,4 +593,141 @@ window.closePreviewModal = function() {
     if (modal) {
         modal.style.display = 'none';
     }
+};
+
+/* Data protection: snapshot export and reversible deletion.
+   Publish matching Firebase rules before enabling delete/recover operations. */
+const DAR_PROTECTED_COLLECTIONS = ['clients', 'documents', 'services', 'monthlyExpenses'];
+function darSafeKey(value) {
+    const key = String(value || '');
+    if (!key || /[.#$\\/\\[\\]]/.test(key)) throw new Error('Invalid record identifier');
+    return key;
+}
+function darSignedInUser() {
+    const user = firebase.auth().currentUser;
+    if (!user || !user.emailVerified) throw new Error('Sign in with a verified account first.');
+    return user;
+}
+function darDownloadJSON(name, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+window.exportDarBackup = async function() {
+    try {
+        const user = darSignedInUser();
+        const data = {};
+        for (const collection of DAR_PROTECTED_COLLECTIONS) {
+            data[collection] = (await db.ref(collection).once('value')).val() || {};
+        }
+        const date = new Date().toISOString().replace(/[:.]/g, '-');
+        darDownloadJSON('dar-al-shams-backup-' + date + '.json', {
+            format: 'dar-al-shams-backup-v1', exportedAt: new Date().toISOString(),
+            exportedByUid: user.uid, data
+        });
+        alert('Backup downloaded. Keep the file in secure storage; it contains private business information.');
+    } catch (error) {
+        console.error('Backup failed:', error);
+        alert('Backup failed: ' + error.message);
+    }
+};
+window.safeDeleteDarRecord = async function(collection, key) {
+    try {
+        const user = darSignedInUser();
+        if (!DAR_PROTECTED_COLLECTIONS.includes(collection)) throw new Error('Invalid collection');
+        key = darSafeKey(key);
+        const snapshot = await db.ref(collection + '/' + key).once('value');
+        if (!snapshot.exists()) throw new Error('Record was already removed.');
+        const id = db.ref('deletedRecords').push().key;
+        const auditId = db.ref('activityLog').push().key;
+        const updates = {};
+        updates['deletedRecords/' + id] = {
+            collection, recordKey: key, value: snapshot.val(),
+            deletedBy: user.uid, deletedAt: firebase.database.ServerValue.TIMESTAMP
+        };
+        updates[collection + '/' + key] = null;
+        updates['activityLog/' + auditId] = {
+            action: 'delete', collection, recordKey: key, actorUid: user.uid,
+            at: firebase.database.ServerValue.TIMESTAMP
+        };
+        await db.ref().update(updates);
+        alert('Record moved to recovery. It can be restored from Data Protection.');
+    } catch (error) {
+        console.error('Safe deletion failed:', error);
+        alert('Delete failed; record was not intentionally removed: ' + error.message);
+        throw error;
+    }
+};
+window.restoreDarRecord = async function(id) {
+    try {
+        const user = darSignedInUser();
+        id = darSafeKey(id);
+        const deleted = (await db.ref('deletedRecords/' + id).once('value')).val();
+        if (!deleted || !DAR_PROTECTED_COLLECTIONS.includes(deleted.collection)) throw new Error('Recovery record unavailable');
+        const key = darSafeKey(deleted.recordKey);
+        const target = db.ref(deleted.collection + '/' + key);
+        const exists = await target.once('value');
+        if (exists.exists()) throw new Error('A record with this ID already exists. No data was overwritten.');
+        const auditId = db.ref('activityLog').push().key;
+        const updates = {};
+        updates[deleted.collection + '/' + key] = deleted.value;
+        updates['deletedRecords/' + id] = null;
+        updates['activityLog/' + auditId] = {
+            action: 'restore', collection: deleted.collection, recordKey: key,
+            actorUid: user.uid, at: firebase.database.ServerValue.TIMESTAMP
+        };
+        await db.ref().update(updates);
+        alert('Record restored.');
+        window.showDarRecovery();
+    } catch (error) {
+        alert('Restore failed: ' + error.message);
+    }
+};
+window.showDarRecovery = async function() {
+    try {
+        darSignedInUser();
+        const snapshot = await db.ref('deletedRecords').limitToLast(40).once('value');
+        const list = document.getElementById('dar-recovery-list');
+        if (!list) return;
+        list.replaceChildren();
+        const entries = Object.entries(snapshot.val() || {}).reverse();
+        if (!entries.length) { list.textContent = 'No deleted records.'; return; }
+        entries.forEach(([id, record]) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'margin:8px 0;padding:8px;border-bottom:1px solid #ccc;';
+            const label = document.createElement('span');
+            label.textContent = record.collection + ' / ' + record.recordKey + ' — ' + new Date(record.deletedAt).toLocaleString();
+            const button = document.createElement('button');
+            button.type = 'button'; button.textContent = 'Restore'; button.className = 'btn btn-secondary';
+            button.onclick = () => window.restoreDarRecord(id);
+            row.append(label, document.createTextNode(' '), button);
+            list.appendChild(row);
+        });
+    } catch (error) { alert('Recovery list unavailable: ' + error.message); }
+};
+window.showDarActivity = async function() {
+    try {
+        darSignedInUser();
+        const snapshot = await db.ref('activityLog').limitToLast(30).once('value');
+        const list = document.getElementById('dar-activity-list');
+        if (!list) return;
+        list.replaceChildren();
+        const entries = Object.values(snapshot.val() || {}).reverse();
+        if (!entries.length) { list.textContent = 'No recorded actions yet.'; return; }
+        entries.forEach(record => {
+            const line = document.createElement('div');
+            line.style.cssText = 'padding:7px;border-bottom:1px solid #ccc;overflow-wrap:anywhere;';
+            line.textContent = new Date(record.at).toLocaleString() + ' — ' + record.action +
+                ' — ' + record.collection + '/' + record.recordKey + ' — UID: ' + record.actorUid;
+            list.appendChild(line);
+        });
+    } catch (error) { alert('Activity history unavailable: ' + error.message); }
+};
+window.toggleDarProtection = function() {
+    const panel = document.getElementById('dar-protection-panel');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) { window.showDarRecovery(); window.showDarActivity(); }
 };
