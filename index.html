@@ -56,7 +56,17 @@
         </div>
     </div>
 
-    <!-- Main System App Container -->
+    <section id="dar-protection-panel" hidden style="position:fixed;inset:10% 5%;z-index:2000;overflow:auto;background:var(--card-bg,#fff);color:var(--text-primary,#111);padding:20px;border:1px solid #94a3b8;border-radius:12px;box-shadow:0 10px 40px #0005;">
+            <h2>Data Protection</h2>
+            <p>Download an encrypted-storage-ready JSON backup. Keep it private. Deletions can be recovered here.</p>
+            <button type="button" class="btn btn-primary" onclick="exportDarBackup()">Download full backup</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleDarProtection()">Close</button>
+            <h3 style="margin-top:20px;">Recently deleted records</h3>
+            <div id="dar-recovery-list">Loading...</div>
+            <h3 style="margin-top:20px;">Activity history (deletes and restores)</h3>
+            <div id="dar-activity-list">Loading...</div>
+        </section>
+        <!-- Main System App Container -->
     <div id="app-container">
         
         <!-- Sidebar Navigation -->
@@ -78,6 +88,7 @@
                 <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
             </ul>
             <div class="sidebar-footer">
+                <button type="button" onclick="toggleDarProtection()" class="btn btn-secondary" style="width:100%;font-size:0.8rem;margin-bottom:8px;">Data Protection</button>
                 <button onclick="handleLogout()" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;">Exit Portal</button>
             </div>
         </aside>
