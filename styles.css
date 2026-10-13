@@ -266,3 +266,19 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
     border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; z-index: 1001;
 }
 .preview-modal-body-canvas { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); background: #334155; }
+
+
+/* Mobile app layout only: do not change the invoice output template. */
+@media (max-width: 767px) {
+  html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+  #app-container { width: 100%; min-width: 0; }
+  .view-space { min-width: 0; width: 100%; padding: 12px; overflow-x: hidden; }
+  .table-responsive { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sidebar { max-height: 100dvh; overflow-y: auto; }
+  .preview-modal-backdrop { padding: 0; }
+  .preview-modal-toolbar { padding: 0 10px; gap: 8px; }
+  .preview-modal-toolbar h3 { font-size: 0.8rem !important; }
+  .preview-modal-body-canvas { padding: 12px !important; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .preview-modal-body-canvas .a4-wrapper { min-width: 0; width: 800px; max-width: none !important; margin: 0 !important; }
+  input, select, textarea { max-width: 100%; min-width: 0; font-size: 16px; }
+}
