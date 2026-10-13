@@ -17,6 +17,20 @@
     "monthlyExpenses": {
       ".read": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
       ".write": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')"
+    },
+    "deletedRecords": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
+      "$id": {
+        ".write": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
+        ".validate": "newData.hasChildren(['collection','recordKey','value','deletedBy','deletedAt']) && newData.child('deletedBy').val() === auth.uid && newData.child('deletedAt').isNumber() && newData.child('collection').isString() && newData.child('recordKey').isString()"
+      }
+    },
+    "activityLog": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
+      "$id": {
+        ".write": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2') && !data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren(['action','collection','recordKey','actorUid','at']) && newData.child('actorUid').val() === auth.uid && newData.child('at').isNumber() && (newData.child('action').val() === 'delete' || newData.child('action').val() === 'restore')"
+      }
     }
   }
 }
