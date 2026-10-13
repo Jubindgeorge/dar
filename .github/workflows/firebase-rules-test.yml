@@ -21,6 +21,6 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Install isolated test dependencies
-        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@11
+        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Run emulator authorization tests (never production)
         run: npx firebase-tools emulators:exec --only database --project dar-rules-ci-test "node --test tests/database-rules.test.cjs"
