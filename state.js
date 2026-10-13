@@ -12,6 +12,15 @@ let state = {
     activeWorksBranch: 'company'
 };
 
+function showFirebaseReadError(collection, error) {
+    console.error('Firebase ' + collection + ' listener failed:', error);
+    const message = error && error.code === 'PERMISSION_DENIED'
+        ? 'Firebase denied access to ' + collection + '. Verify the published database rules allow your signed-in UID and verified email.'
+        : 'Unable to load ' + collection + '. Check your internet connection and Firebase configuration.';
+    if (typeof showCustomModal === 'function') showCustomModal('Records not loaded', message);
+    else alert(message);
+}
+
 function initFirebaseListeners() {
     if (!db) { console.error('Firebase database is unavailable. Check config.js and Firebase scripts.'); return; }
 
@@ -20,7 +29,7 @@ function initFirebaseListeners() {
         state.clients = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderClientsTable === 'function') renderClientsTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
-    }, error => console.error('Firebase clients listener failed:', error));
+    }, error => showFirebaseReadError('clients', error));
 
     db.ref('documents').on('value', snapshot => {
         const val = snapshot.val();
@@ -29,19 +38,19 @@ function initFirebaseListeners() {
         if (typeof renderWorksTable === 'function') renderWorksTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
         if (typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
-    }, error => console.error('Firebase documents listener failed:', error));
+    }, error => showFirebaseReadError('documents', error));
 
     db.ref('services').on('value', snapshot => {
         const val = snapshot.val();
         state.services = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderServicesCatalog === 'function') renderServicesCatalog();
         if (typeof populateStudioInjectorSelect === 'function') populateStudioInjectorSelect();
-    }, error => console.error('Firebase services listener failed:', error));
+    }, error => showFirebaseReadError('services', error));
 
     db.ref('monthlyExpenses').on('value', snapshot => {
         const val = snapshot.val();
         state.monthlyExpenses = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderMonthlyExpensesTable === 'function') renderMonthlyExpensesTable();
         if (typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
-    }, error => console.error('Firebase monthlyExpenses listener failed:', error));
+    }, error => showFirebaseReadError('monthlyExpenses', error));
 }
