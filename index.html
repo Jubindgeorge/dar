@@ -266,7 +266,18 @@
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                             <span style="font-size: 0.85rem; color: var(--text-muted);">Total Ledger Amount: <strong id="ledger-total-amount" style="color: var(--accent-green);">AED 0.00</strong></span>
-                            <input type="text" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." style="max-width: 300px;">
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;">
+                                <input type="search" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." aria-label="Search financial records" style="flex:2 1 210px;min-width:0;">
+                                <select id="doc-branch-filter" onchange="renderDocumentsTable()" aria-label="Filter records by work type" style="flex:1 1 130px;min-width:0;">
+                                    <option value="all">All work types</option>
+                                    <option value="company">Business Works</option>
+                                    <option value="staff">Staff Works</option>
+                                </select>
+                                <input id="doc-min-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Min AED" aria-label="Minimum amount in AED" style="flex:1 1 100px;min-width:0;">
+                                <input id="doc-max-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Max AED" aria-label="Maximum amount in AED" style="flex:1 1 100px;min-width:0;">
+                                <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters()">Clear filters</button>
+                                <span id="doc-filter-count" role="status" aria-live="polite" style="font-size:0.8rem;color:var(--text-muted);"></span>
+                            </div>
                         </div>
                         <div class="table-responsive" style="margin-top: 0;">
                             <table class="data-table">
