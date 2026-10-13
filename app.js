@@ -391,20 +391,52 @@ function renderWorksDetailView() {
     }).join('');
 }
 
+function getDarDocumentAmount(d) {
+    const candidates = [d.totalAmount, d.totalAmt, d.total, d.amount];
+    for (const candidate of candidates) {
+        if (candidate === null || candidate === undefined || candidate === '') continue;
+        const number = Number(String(candidate).replace(/,/g, ''));
+        if (Number.isFinite(number)) return number;
+    }
+    return 0;
+}
+window.clearDocumentFilters = function() {
+    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount']) {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+    }
+    const branch = document.getElementById('doc-branch-filter');
+    if (branch) branch.value = 'all';
+    renderDocumentsTable();
+};
 function renderDocumentsTable() {
     const tbody = document.getElementById('doc-table-body');
     if (!tbody) return;
 
-    const searchVal = (document.getElementById('doc-search-input')?.value || '').toLowerCase();
-    
-    let filtered = (state.documents || []).filter(d => {
-        return (d.refCode || '').toLowerCase().includes(searchVal) ||
-               (d.clientName || '').toLowerCase().includes(searchVal) ||
-               (d.companyName || '').toLowerCase().includes(searchVal);
+    const searchVal = (document.getElementById('doc-search-input')?.value || '').trim().toLowerCase();
+    const branch = document.getElementById('doc-branch-filter')?.value || 'all';
+    const minRaw = document.getElementById('doc-min-amount')?.value || '';
+    const maxRaw = document.getElementById('doc-max-amount')?.value || '';
+    const min = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Math.max(0, Number(minRaw)) : null;
+    const max = maxRaw !== '' && Number.isFinite(Number(maxRaw)) ? Math.max(0, Number(maxRaw)) : null;
+    const all = state.documents || [];
+    const filtered = all.filter(d => {
+        const matchesText = [d.refCode, d.clientName, d.companyName]
+            .some(value => String(value || '').toLowerCase().includes(searchVal));
+        const matchesBranch = branch === 'all' ||
+            (branch === 'staff' ? d.branchTag === 'staff' : d.branchTag !== 'staff');
+        const amount = getDarDocumentAmount(d);
+        return matchesText && matchesBranch &&
+            (min === null || amount >= min) && (max === null || amount <= max);
     });
+    const count = document.getElementById('doc-filter-count');
+    if (count) count.textContent = filtered.length + ' of ' + all.length + ' records';
+    const master = document.getElementById('th-select-all');
+    if (master) master.checked = false;
+    if (typeof updateBatchDeleteButtonState === 'function') updateBatchDeleteButtonState();
 
     let totalVolume = filtered.reduce((acc, curr) => {
-        const amt = parseFloat(curr.totalAmount) || parseFloat(curr.totalAmt) || parseFloat(curr.total) || parseFloat(curr.amount) || 0;
+        const amt = getDarDocumentAmount(curr);
         return acc + amt;
     }, 0);
 
@@ -419,7 +451,7 @@ function renderDocumentsTable() {
     }
 
     tbody.innerHTML = filtered.map(d => {
-        const rowTotal = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        const rowTotal = getDarDocumentAmount(d);
         return `
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
