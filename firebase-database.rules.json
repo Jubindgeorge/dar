@@ -22,7 +22,7 @@
       "$uid": {
         ".read": "(auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')) || (auth != null && auth.uid === $uid)",
         ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && newData.hasChildren(['email','createdAt']) && newData.child('email').val() === auth.token.email && newData.child('createdAt').isNumber()",
-        ".validate": "newData.hasChildren(['email','createdAt']) && newData.childrenCount <= 2",
+        ".validate": "newData.hasChildren(['email','createdAt']) && newData.numChildren() <= 2",
         "email": {
           ".validate": "newData.isString() && newData.val().length <= 254"
         },
