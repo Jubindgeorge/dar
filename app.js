@@ -92,9 +92,19 @@ window.handleLogin = async function(event) {
             : firebase.auth.Auth.Persistence.SESSION);
         const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
         document.getElementById('login-pin').value = '';
-        if (credential.user.uid !== DAR_ADMIN_UID || !credential.user.emailVerified) {
+        if (credential.user.uid !== DAR_ADMIN_UID) {
             await firebase.auth().signOut();
-            alert('Administrator access requires the approved account and verified email.');
+            alert('This account is not the approved DAR AL SHAMS administrator.');
+        } else if (!credential.user.emailVerified) {
+            try {
+                await credential.user.sendEmailVerification();
+                alert('Verification email sent. Check your inbox and spam folder, verify your address, then sign in again.');
+            } catch (verificationError) {
+                console.error('Email verification failed:', verificationError.code);
+                alert('Could not send verification email. Check Firebase email templates or try again later.');
+            } finally {
+                await firebase.auth().signOut();
+            }
         }
     } catch (error) {
         console.error('Login failed:', error.code);
