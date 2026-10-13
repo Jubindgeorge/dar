@@ -326,8 +326,8 @@ window.renderMonthlyExpensesTable = function() {
     expenses.forEach((exp, index) => {
         tbody.innerHTML += `
             <tr>
-                <td>${exp.month}</td>
-                <td>${exp.title}</td>
+                <td>${escapeHtml(exp.month)}</td>
+                <td>${escapeHtml(exp.title)}</td>
                 <td style="color: var(--accent-green);">AED ${Number(exp.amount).toFixed(2)}</td>
                 <td style="text-align: center;"><button onclick="deleteMonthlyExpense(${index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
             </tr>
@@ -355,8 +355,11 @@ window.promptEditAdvance = function() {
 
     const currentAdv = doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0;
     const newAdvance = prompt("Enter new Advance Payment amount (AED):", currentAdv);
-    if (newAdvance !== null && !isNaN(newAdvance)) {
+    if (newAdvance !== null && newAdvance.trim() !== '' && Number.isFinite(Number(newAdvance))) {
         if (Number(newAdvance) < 0) { alert('Advance payment cannot be negative.'); return; }
+        const total = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
+        const logged = (doc.paymentLogs || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+        if (Number(newAdvance) + logged > total) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
         doc.advanceAmount = Number(newAdvance);
         doc.advanceAmt = Number(newAdvance);
         if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
