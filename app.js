@@ -50,6 +50,7 @@ window.exitWelcomeScreen = function() {
 
 const DAR_ALLOWED_UIDS = new Set(['DOoTyjTlQQWpW5Q4p6bZfgcyDYr2', '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2']);
 let darListenersActive = false;
+let darLoginInProgress = false;
 
 function initializeFirebaseLogin() {
     const authPanel = document.getElementById('auth-container');
@@ -76,7 +77,7 @@ function initializeFirebaseLogin() {
             state.documents = [];
             state.services = [];
             state.monthlyExpenses = [];
-            if (user) await firebase.auth().signOut();
+            if (user && !darLoginInProgress) await firebase.auth().signOut();
         }
     });
 }
@@ -86,19 +87,32 @@ window.handleLogin = async function(event) {
     const email = document.getElementById('login-user').value.trim();
     const password = document.getElementById('login-pin').value;
     const remember = document.getElementById('remember-device')?.checked;
+    darLoginInProgress = true;
     try {
         await firebase.auth().setPersistence(remember
             ? firebase.auth.Auth.Persistence.LOCAL
             : firebase.auth.Auth.Persistence.SESSION);
         const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
         document.getElementById('login-pin').value = '';
-        if (!DAR_ALLOWED_UIDS.has(credential.user.uid) || !credential.user.emailVerified) {
+        if (!DAR_ALLOWED_UIDS.has(credential.user.uid)) {
             await firebase.auth().signOut();
-            alert('Access requires an approved account and verified email.');
+            alert('This account is not approved for DAR AL SHAMS.');
+        } else if (!credential.user.emailVerified) {
+            try {
+                await credential.user.sendEmailVerification();
+                alert('Verification email sent. Check your inbox and spam folder, then sign in again after verifying.');
+            } catch (verificationError) {
+                console.error('Verification email failed:', verificationError.code);
+                alert('Could not send the verification email. Please try again later.');
+            } finally {
+                await firebase.auth().signOut();
+            }
         }
     } catch (error) {
         console.error('Login failed:', error.code);
         alert('Sign-in failed. Check your credentials and Firebase settings.');
+    } finally {
+        darLoginInProgress = false;
     }
 };
 
