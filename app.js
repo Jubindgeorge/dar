@@ -51,37 +51,115 @@ window.exitWelcomeScreen = function() {
 const DAR_ALLOWED_UIDS = new Set(['DOoTyjTlQQWpW5Q4p6bZfgcyDYr2', '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2']);
 let darListenersActive = false;
 let darLoginInProgress = false;
+let darApprovalRef = null;
+let darRequestRef = null;
+let darAuthVersion = 0;
 
-function initializeFirebaseLogin() {
+function setAuthStatus(message) {
+    const el = document.getElementById('auth-status');
+    if (el) el.textContent = message;
+}
+window.toggleSignup = function(show) {
+    document.getElementById('signup-form').style.display = show ? 'flex' : 'none';
+    document.getElementById('login-form').style.display = show ? 'none' : 'flex';
+    setAuthStatus('');
+};
+function stopDarListeners() {
+    if (darApprovalRef) { darApprovalRef.off(); darApprovalRef = null; }
+    if (darRequestRef) { darRequestRef.off(); darRequestRef = null; }
+    if (darListenersActive) {
+        ['clients', 'documents', 'services', 'monthlyExpenses'].forEach(path => db.ref(path).off());
+        darListenersActive = false;
+    }
+    const panel = document.getElementById('admin-approvals');
+    if (panel) panel.style.display = 'none';
+}
+function setDarAccess(allowed) {
     const authPanel = document.getElementById('auth-container');
     const appPanel = document.getElementById('app-container');
-    if (appPanel) appPanel.style.display = 'none';
+    if (authPanel) authPanel.style.display = allowed ? 'none' : 'flex';
+    if (appPanel) appPanel.style.display = allowed ? 'flex' : 'none';
+    if (allowed && !darListenersActive) {
+        darListenersActive = true;
+        initFirebaseListeners();
+        const welcome = document.getElementById('welcome-screen');
+        if (welcome) welcome.style.display = 'none';
+        switchTab('dashboard');
+    }
+}
+function showAdminApprovals() {
+    const panel = document.getElementById('admin-approvals');
+    const list = document.getElementById('approval-list');
+    if (!panel || !list) return;
+    panel.style.display = 'block';
+    darRequestRef = db.ref('signupRequests');
+    darRequestRef.on('value', async snapshot => {
+        const requests = snapshot.val() || {};
+        const approvals = (await db.ref('approvals').once('value')).val() || {};
+        list.replaceChildren();
+        const pending = Object.entries(requests).filter(([uid]) => approvals[uid] !== true);
+        if (!pending.length) { list.textContent = 'No pending users.'; return; }
+        pending.forEach(([uid, request]) => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:10px 0;border-bottom:1px solid #94a3b8;overflow-wrap:anywhere;';
+            const email = document.createElement('div');
+            email.textContent = String(request.email || 'Unknown email');
+            const approve = document.createElement('button');
+            approve.type = 'button';
+            approve.textContent = 'Approve full access';
+            approve.className = 'btn btn-primary';
+            approve.onclick = async () => {
+                if (!confirm('Grant full financial-record access to ' + email.textContent + '?')) return;
+                approve.disabled = true;
+                try { await db.ref('approvals/' + uid).set(true); item.remove(); }
+                catch (error) { alert('Approval failed: ' + error.message); approve.disabled = false; }
+            };
+            item.append(email, approve);
+            list.appendChild(item);
+        });
+    }, error => { list.textContent = 'Could not load requests: ' + error.message; });
+}
+function initializeFirebaseLogin() {
+    setDarAccess(false);
     firebase.auth().onAuthStateChanged(async user => {
-        const allowed = !!user && DAR_ALLOWED_UIDS.has(user.uid) && user.emailVerified;
-        if (authPanel) authPanel.style.display = allowed ? 'none' : 'flex';
-        if (appPanel) appPanel.style.display = allowed ? 'flex' : 'none';
-        if (allowed) {
-            if (!darListenersActive) {
-                darListenersActive = true;
-                initFirebaseListeners();
+        const version = ++darAuthVersion;
+        stopDarListeners();
+        setDarAccess(false);
+        if (!user) {
+            state.clients = []; state.documents = []; state.services = []; state.monthlyExpenses = [];
+            return;
+        }
+        if (!user.emailVerified) {
+            setAuthStatus('Verify your email address before signing in.');
+            if (!darLoginInProgress) await firebase.auth().signOut();
+            return;
+        }
+        try {
+            await user.getIdToken(true);
+            if (version !== darAuthVersion) return;
+            if (DAR_ALLOWED_UIDS.has(user.uid)) {
+                setDarAccess(true);
+                showAdminApprovals();
+                return;
             }
-            const welcome = document.getElementById('welcome-screen');
-            if (welcome) welcome.style.display = 'none';
-            switchTab('dashboard');
-        } else {
-            if (darListenersActive) {
-                ['clients', 'documents', 'services', 'monthlyExpenses'].forEach(path => db.ref(path).off());
-                darListenersActive = false;
-            }
-            state.clients = [];
-            state.documents = [];
-            state.services = [];
-            state.monthlyExpenses = [];
-            if (user && !darLoginInProgress) await firebase.auth().signOut();
+            darApprovalRef = db.ref('approvals/' + user.uid);
+            darApprovalRef.on('value', snapshot => {
+                if (version !== darAuthVersion) return;
+                const approved = snapshot.val() === true;
+                setDarAccess(approved);
+                setAuthStatus(approved ? '' : 'Email verified. Waiting for an administrator to approve your account.');
+                if (!approved && darListenersActive) {
+                    ['clients', 'documents', 'services', 'monthlyExpenses'].forEach(path => db.ref(path).off());
+                    darListenersActive = false;
+                    state.clients = []; state.documents = []; state.services = []; state.monthlyExpenses = [];
+                }
+            }, error => setAuthStatus('Approval check failed: ' + error.message));
+        } catch (error) {
+            setAuthStatus('Could not verify access. Please sign in again.');
+            console.error('DAR authorization failed:', error);
         }
     });
 }
-
 window.handleLogin = async function(event) {
     if (event) event.preventDefault();
     const email = document.getElementById('login-user').value.trim();
@@ -89,45 +167,87 @@ window.handleLogin = async function(event) {
     const remember = document.getElementById('remember-device')?.checked;
     darLoginInProgress = true;
     try {
-        await firebase.auth().setPersistence(remember
-            ? firebase.auth.Auth.Persistence.LOCAL
-            : firebase.auth.Auth.Persistence.SESSION);
+        await firebase.auth().setPersistence(remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
         const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
         document.getElementById('login-pin').value = '';
-        if (!DAR_ALLOWED_UIDS.has(credential.user.uid)) {
-            await firebase.auth().signOut();
-            alert('This account is not approved for DAR AL SHAMS.');
-        } else if (!credential.user.emailVerified) {
+        if (!credential.user.emailVerified) {
             try {
                 await credential.user.sendEmailVerification();
-                alert('Verification email sent. Check your inbox and spam folder, then sign in again after verifying.');
-            } catch (verificationError) {
-                console.error('Verification email failed:', verificationError.code);
-                alert('Could not send the verification email. Please try again later.');
-            } finally {
-                await firebase.auth().signOut();
-            }
+                setAuthStatus('Verification email sent. Check inbox/spam, verify, then sign in again.');
+            } finally { await firebase.auth().signOut(); }
+        } else {
+            setAuthStatus('Checking account approval...');
         }
     } catch (error) {
         console.error('Login failed:', error.code);
-        alert('Sign-in failed. Check your credentials and Firebase settings.');
-    } finally {
-        darLoginInProgress = false;
-    }
+        setAuthStatus('Sign-in failed. Check your email and password.');
+    } finally { darLoginInProgress = false; }
 };
-
+window.handleSignup = async function(event) {
+    if (event) event.preventDefault();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    if (password.length < 8) { setAuthStatus('Use at least 8 password characters.'); return; }
+    darLoginInProgress = true;
+    try {
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+        const credential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        document.getElementById('signup-password').value = '';
+        await db.ref('signupRequests/' + credential.user.uid).set({
+            email: credential.user.email,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+        });
+        await credential.user.sendEmailVerification();
+        setAuthStatus('Account created. Verify your email, then sign in and wait for administrator approval.');
+        await firebase.auth().signOut();
+        window.toggleSignup(false);
+        setAuthStatus('Account created. Check your email for verification, then sign in.');
+    } catch (error) {
+        console.error('Sign-up failed:', error.code);
+        setAuthStatus('Sign-up incomplete: ' + error.message + '. If the account was created, sign in to retry verification.');
+        if (firebase.auth().currentUser) await firebase.auth().signOut();
+    } finally { darLoginInProgress = false; }
+};
 window.handleLogout = async function() {
+    stopDarListeners();
     await firebase.auth().signOut();
 };
 
-function toggleSidebar() {
-    const appContainer = document.getElementById('app-container');
-    if (appContainer) {
-        appContainer.classList.toggle('sidebar-collapsed');
-    }
+function isDarMobileLayout() {
+    return window.matchMedia('(max-width: 767px)').matches;
 }
+function syncDarMobileMenu() {
+    const app = document.getElementById('app-container');
+    const open = !!app && isDarMobileLayout() && app.classList.contains('mobile-menu-open');
+    const backdrop = document.getElementById('dar-mobile-menu-backdrop');
+    if (backdrop) backdrop.hidden = !open;
+    const toggle = document.querySelector('.sidebar-toggle-btn');
+    if (toggle) toggle.setAttribute('aria-expanded', String(open));
+}
+window.closeDarMobileMenu = function() {
+    document.getElementById('app-container')?.classList.remove('mobile-menu-open');
+    syncDarMobileMenu();
+};
+function toggleSidebar() {
+    const app = document.getElementById('app-container');
+    if (!app) return;
+    if (isDarMobileLayout()) {
+        app.classList.toggle('mobile-menu-open');
+    } else {
+        app.classList.toggle('sidebar-collapsed');
+    }
+    syncDarMobileMenu();
+}
+window.addEventListener('resize', () => {
+    if (!isDarMobileLayout()) closeDarMobileMenu();
+    else syncDarMobileMenu();
+});
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeDarMobileMenu();
+});
 
 window.switchTab = function(tabId) {
+    if (isDarMobileLayout()) closeDarMobileMenu();
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
     
@@ -160,31 +280,51 @@ window.switchTab = function(tabId) {
     if (tabId === 'accounts-ledger' && typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
 };
 
+function darDashboardAmount(record) {
+    for (const value of [record.totalAmount, record.totalAmt, record.total, record.amount]) {
+        if (value === undefined || value === null || value === '') continue;
+        const parsed = Number(String(value).replace(/,/g, ''));
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return 0;
+}
 function renderDashboardStats() {
-    const clientsCount = document.getElementById('dash-client-count');
-    const worksCount = document.getElementById('dash-works-count');
-    if (clientsCount) clientsCount.innerText = (state.clients || []).length;
-    if (worksCount) worksCount.innerText = (state.documents || []).length;
-
+    const documents = state.documents || [];
+    const clients = state.clients || [];
     const now = new Date();
-    let currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    let currentYearStr = now.getFullYear().toString();
-
-    let monthlyTotal = 0;
-    let annualTotal = 0;
-
-    (state.documents || []).forEach(doc => {
-        let created = doc.createdDate || '';
-        let total = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
-
-        if (created.startsWith(currentMonthStr)) monthlyTotal += total;
-        if (created.startsWith(currentYearStr)) annualTotal += total;
+    const month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const year = String(now.getFullYear());
+    const sums = {month: 0, year: 0, business: 0, staff: 0, businessCount: 0, staffCount: 0};
+    documents.forEach(doc => {
+        const amount = darDashboardAmount(doc);
+        const date = String(doc.createdDate || '');
+        if (date.startsWith(month)) sums.month += amount;
+        if (date.startsWith(year)) sums.year += amount;
+        if (doc.branchTag === 'staff') { sums.staff += amount; sums.staffCount++; }
+        else { sums.business += amount; sums.businessCount++; }
     });
-
-    const monthlyPayout = document.getElementById('dash-monthly-payout');
-    const annualPayout = document.getElementById('dash-annual-payout');
-    if (monthlyPayout) monthlyPayout.innerText = `AED ${monthlyTotal.toFixed(2)}`;
-    if (annualPayout) annualPayout.innerText = `AED ${annualTotal.toFixed(2)}`;
+    const expenses = (state.monthlyExpenses || []).reduce((sum, entry) => {
+        if (String(entry.month || '') !== month) return sum;
+        const amount = Number(entry.amount);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+    const currency = amount => 'AED ' + amount.toLocaleString('en-AE', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    set('dash-client-count', String(clients.length));
+    set('dash-works-count', String(documents.length));
+    set('dash-monthly-payout', currency(sums.month));
+    set('dash-annual-payout', currency(sums.year));
+    set('dash-business-total', currency(sums.business));
+    set('dash-staff-total', currency(sums.staff));
+    set('dash-business-count', sums.businessCount + ' records');
+    set('dash-staff-count', sums.staffCount + ' records');
+    set('dash-month-expenses', currency(expenses));
+    set('dash-month-net', currency(sums.month - expenses));
 }
 
 function normalizeCompanyFolderKey(value) {
@@ -391,20 +531,52 @@ function renderWorksDetailView() {
     }).join('');
 }
 
+function getDarDocumentAmount(d) {
+    const candidates = [d.totalAmount, d.totalAmt, d.total, d.amount];
+    for (const candidate of candidates) {
+        if (candidate === null || candidate === undefined || candidate === '') continue;
+        const number = Number(String(candidate).replace(/,/g, ''));
+        if (Number.isFinite(number)) return number;
+    }
+    return 0;
+}
+window.clearDocumentFilters = function() {
+    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount']) {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+    }
+    const branch = document.getElementById('doc-branch-filter');
+    if (branch) branch.value = 'all';
+    renderDocumentsTable();
+};
 function renderDocumentsTable() {
     const tbody = document.getElementById('doc-table-body');
     if (!tbody) return;
 
-    const searchVal = (document.getElementById('doc-search-input')?.value || '').toLowerCase();
-    
-    let filtered = (state.documents || []).filter(d => {
-        return (d.refCode || '').toLowerCase().includes(searchVal) ||
-               (d.clientName || '').toLowerCase().includes(searchVal) ||
-               (d.companyName || '').toLowerCase().includes(searchVal);
+    const searchVal = (document.getElementById('doc-search-input')?.value || '').trim().toLowerCase();
+    const branch = document.getElementById('doc-branch-filter')?.value || 'all';
+    const minRaw = document.getElementById('doc-min-amount')?.value || '';
+    const maxRaw = document.getElementById('doc-max-amount')?.value || '';
+    const min = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Math.max(0, Number(minRaw)) : null;
+    const max = maxRaw !== '' && Number.isFinite(Number(maxRaw)) ? Math.max(0, Number(maxRaw)) : null;
+    const all = state.documents || [];
+    const filtered = all.filter(d => {
+        const matchesText = [d.refCode, d.clientName, d.companyName]
+            .some(value => String(value || '').toLowerCase().includes(searchVal));
+        const matchesBranch = branch === 'all' ||
+            (branch === 'staff' ? d.branchTag === 'staff' : d.branchTag !== 'staff');
+        const amount = getDarDocumentAmount(d);
+        return matchesText && matchesBranch &&
+            (min === null || amount >= min) && (max === null || amount <= max);
     });
+    const count = document.getElementById('doc-filter-count');
+    if (count) count.textContent = filtered.length + ' of ' + all.length + ' records';
+    const master = document.getElementById('th-select-all');
+    if (master) master.checked = false;
+    if (typeof updateBatchDeleteButtonState === 'function') updateBatchDeleteButtonState();
 
     let totalVolume = filtered.reduce((acc, curr) => {
-        const amt = parseFloat(curr.totalAmount) || parseFloat(curr.totalAmt) || parseFloat(curr.total) || parseFloat(curr.amount) || 0;
+        const amt = getDarDocumentAmount(curr);
         return acc + amt;
     }, 0);
 
@@ -419,7 +591,7 @@ function renderDocumentsTable() {
     }
 
     tbody.innerHTML = filtered.map(d => {
-        const rowTotal = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+        const rowTotal = getDarDocumentAmount(d);
         return `
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
