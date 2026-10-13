@@ -600,7 +600,7 @@ window.closePreviewModal = function() {
 const DAR_PROTECTED_COLLECTIONS = ['clients', 'documents', 'services', 'monthlyExpenses'];
 function darSafeKey(value) {
     const key = String(value || '');
-    if (!key || /[.#$\\/\\[\\]]/.test(key)) throw new Error('Invalid record identifier');
+    if (!key || [...key].some(ch => '.#$[]/'.includes(ch) || ch.charCodeAt(0) === 92 || ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127)) throw new Error('Invalid record identifier');
     return key;
 }
 function darSignedInUser() {
