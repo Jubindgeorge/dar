@@ -111,7 +111,7 @@ function showAdminApprovals() {
             approve.onclick = async () => {
                 if (!confirm('Grant full financial-record access to ' + email.textContent + '?')) return;
                 approve.disabled = true;
-                try { await db.ref('approvals/' + uid).set(true); }
+                try { await db.ref('approvals/' + uid).set(true); item.remove(); }
                 catch (error) { alert('Approval failed: ' + error.message); approve.disabled = false; }
             };
             item.append(email, approve);
@@ -127,7 +127,6 @@ function initializeFirebaseLogin() {
         setDarAccess(false);
         if (!user) {
             state.clients = []; state.documents = []; state.services = []; state.monthlyExpenses = [];
-            setAuthStatus('');
             return;
         }
         if (!user.emailVerified) {
