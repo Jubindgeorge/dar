@@ -1,0 +1,26 @@
+name: Firebase Rules Emulator Tests
+on:
+  pull_request:
+    paths:
+      - 'firebase-database.rules.json'
+      - 'tests/database-rules.test.cjs'
+      - '.github/workflows/firebase-rules-test.yml'
+  workflow_dispatch:
+jobs:
+  rules-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install isolated test dependencies
+        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@11
+      - name: Run emulator authorization tests (never production)
+        run: npx firebase-tools emulators:exec --only database --project dar-rules-ci-test "node --test tests/database-rules.test.cjs"
