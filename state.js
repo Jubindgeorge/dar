@@ -50,6 +50,7 @@ function initFirebaseListeners() {
     db.ref('monthlyExpenses').on('value', snapshot => {
         const val = snapshot.val();
         state.monthlyExpenses = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
+        if (typeof renderDashboardStats === 'function') renderDashboardStats();
         if (typeof renderMonthlyExpensesTable === 'function') renderMonthlyExpensesTable();
         if (typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
     }, error => showFirebaseReadError('monthlyExpenses', error));

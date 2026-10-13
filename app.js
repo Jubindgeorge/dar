@@ -160,31 +160,51 @@ window.switchTab = function(tabId) {
     if (tabId === 'accounts-ledger' && typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
 };
 
+function darDashboardAmount(record) {
+    for (const value of [record.totalAmount, record.totalAmt, record.total, record.amount]) {
+        if (value === undefined || value === null || value === '') continue;
+        const parsed = Number(String(value).replace(/,/g, ''));
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return 0;
+}
 function renderDashboardStats() {
-    const clientsCount = document.getElementById('dash-client-count');
-    const worksCount = document.getElementById('dash-works-count');
-    if (clientsCount) clientsCount.innerText = (state.clients || []).length;
-    if (worksCount) worksCount.innerText = (state.documents || []).length;
-
+    const documents = state.documents || [];
+    const clients = state.clients || [];
     const now = new Date();
-    let currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    let currentYearStr = now.getFullYear().toString();
-
-    let monthlyTotal = 0;
-    let annualTotal = 0;
-
-    (state.documents || []).forEach(doc => {
-        let created = doc.createdDate || '';
-        let total = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || 0;
-
-        if (created.startsWith(currentMonthStr)) monthlyTotal += total;
-        if (created.startsWith(currentYearStr)) annualTotal += total;
+    const month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const year = String(now.getFullYear());
+    const sums = {month: 0, year: 0, business: 0, staff: 0, businessCount: 0, staffCount: 0};
+    documents.forEach(doc => {
+        const amount = darDashboardAmount(doc);
+        const date = String(doc.createdDate || '');
+        if (date.startsWith(month)) sums.month += amount;
+        if (date.startsWith(year)) sums.year += amount;
+        if (doc.branchTag === 'staff') { sums.staff += amount; sums.staffCount++; }
+        else { sums.business += amount; sums.businessCount++; }
     });
-
-    const monthlyPayout = document.getElementById('dash-monthly-payout');
-    const annualPayout = document.getElementById('dash-annual-payout');
-    if (monthlyPayout) monthlyPayout.innerText = `AED ${monthlyTotal.toFixed(2)}`;
-    if (annualPayout) annualPayout.innerText = `AED ${annualTotal.toFixed(2)}`;
+    const expenses = (state.monthlyExpenses || []).reduce((sum, entry) => {
+        if (String(entry.month || '') !== month) return sum;
+        const amount = Number(entry.amount);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+    const currency = amount => 'AED ' + amount.toLocaleString('en-AE', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    set('dash-client-count', String(clients.length));
+    set('dash-works-count', String(documents.length));
+    set('dash-monthly-payout', currency(sums.month));
+    set('dash-annual-payout', currency(sums.year));
+    set('dash-business-total', currency(sums.business));
+    set('dash-staff-total', currency(sums.staff));
+    set('dash-business-count', sums.businessCount + ' records');
+    set('dash-staff-count', sums.staffCount + ' records');
+    set('dash-month-expenses', currency(expenses));
+    set('dash-month-net', currency(sums.month - expenses));
 }
 
 function normalizeCompanyFolderKey(value) {
