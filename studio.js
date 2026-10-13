@@ -224,6 +224,12 @@ function commitDocumentToMemory() {
         showCustomModal('Invalid amounts', 'Amounts cannot be negative. Please check the government fee, total and advance fields.');
         return;
     }
+    const recordedPayments = (state.documents || []).find(d => d.refCode === refCode)?.paymentLogs || [];
+    const paidInLogs = recordedPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+    if (advanceAmt + paidInLogs > totalAmt) {
+        showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
+        return;
+    }
     if (advanceAmt > totalAmt) {
         showCustomModal('Advance exceeds total', 'The advance payment cannot be greater than the invoice total.');
         return;
@@ -244,6 +250,10 @@ function commitDocumentToMemory() {
 
     const mainPackageName = items[0]?.packageName || 'Service Record';
 
+    // Preserve recorded payments when editing an invoice; never silently reset the ledger.
+    const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
+    const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
+
     const payload = {
         refCode,
         type,
@@ -259,6 +269,7 @@ function commitDocumentToMemory() {
         govtFee: govtAmt,
         advanceAmt,
         advanceAmount: advanceAmt,
+        paymentLogs: preservedPaymentLogs,
         totalAmount: totalAmt,
         totalAmt,
         total: totalAmt,
