@@ -64,6 +64,8 @@ function initializeFirebaseLogin() {
                 darListenersActive = true;
                 initFirebaseListeners();
             }
+            const welcome = document.getElementById('welcome-screen');
+            if (welcome) welcome.style.display = 'none';
             switchTab('dashboard');
         } else {
             if (darListenersActive) {
