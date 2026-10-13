@@ -29,14 +29,16 @@
         "createdAt": {
           ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 86400000"
         }
-      }
+      },
+      ".read": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')"
     },
     "approvals": {
       "$uid": {
         ".read": "(auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')) || (auth != null && auth.uid === $uid)",
         ".write": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
         ".validate": "newData.isBoolean()"
-      }
+      },
+      ".read": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')"
     }
   }
 }
