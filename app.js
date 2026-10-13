@@ -32,9 +32,7 @@ function workDescriptionCell(doc) {
 document.addEventListener('DOMContentLoaded', () => {
     const expenseMonth = document.getElementById('exp-input-month');
     if (expenseMonth && !expenseMonth.value) expenseMonth.value = localISODate().slice(0, 7);
-    if (typeof initFirebaseListeners === 'function') {
-        initFirebaseListeners();
-    }
+    initializeFirebaseLogin();
     const requestedTab = (window.location.hash || '').replace(/^#/, '');
     if (requestedTab && document.getElementById(`tab-${requestedTab}`)) switchTab(requestedTab);
 });
@@ -50,20 +48,62 @@ window.exitWelcomeScreen = function() {
     }, 400);
 };
 
-window.handleLogin = function(e) {
-    if (e) e.preventDefault();
-    const auth = document.getElementById('auth-container');
-    const app = document.getElementById('app-container');
-    if (auth) auth.style.display = 'none';
-    if (app) app.style.display = 'flex';
-    switchTab('dashboard');
+const DAR_ADMIN_UID = 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2';
+let darListenersActive = false;
+
+function initializeFirebaseLogin() {
+    const authPanel = document.getElementById('auth-container');
+    const appPanel = document.getElementById('app-container');
+    if (appPanel) appPanel.style.display = 'none';
+    firebase.auth().onAuthStateChanged(async user => {
+        const allowed = !!user && user.uid === DAR_ADMIN_UID && user.emailVerified;
+        if (authPanel) authPanel.style.display = allowed ? 'none' : 'flex';
+        if (appPanel) appPanel.style.display = allowed ? 'flex' : 'none';
+        if (allowed) {
+            if (!darListenersActive) {
+                darListenersActive = true;
+                initFirebaseListeners();
+            }
+            const welcome = document.getElementById('welcome-screen');
+            if (welcome) welcome.style.display = 'none';
+            switchTab('dashboard');
+        } else {
+            if (darListenersActive) {
+                ['clients', 'documents', 'services', 'monthlyExpenses'].forEach(path => db.ref(path).off());
+                darListenersActive = false;
+            }
+            state.clients = [];
+            state.documents = [];
+            state.services = [];
+            state.monthlyExpenses = [];
+            if (user) await firebase.auth().signOut();
+        }
+    });
+}
+
+window.handleLogin = async function(event) {
+    if (event) event.preventDefault();
+    const email = document.getElementById('login-user').value.trim();
+    const password = document.getElementById('login-pin').value;
+    const remember = document.getElementById('remember-device')?.checked;
+    try {
+        await firebase.auth().setPersistence(remember
+            ? firebase.auth.Auth.Persistence.LOCAL
+            : firebase.auth.Auth.Persistence.SESSION);
+        const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        document.getElementById('login-pin').value = '';
+        if (credential.user.uid !== DAR_ADMIN_UID || !credential.user.emailVerified) {
+            await firebase.auth().signOut();
+            alert('Administrator access requires the approved account and verified email.');
+        }
+    } catch (error) {
+        console.error('Login failed:', error.code);
+        alert('Sign-in failed. Check your credentials and Firebase settings.');
+    }
 };
 
-window.handleLogout = function() {
-    const app = document.getElementById('app-container');
-    const auth = document.getElementById('auth-container');
-    if (app) app.style.display = 'none';
-    if (auth) auth.style.display = 'flex';
+window.handleLogout = async function() {
+    await firebase.auth().signOut();
 };
 
 function toggleSidebar() {

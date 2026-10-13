@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "clients": {
+      ".read": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true",
+      ".write": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true"
+    },
+    "documents": {
+      ".read": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true",
+      ".write": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true"
+    },
+    "services": {
+      ".read": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true",
+      ".write": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true"
+    },
+    "monthlyExpenses": {
+      ".read": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true",
+      ".write": "auth != null && auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' && auth.token.email_verified === true"
+    }
+  }
+}
