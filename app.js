@@ -48,7 +48,7 @@ window.exitWelcomeScreen = function() {
     }, 400);
 };
 
-const DAR_ADMIN_UID = 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2';
+const DAR_ALLOWED_UIDS = new Set(['DOoTyjTlQQWpW5Q4p6bZfgcyDYr2', '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2']);
 let darListenersActive = false;
 
 function initializeFirebaseLogin() {
@@ -56,7 +56,7 @@ function initializeFirebaseLogin() {
     const appPanel = document.getElementById('app-container');
     if (appPanel) appPanel.style.display = 'none';
     firebase.auth().onAuthStateChanged(async user => {
-        const allowed = !!user && user.uid === DAR_ADMIN_UID && user.emailVerified;
+        const allowed = !!user && DAR_ALLOWED_UIDS.has(user.uid) && user.emailVerified;
         if (authPanel) authPanel.style.display = allowed ? 'none' : 'flex';
         if (appPanel) appPanel.style.display = allowed ? 'flex' : 'none';
         if (allowed) {
@@ -92,9 +92,9 @@ window.handleLogin = async function(event) {
             : firebase.auth.Auth.Persistence.SESSION);
         const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
         document.getElementById('login-pin').value = '';
-        if (credential.user.uid !== DAR_ADMIN_UID || !credential.user.emailVerified) {
+        if (!DAR_ALLOWED_UIDS.has(credential.user.uid) || !credential.user.emailVerified) {
             await firebase.auth().signOut();
-            alert('Administrator access requires the approved account and verified email.');
+            alert('Access requires an approved account and verified email.');
         }
     } catch (error) {
         console.error('Login failed:', error.code);
