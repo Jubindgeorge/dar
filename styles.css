@@ -282,3 +282,44 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
   .preview-modal-body-canvas .a4-wrapper { min-width: 0; width: 800px; max-width: none !important; margin: 0 !important; }
   input, select, textarea { max-width: 100%; min-width: 0; font-size: 16px; }
 }
+
+
+/* iPhone navigation enhancements. Does not affect print or invoice preview. */
+@media screen and (max-width: 767px) {
+  #app-container { position: relative; overflow: hidden; }
+  #app-container .sidebar {
+    position: fixed; top: 0; bottom: 0; left: 0;
+    width: min(82vw, 310px) !important; height: 100dvh; max-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    transform: translateX(-105%); visibility: hidden;
+    z-index: 1101; box-shadow: 12px 0 35px rgba(0,0,0,.25);
+    transition: transform .2s ease, visibility .2s ease;
+  }
+  #app-container.mobile-menu-open .sidebar {
+    transform: translateX(0); visibility: visible;
+  }
+  #app-container .sidebar-menu { min-height: 0; overscroll-behavior: contain; }
+  #app-container.sidebar-collapsed .sidebar .sidebar-header h3,
+  #app-container.sidebar-collapsed .sidebar .sidebar-header p,
+  #app-container.sidebar-collapsed .sidebar .sidebar-menu span,
+  #app-container.sidebar-collapsed .sidebar .sidebar-footer { display: initial !important; }
+  #app-container.sidebar-collapsed .sidebar .sidebar-menu li { justify-content: flex-start; padding: 12px 14px; }
+  #app-container.sidebar-collapsed .sidebar .sidebar-menu li i { font-size: 1rem; margin: 0; }
+  #app-container .content-area { width: 100%; min-width: 0; }
+  .top-bar { height: auto; min-height: 60px; padding: 8px 12px; gap: 8px; }
+  .top-bar-title-section { min-width: 0; }
+  .top-bar-title-section > div { min-width: 0; }
+  #topbar-title { overflow-wrap: anywhere; }
+  .sidebar-toggle-btn { min-width: 44px; min-height: 44px; }
+  .sidebar-menu li { min-height: 44px; }
+  .table-responsive { overscroll-behavior-x: contain; }
+  #dar-mobile-menu-backdrop {
+    position: fixed; inset: 0; z-index: 1100;
+    background: rgba(0,0,0,.55);
+  }
+  #dar-mobile-menu-backdrop[hidden] { display: none; }
+}
+@media screen and (min-width: 768px) {
+  #dar-mobile-menu-backdrop { display: none !important; }
+}
