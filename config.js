@@ -62,6 +62,6 @@ function saveStateToFirebase() {
     return Promise.all(writes).catch(error => {
         console.error('Firebase save failed:', error);
         if (typeof showCustomModal === 'function') showCustomModal('Save failed', 'Your changes could not be saved. Check your connection and Firebase permissions, then try again.');
-        return false;
+        throw error;
     });
 }
