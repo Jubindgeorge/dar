@@ -588,7 +588,7 @@ function getDarDocumentAmount(d) {
     return 0;
 }
 window.clearDocumentFilters = function() {
-    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount']) {
+    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount', 'doc-date-from', 'doc-date-to']) {
         const input = document.getElementById(id);
         if (input) input.value = '';
     }
@@ -606,14 +606,19 @@ function renderDocumentsTable() {
     const maxRaw = document.getElementById('doc-max-amount')?.value || '';
     const min = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Math.max(0, Number(minRaw)) : null;
     const max = maxRaw !== '' && Number.isFinite(Number(maxRaw)) ? Math.max(0, Number(maxRaw)) : null;
+    const fromDate = document.getElementById('doc-date-from')?.value || '';
+    const toDate = document.getElementById('doc-date-to')?.value || '';
     const all = state.documents || [];
     const filtered = all.filter(d => {
+        const recordDate = String(d.createdDate || d.date || '').slice(0, 10);
+        const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) &&
+            (!toDate || (recordDate && recordDate <= toDate));
         const matchesText = [d.refCode, d.clientName, d.companyName]
             .some(value => String(value || '').toLowerCase().includes(searchVal));
         const matchesBranch = branch === 'all' ||
             (branch === 'staff' ? getAutomaticWorkBranch(d) === 'staff' : getAutomaticWorkBranch(d) !== 'staff');
         const amount = getDarDocumentAmount(d);
-        return matchesText && matchesBranch &&
+        return matchesText && matchesBranch && matchesDate &&
             (min === null || amount >= min) && (max === null || amount <= max);
     });
     const count = document.getElementById('doc-filter-count');
