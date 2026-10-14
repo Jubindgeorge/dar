@@ -317,6 +317,9 @@ window.switchTab = function(tabId) {
     if (tabId === 'works-detail' && typeof renderWorksDetailView === 'function') renderWorksDetailView();
     if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
     if (tabId === 'documents' && typeof renderDocumentsTable === 'function') renderDocumentsTable();
+    if (tabId === 'work-tracking' && typeof darRenderWorkTracking === 'function') darRenderWorkTracking();
+    if (tabId === 'completed-files' && typeof darRenderCompletedFiles === 'function') darRenderCompletedFiles();
+    if (tabId === 'expiry-notifications' && typeof darRenderExpiryNotifications === 'function') darRenderExpiryNotifications();
     if (tabId === 'accounts-ledger' && typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
 };
 
@@ -337,7 +340,7 @@ function renderDashboardStats() {
     const sums = {month: 0, year: 0, business: 0, staff: 0, businessCount: 0, staffCount: 0};
     documents.forEach(doc => {
         const amount = darDashboardAmount(doc);
-        const date = String(doc.createdDate || '');
+        const date = String(doc.createdDate || doc.date || '');
         if (date.startsWith(month)) sums.month += amount;
         if (date.startsWith(year)) sums.year += amount;
         if (getAutomaticWorkBranch(doc) === 'staff') { sums.staff += amount; sums.staffCount++; }
