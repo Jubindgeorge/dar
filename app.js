@@ -660,16 +660,16 @@ function renderDocumentsTable() {
         return `
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${darEscapeHTML(d.refCode)}" onchange="updateBatchDeleteButtonState()"></td>
-            <td><strong>${d.refCode}</strong></td>
-            <td>${d.clientName || '-'}</td>
-            <td>${d.companyName || '-'}</td>
+            <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+            <td>${darEscapeHTML(d.clientName || '-')}</td>
+            <td>${darEscapeHTML(d.companyName || '-')}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${getAutomaticWorkBranch(d) === 'unassigned' ? 'Without Company' : getAutomaticWorkBranch(d) === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
             <td>${workDescriptionCell(d)}</td>
             <td>AED ${rowTotal.toFixed(2)}</td>
             <td style="text-align: center;">
-                <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
-                <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteSingleDocument(${darSafeDocumentKey(d.refCode)})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                <button onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                <button onclick='openStudio("Invoice", ${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick='deleteSingleDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
     `;
