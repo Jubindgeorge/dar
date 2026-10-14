@@ -8,6 +8,8 @@ on:
       - 'tests/browser-smoke.cjs'
       - 'tests/backup-restore-smoke.cjs'
       - 'tests/v2-readonly-smoke.cjs'
+      - 'tests/expiry-dry-run.cjs'
+      - 'scripts/expiry-reminders.mjs'
       - '.github/workflows/browser-smoke.yml'
   workflow_dispatch:
 jobs:
@@ -28,3 +30,4 @@ jobs:
           node tests/browser-smoke.cjs
           node tests/backup-restore-smoke.cjs
           node tests/v2-readonly-smoke.cjs
+          node tests/expiry-dry-run.cjs
