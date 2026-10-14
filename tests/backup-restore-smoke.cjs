@@ -8,15 +8,15 @@ const assert = require('node:assert/strict');
   const result=await page.evaluate(async()=>{
    const storage={clients:{'test-client':{name:'Test Client'}},documents:{'test-doc':{total:250}},services:{'test-service':{name:'Repair'}},monthlyExpenses:{'test-expense':{amount:20}},deletedRecords:{},activityLog:{}};
    let counter=0, exported=null;const messages=[];
-   const original={db:window.db,alert:window.alert,download:window.darDownloadJSON,firebase:window.firebase};
+   const original={ref:db.ref,alert:window.alert,createObjectURL:URL.createObjectURL,click:HTMLAnchorElement.prototype.click,auth:firebase.auth};\n   firebase.auth=()=>({currentUser:{uid:'test-admin',emailVerified:true}});
    window.alert=m=>messages.push(m);
-   window.darDownloadJSON=(name,payload)=>{exported={name,payload}};
+   URL.createObjectURL=blob=>{window.__exportPromise=blob.text().then(x=>{exported={payload:JSON.parse(x)}});return 'blob:isolated-test'};\n   HTMLAnchorElement.prototype.click=function(){};
    const read=path=>path.split('/').reduce((obj,k)=>obj?.[k],storage);
    const put=(path,value)=>{const keys=path.split('/');let obj=storage;for(let i=0;i<keys.length-1;i++)obj=obj[keys[i]]??={};if(value===null)delete obj[keys.at(-1)];else obj[keys.at(-1)]=JSON.parse(JSON.stringify(value))};
-   window.db={ref:(path='')=>({once:async()=>({val:()=>read(path),exists:()=>read(path)!==undefined}),push:()=>({key:'test-key-'+(++counter)}),update:async updates=>Object.entries(updates).forEach(([p,v])=>put(p,v)),limitToLast:()=>({once:async()=>({val:()=>read(path)})})})};
+   db.ref=(path='')=>({once:async()=>({val:()=>read(path),exists:()=>read(path)!==undefined}),push:()=>({key:'test-key-'+(++counter)}),update:async updates=>Object.entries(updates).forEach(([p,v])=>put(p,v)),limitToLast:()=>({once:async()=>({val:()=>read(path)})})})};
    window.firebase.database.ServerValue.TIMESTAMP=1728892800000;
    try {
-    await window.exportDarBackup();
+    await window.exportDarBackup();await window.__exportPromise;
     const before=JSON.stringify(storage.documents['test-doc']);
     await window.safeDeleteDarRecord('documents','test-doc');
     const deleted=storage.documents['test-doc']===undefined;
@@ -24,7 +24,7 @@ const assert = require('node:assert/strict');
     const auditedDelete=Object.values(storage.activityLog).some(x=>x.action==='delete');
     await window.restoreDarRecord(trashIds[0]);
     return {exported:!!exported,format:exported?.payload.format,collections:Object.keys(exported?.payload.data||{}).sort(),deleted,trashCount:trashIds.length,auditedDelete,restored:JSON.stringify(storage.documents['test-doc'])===before,trashEmpty:Object.keys(storage.deletedRecords).length===0,auditedRestore:Object.values(storage.activityLog).some(x=>x.action==='restore'),messages};
-   } finally {window.db=original.db;window.alert=original.alert;window.darDownloadJSON=original.download;window.firebase=original.firebase}
+   } finally {db.ref=original.ref;window.alert=original.alert;URL.createObjectURL=original.createObjectURL;HTMLAnchorElement.prototype.click=original.click;firebase.auth=original.auth}
   });
   assert.equal(result.exported,true);
   assert.equal(result.format,'dar-al-shams-backup-v1');
