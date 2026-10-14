@@ -113,12 +113,58 @@ function populateStudioInjectorSelect() {
         (state.services || []).map(s => `<option value="${s.id}">${s.title} (Govt: AED ${s.govtAmt || 0})</option>`).join('');
 }
 
+function normalizeStudioCompanyName(value) {
+    return String(value || '').toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+}
+
+function previewStudioCompanyMatches() {
+    const input = document.getElementById('st-company-name');
+    const target = document.getElementById('st-company-matches');
+    if (!input || !target) return;
+    const query = normalizeStudioCompanyName(input.value);
+    if (!query) { target.replaceChildren(); return; }
+    const matches = (state.clients || []).filter(c => normalizeStudioCompanyName(c.companyName).includes(query)).slice(0, 6);
+    target.replaceChildren();
+    if (!matches.length) {
+        const label = document.createElement('span');
+        label.textContent = 'New company — no existing registration found. You may continue without registering.';
+        target.appendChild(label);
+        return;
+    }
+    matches.forEach(company => {
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'padding:8px;border:1px solid var(--border-color);border-radius:6px;margin-bottom:4px';
+        const title = document.createElement('div');
+        title.textContent = company.companyName || '';
+        const details = document.createElement('small');
+        const count = (state.documents || []).filter(d => normalizeStudioCompanyName(d.companyName) === normalizeStudioCompanyName(company.companyName)).length;
+        details.textContent = [company.nameAr, company.contactPerson, count + ' previous records'].filter(Boolean).join(' · ');
+        const use = document.createElement('button');
+        use.type = 'button';
+        use.className = 'btn btn-secondary';
+        use.textContent = 'Use This Company';
+        use.style.cssText = 'margin:5px 5px 0 0;padding:5px 8px';
+        use.onclick = () => { autofillStudioClient(company.companyName); target.replaceChildren(); };
+        wrapper.append(title, details, document.createElement('div'), use);
+        if (company.id && typeof viewClientDetail === 'function') {
+            const view = document.createElement('button');
+            view.type = 'button'; view.className = 'btn btn-secondary';
+            view.textContent = 'View Previous Records';
+            view.style.cssText = 'margin:5px 5px 0 0;padding:5px 8px';
+            view.onclick = () => viewClientDetail(company.id);
+            wrapper.appendChild(view);
+        }
+        target.appendChild(wrapper);
+    });
+}
+
 function autofillStudioClient(companyName) {
     if (!companyName) return;
-    const client = (state.clients || []).find(c => c.companyName === companyName);
+    const client = (state.clients || []).find(c => normalizeStudioCompanyName(c.companyName) === normalizeStudioCompanyName(companyName));
     if (client) {
         const compInput = document.getElementById('st-company-name');
         if (compInput) compInput.value = client.companyName || '';
+        document.getElementById('st-company-matches')?.replaceChildren();
         const contactInput = document.getElementById('st-contact-person');
         if (contactInput) contactInput.value = client.contactPerson || '';
     }
@@ -278,7 +324,7 @@ function commitDocumentToMemory() {
         total: totalAmt,
         amount: totalAmt,
         items,
-        branchTag: document.getElementById('st-branch-tag')?.value === 'staff' ? 'staff' : 'company'
+        branchTag: companyName && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
     };
 
     db.ref(`documents/${refCode}`).set(payload, (err) => {
