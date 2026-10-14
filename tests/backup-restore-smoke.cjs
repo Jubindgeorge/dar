@@ -8,12 +8,14 @@ const assert = require('node:assert/strict');
   const result=await page.evaluate(async()=>{
    const storage={clients:{'test-client':{name:'Test Client'}},documents:{'test-doc':{total:250}},services:{'test-service':{name:'Repair'}},monthlyExpenses:{'test-expense':{amount:20}},deletedRecords:{},activityLog:{}};
    let counter=0, exported=null;const messages=[];
-   const original={ref:db.ref,alert:window.alert,createObjectURL:URL.createObjectURL,click:HTMLAnchorElement.prototype.click,auth:firebase.auth};\n   firebase.auth=()=>({currentUser:{uid:'test-admin',emailVerified:true}});
+   const original={ref:db.ref,alert:window.alert,createObjectURL:URL.createObjectURL,click:HTMLAnchorElement.prototype.click,auth:firebase.auth};
+   firebase.auth=()=>({currentUser:{uid:'test-admin',emailVerified:true}});
    window.alert=m=>messages.push(m);
-   URL.createObjectURL=blob=>{window.__exportPromise=blob.text().then(x=>{exported={payload:JSON.parse(x)}});return 'blob:isolated-test'};\n   HTMLAnchorElement.prototype.click=function(){};
+   URL.createObjectURL=blob=>{window.__exportPromise=blob.text().then(x=>{exported={payload:JSON.parse(x)}});return 'blob:isolated-test'};
+   HTMLAnchorElement.prototype.click=function(){};
    const read=path=>path.split('/').reduce((obj,k)=>obj?.[k],storage);
    const put=(path,value)=>{const keys=path.split('/');let obj=storage;for(let i=0;i<keys.length-1;i++)obj=obj[keys[i]]??={};if(value===null)delete obj[keys.at(-1)];else obj[keys.at(-1)]=JSON.parse(JSON.stringify(value))};
-   db.ref=(path='')=>({once:async()=>({val:()=>read(path),exists:()=>read(path)!==undefined}),push:()=>({key:'test-key-'+(++counter)}),update:async updates=>Object.entries(updates).forEach(([p,v])=>put(p,v)),limitToLast:()=>({once:async()=>({val:()=>read(path)})})})};
+   db.ref=(path='')=>({once:async()=>({val:()=>read(path),exists:()=>read(path)!==undefined}),push:()=>({key:'test-key-'+(++counter)}),update:async updates=>Object.entries(updates).forEach(([p,v])=>put(p,v)),limitToLast:()=>({once:async()=>({val:()=>read(path)})})});
    window.firebase.database.ServerValue.TIMESTAMP=1728892800000;
    try {
     await window.exportDarBackup();await window.__exportPromise;
