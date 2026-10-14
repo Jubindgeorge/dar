@@ -248,7 +248,10 @@ function commitDocumentToMemory() {
         });
     });
 
-    const mainPackageName = items[0]?.packageName || 'Service Record';
+    const selectedCatalogId = document.getElementById('st-service-injector')?.value;
+    const selectedCatalog = (state.services || []).find(service => service.id === selectedCatalogId);
+    const previousTitle = (state.documents || []).find(d => d.refCode === refCode);
+    const mainPackageName = selectedCatalog?.title || previousTitle?.packageName || items[0]?.packageName || 'Service Record';
 
     // Preserve recorded payments when editing an invoice; never silently reset the ledger.
     const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
@@ -281,10 +284,10 @@ function commitDocumentToMemory() {
     db.ref(`documents/${refCode}`).set(payload, (err) => {
         if (!err) {
             if (typeof showCustomModal === 'function') {
-                showCustomModal('Success', `Document ${refCode} successfully saved!`);
+                showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
             }
             state.activeEditingId = null;
-            switchTab('documents');
+            // Keep the completed entry visible until the user chooses the next action.
         } else if (typeof showCustomModal === 'function') {
             showCustomModal('Save failed', 'The document could not be saved. Please check your connection and try again.');
         }
