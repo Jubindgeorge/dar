@@ -318,7 +318,6 @@ function commitDocumentToMemory() {
         govtFee: govtAmt,
         advanceAmt,
         advanceAmount: advanceAmt,
-        paymentLogs: preservedPaymentLogs,
         totalAmount: totalAmt,
         totalAmt,
         total: totalAmt,
@@ -327,10 +326,11 @@ function commitDocumentToMemory() {
         branchTag: companyName && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
     };
 
-    db.ref(`documents/${refCode}`).set(payload, (err) => {
+    // Update only editable invoice fields; preserve PRO history, expiry metadata and payment logs.
+    db.ref(`documents/${refCode}`).update(payload, (err) => {
         if (!err) {
             const savedIndex = (state.documents || []).findIndex(d => d.refCode === refCode);
-            if (savedIndex >= 0) state.documents[savedIndex] = payload;
+            if (savedIndex >= 0) state.documents[savedIndex] = { ...state.documents[savedIndex], ...payload };
             else { state.documents = state.documents || []; state.documents.push(payload); }
             if (typeof showCustomModal === 'function') {
                 showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
