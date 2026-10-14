@@ -74,6 +74,13 @@
         ".validate": "newData.isBoolean()"
       },
       ".read": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')"
+    },
+    "systemSettings": {
+      "maintenanceNotice": {
+        ".read": true,
+        ".write": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
+        ".validate": "newData.isBoolean()"
+      }
     }
   }
 }
