@@ -334,3 +334,8 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
   #app-container .sidebar-menu { flex-grow: 0; overflow-y: visible; }
   #app-container .sidebar-footer { flex-shrink: 0; }
 }
+
+/* V2: financial record date filters and mobile input sizing. */
+.v2-filter-date { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--text-muted, #94a3b8); flex: 1 1 155px; min-width: 0; }
+.v2-filter-date input { min-width: 0; width: 100%; max-width: 100%; min-height: 40px; }
+@media (max-width: 768px) { #tab-documents input, #tab-documents select { max-width: 100%; box-sizing: border-box; } #tab-documents .table-responsive { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; } }
