@@ -55,6 +55,7 @@
                 <button type="button" onclick="toggleSignup(false)">Back to sign in</button>
             </form>
             <p id="auth-status" role="status" aria-live="polite" style="margin-top:12px;"></p>
+            <div id="dar-maintenance-message" role="status" style="display:none;margin-top:12px;padding:12px;border:1px solid #d97706;border-radius:8px;"><strong>System Update in Progress</strong><p>Maintenance is in progress. Please try again shortly.</p></div>
         </div>
     </div>
 
@@ -94,7 +95,8 @@
                 <li onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
                 <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
             </ul>
-            <div style="padding:8px 14px;"><button id="dar-notification-button" type="button" onclick="toggleDarNotifications()" class="btn btn-secondary" style="display:none;width:100%;text-align:left;"><i class="fa-solid fa-bell"></i> Notifications <span id="dar-notification-count" style="display:none;background:#b91c1c;color:white;border-radius:12px;padding:2px 7px;margin-left:6px;"></span></button></div>\n            <div class="sidebar-footer">
+            <div style="padding:8px 14px;"><button id="dar-notification-button" type="button" onclick="toggleDarNotifications()" class="btn btn-secondary" style="display:none;width:100%;text-align:left;"><i class="fa-solid fa-bell"></i> Notifications <span id="dar-notification-count" style="display:none;background:#b91c1c;color:white;border-radius:12px;padding:2px 7px;margin-left:6px;"></span></button></div>\n            <div id="dar-maintenance-admin" style="display:none;padding:8px 14px;"><label>System Update Notice</label><button type="button" id="dar-maintenance-toggle" class="btn btn-secondary" onclick="toggleDarMaintenance()" style="width:100%;margin-top:6px;">Enable Maintenance Notice</button><small>Login notice only; does not lock accounts.</small></div>
+            <div class="sidebar-footer">
                 <button type="button" onclick="toggleDarProtection()" class="btn btn-secondary" style="width:100%;font-size:0.8rem;margin-bottom:8px;">Data Protection</button>
                 <button onclick="handleLogout()" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;">Exit Portal</button>
             </div>
