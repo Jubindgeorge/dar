@@ -55,6 +55,34 @@ let darApprovalRef = null;
 let darRequestRef = null;
 let darNotificationsOpen = false;
 let darAuthVersion = 0;
+let darMaintenanceRef = null;
+let darMaintenanceEnabled = false;
+function updateDarMaintenanceUi() {
+    const notice = document.getElementById('dar-maintenance-message');
+    if (notice) notice.style.display = darMaintenanceEnabled ? 'block' : 'none';
+    const admin = document.getElementById('dar-maintenance-admin');
+    const isAdmin = DAR_ALLOWED_UIDS.has(firebase.auth().currentUser?.uid);
+    if (admin) admin.style.display = isAdmin ? 'block' : 'none';
+    const toggle = document.getElementById('dar-maintenance-toggle');
+    if (toggle) toggle.textContent = darMaintenanceEnabled ? 'Disable Maintenance Notice' : 'Enable Maintenance Notice';
+}
+window.toggleDarMaintenance = async function() {
+    if (!DAR_ALLOWED_UIDS.has(firebase.auth().currentUser?.uid)) return;
+    const button = document.getElementById('dar-maintenance-toggle');
+    if (button) button.disabled = true;
+    try { await db.ref('systemSettings/maintenanceNotice').set(!darMaintenanceEnabled); }
+    catch (error) { alert('Unable to update maintenance notice: ' + error.message); }
+    finally { if (button) button.disabled = false; }
+};
+function listenDarMaintenance() {
+    if (darMaintenanceRef) darMaintenanceRef.off();
+    darMaintenanceRef = db.ref('systemSettings/maintenanceNotice');
+    darMaintenanceRef.on('value', snapshot => {
+        darMaintenanceEnabled = snapshot.val() === true;
+        updateDarMaintenanceUi();
+    }, () => { darMaintenanceEnabled = false; updateDarMaintenanceUi(); });
+}
+
 
 function setAuthStatus(message) {
     const el = document.getElementById('auth-status');
@@ -130,10 +158,12 @@ function showAdminApprovals() {
 }
 function initializeFirebaseLogin() {
     setDarAccess(false);
+    listenDarMaintenance();
     firebase.auth().onAuthStateChanged(async user => {
         const version = ++darAuthVersion;
         stopDarListeners();
         setDarAccess(false);
+        updateDarMaintenanceUi();
         if (!user) {
             state.clients = []; state.documents = []; state.services = []; state.monthlyExpenses = [];
             return;
@@ -149,6 +179,7 @@ function initializeFirebaseLogin() {
             if (DAR_ALLOWED_UIDS.has(user.uid)) {
                 setDarAccess(true);
                 showAdminApprovals();
+                updateDarMaintenanceUi();
                 return;
             }
             darApprovalRef = db.ref('approvals/' + user.uid);
