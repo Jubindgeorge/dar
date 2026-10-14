@@ -49,7 +49,7 @@ const assert = require('node:assert/strict');
         document.getElementById('st-ref-code').value='CI-SAVE-001';
         document.getElementById('st-client-name').value='Test Staff';
         document.getElementById('st-company-name').value='Test Company';
-        document.getElementById('st-branch-tag').value='staff';
+        previewStudioCompanyMatches();
         db.ref=path=>({set:(payload,callback)=>{calls.push({path,payload});callback(null);}});
         window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
         commitDocumentToMemory();
@@ -58,7 +58,7 @@ const assert = require('node:assert/strict');
       } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
     });
     assert.equal(saveFlow.saved?.packageName,'Employment Visa Package','Injected catalog title retained');
-    assert.equal(saveFlow.saved?.branchTag,'staff','Staff invoice stays in Staff branch');
+    assert.equal(saveFlow.saved?.branchTag,'staff','Different client and company automatically classify as staff');
     assert.match(saveFlow.modal?.actions||'',/Preview \/ Print/);
     assert.match(saveFlow.modal?.actions||'',/Create Next/);
     assert.match(saveFlow.modal?.actions||'',/Back to Ledger/);
