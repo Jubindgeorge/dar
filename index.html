@@ -158,6 +158,11 @@
                         <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Recorded Expenses — This Month</p><h3 id="dash-month-expenses">AED 0.00</h3></div></div>
                         <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Invoiced Less Expenses — This Month</p><h3 id="dash-month-net">AED 0.00</h3><small style="color:var(--text-muted);">Not cash flow or net profit</small></div></div>
                     </div>
+                    <div class="dashboard-grid" style="margin-top:16px;" aria-label="V2 payment overview">
+                        <div class="metric-card"><div><p>Payments Received — All Time</p><h3 id="dash-v2-received">AED 0.00</h3></div></div>
+                        <div class="metric-card"><div><p>Outstanding — All Time</p><h3 id="dash-v2-outstanding">AED 0.00</h3></div></div>
+                        <div class="metric-card"><div><p>Unassigned Works</p><h3 id="dash-v2-unassigned">0</h3></div></div>
+                    </div>
                     <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded monthly expenses. Invoice totals are not necessarily payments received.</p>
                 </section>
 
@@ -303,6 +308,8 @@
                                 </select>
                                 <input id="doc-min-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Min AED" aria-label="Minimum amount in AED" style="flex:1 1 100px;min-width:0;">
                                 <input id="doc-max-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Max AED" aria-label="Maximum amount in AED" style="flex:1 1 100px;min-width:0;">
+                                <label class="v2-filter-date">From <input type="date" id="doc-date-from" onchange="renderDocumentsTable()" aria-label="Records from date"></label>
+                                <label class="v2-filter-date">To <input type="date" id="doc-date-to" onchange="renderDocumentsTable()" aria-label="Records through date"></label>
                                 <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters()">Clear filters</button>
                                 <span id="doc-filter-count" role="status" aria-live="polite" style="font-size:0.8rem;color:var(--text-muted);"></span>
                             </div>

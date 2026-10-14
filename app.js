@@ -365,6 +365,12 @@ function renderDashboardStats() {
     set('dash-staff-count', sums.staffCount + ' records');
     set('dash-month-expenses', currency(expenses));
     set('dash-month-net', currency(sums.month - expenses));
+    if (typeof window.getDarV2FinancialOverview === 'function') {
+        const v2 = window.getDarV2FinancialOverview(documents, state.monthlyExpenses || []);
+        set('dash-v2-received', currency(v2.received));
+        set('dash-v2-outstanding', currency(v2.outstanding));
+        set('dash-v2-unassigned', String(v2.unassigned));
+    }
 }
 
 function normalizeCompanyFolderKey(value) {
@@ -588,7 +594,7 @@ function getDarDocumentAmount(d) {
     return 0;
 }
 window.clearDocumentFilters = function() {
-    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount']) {
+    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount', 'doc-date-from', 'doc-date-to']) {
         const input = document.getElementById(id);
         if (input) input.value = '';
     }
@@ -606,14 +612,19 @@ function renderDocumentsTable() {
     const maxRaw = document.getElementById('doc-max-amount')?.value || '';
     const min = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Math.max(0, Number(minRaw)) : null;
     const max = maxRaw !== '' && Number.isFinite(Number(maxRaw)) ? Math.max(0, Number(maxRaw)) : null;
+    const fromDate = document.getElementById('doc-date-from')?.value || '';
+    const toDate = document.getElementById('doc-date-to')?.value || '';
     const all = state.documents || [];
     const filtered = all.filter(d => {
+        const recordDate = String(d.createdDate || d.date || '').slice(0, 10);
+        const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) &&
+            (!toDate || (recordDate && recordDate <= toDate));
         const matchesText = [d.refCode, d.clientName, d.companyName]
             .some(value => String(value || '').toLowerCase().includes(searchVal));
         const matchesBranch = branch === 'all' ||
             (branch === 'staff' ? getAutomaticWorkBranch(d) === 'staff' : getAutomaticWorkBranch(d) !== 'staff');
         const amount = getDarDocumentAmount(d);
-        return matchesText && matchesBranch &&
+        return matchesText && matchesBranch && matchesDate &&
             (min === null || amount >= min) && (max === null || amount <= max);
     });
     const count = document.getElementById('doc-filter-count');
@@ -834,6 +845,28 @@ function darDownloadJSON(name, data) {
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+// V2: read-only financial overview; does not change ledger or invoice calculations.
+window.getDarV2FinancialOverview = function(documents, expenses) {
+    const docs = Array.isArray(documents) ? documents : [];
+    const costs = Array.isArray(expenses) ? expenses : [];
+    const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0 };
+    docs.forEach(doc => {
+        const total = Math.max(0, Number(getDarDocumentAmount(doc)) || 0);
+        const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
+        const logs = Array.isArray(doc.paymentLogs) ? doc.paymentLogs : [];
+        const paid = Math.max(0, advance + logs.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
+        summary.invoiced += total;
+        summary.received += Math.min(total, paid);
+        summary.outstanding += Math.max(0, total - paid);
+        const branch = getAutomaticWorkBranch(doc);
+        if (branch === 'staff') summary.staff++;
+        else if (branch === 'unassigned') summary.unassigned++;
+        else summary.business++;
+    });
+    summary.expenses = costs.reduce((sum, e) => sum + Math.max(0, Number(e.amount) || 0), 0);
+    return summary;
+};
+
 window.exportDarBackup = async function() {
     try {
         const user = darSignedInUser();

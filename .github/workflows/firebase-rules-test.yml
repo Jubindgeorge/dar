@@ -4,6 +4,8 @@ on:
     paths:
       - 'firebase-database.rules.json'
       - 'tests/database-rules.test.cjs'
+      - 'app.js'
+      - 'tests/v2-readonly-smoke.cjs'
       - '.github/workflows/firebase-rules-test.yml'
   workflow_dispatch:
 jobs:
