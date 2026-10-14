@@ -7,12 +7,12 @@ function localISODate() {
 // Strictly target only explicit package/service titles
 function getWorkItemDescription(item) {
     if (!item || typeof item !== 'object') return '';
-    return String(item.serviceName ?? item.title ?? item.packageName ?? '').trim();
+    return String(item.packageName || item.title || item.serviceName || '').trim();
 }
 
 function getDocumentWorkDescription(doc) {
     // Only check document-level package name or title; ignore descriptions entirely
-    return String(doc?.serviceName ?? doc?.title ?? doc?.packageName ?? '').trim();
+    return String(doc?.packageName || doc?.title || doc?.serviceName || '').trim();
 }
 
 function workDescriptionCell(doc) {
@@ -300,7 +300,7 @@ function renderDashboardStats() {
         const date = String(doc.createdDate || '');
         if (date.startsWith(month)) sums.month += amount;
         if (date.startsWith(year)) sums.year += amount;
-        if (doc.branchTag === 'staff') { sums.staff += amount; sums.staffCount++; }
+        if (getAutomaticWorkBranch(doc) === 'staff') { sums.staff += amount; sums.staffCount++; }
         else { sums.business += amount; sums.businessCount++; }
     });
     const expenses = (state.monthlyExpenses || []).reduce((sum, entry) => {
@@ -328,7 +328,14 @@ function renderDashboardStats() {
 }
 
 function normalizeCompanyFolderKey(value) {
-    return String(value || 'Direct Clients').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+    return String(value || 'Without Company').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function getAutomaticWorkBranch(doc) {
+    const company = normalizeCompanyFolderKey(doc?.companyName || '');
+    const client = normalizeCompanyFolderKey(doc?.clientName || '');
+    if (!String(doc?.companyName || '').trim()) return 'unassigned';
+    return client && company !== client ? 'staff' : 'company';
 }
 
 function renderClientsTable() {
@@ -424,7 +431,7 @@ window.viewClientDetail = function(clientId) {
     document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
     document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
 
-    const clientDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Direct Clients') === normalizeCompanyFolderKey(client.companyName));
+    const clientDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Without Company') === normalizeCompanyFolderKey(client.companyName));
     const tbody = document.getElementById('client-detail-records-body');
     
     if (clientDocs.length === 0) {
@@ -456,7 +463,7 @@ function renderWorksTable() {
     const companyMap = {};
     const companyLabels = {};
     (state.documents || []).forEach(doc => {
-        const label = (doc.companyName || 'Direct Clients').trim();
+        const label = (doc.companyName || 'Without Company').trim();
         const key = normalizeCompanyFolderKey(label);
         if (!companyMap[key]) { companyMap[key] = []; companyLabels[key] = label; }
         companyMap[key].push(doc);
@@ -495,8 +502,8 @@ function renderWorksDetailView() {
     if (titleEl) titleEl.innerText = companyName || '-';
 
     const allCompanyDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Direct Clients') === normalizeCompanyFolderKey(companyName));
-    const companyWorks = allCompanyDocs.filter(d => d.branchTag !== 'staff');
-    const staffWorks = allCompanyDocs.filter(d => d.branchTag === 'staff');
+    const companyWorks = allCompanyDocs.filter(d => getAutomaticWorkBranch(d) !== 'staff');
+    const staffWorks = allCompanyDocs.filter(d => getAutomaticWorkBranch(d) === 'staff');
 
     const countCompany = document.getElementById('count-company-works');
     const countStaff = document.getElementById('count-staff-works');
@@ -564,7 +571,7 @@ function renderDocumentsTable() {
         const matchesText = [d.refCode, d.clientName, d.companyName]
             .some(value => String(value || '').toLowerCase().includes(searchVal));
         const matchesBranch = branch === 'all' ||
-            (branch === 'staff' ? d.branchTag === 'staff' : d.branchTag !== 'staff');
+            (branch === 'staff' ? getAutomaticWorkBranch(d) === 'staff' : getAutomaticWorkBranch(d) !== 'staff');
         const amount = getDarDocumentAmount(d);
         return matchesText && matchesBranch &&
             (min === null || amount >= min) && (max === null || amount <= max);
@@ -586,7 +593,7 @@ function renderDocumentsTable() {
     }
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No financial records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No financial records found.</td></tr>`;
         return;
     }
 
@@ -598,7 +605,7 @@ function renderDocumentsTable() {
             <td><strong>${d.refCode}</strong></td>
             <td>${d.clientName || '-'}</td>
             <td>${d.companyName || '-'}</td>
-            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${d.branchTag === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
+            <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${getAutomaticWorkBranch(d) === 'unassigned' ? 'Without Company' : getAutomaticWorkBranch(d) === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
             <td>${workDescriptionCell(d)}</td>
             <td>AED ${rowTotal.toFixed(2)}</td>
             <td style="text-align: center;">

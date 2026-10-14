@@ -172,7 +172,7 @@
                             <thead>
                                 <tr>
                                     <th>Company Name</th>
-                                    <th style="text-align: right;">Arabic Names</th>
+                                    <th style="text-align: right;">Company Name (Arabic)</th>
                                     <th>Contact</th>
                                     <th style="text-align: center;">Actions</th>
                                 </tr>
@@ -312,8 +312,9 @@
                                         <th>Doc Reference</th>
                                         <th>Client Name</th>
                                         <th>Company Name</th>
-                                        <th>Folder Branch</th>
-                                        <th>Work Details</th>
+                                        <th>Business / Staff</th>
+                                        <th>Package Name / Title</th>
+                                        <th>Total Amount (AED)</th>
                                         <th style="text-align: center;">Actions</th>
                                     </tr>
                                 </thead>
@@ -488,9 +489,9 @@
                             </div>
                             <div>
                                 <label>Company Name</label>
-                                <input type="text" id="st-company-name" placeholder="Alpha Logistics FZ">
+                                <input type="text" id="st-company-name" placeholder="Search or enter company name" autocomplete="off" oninput="previewStudioCompanyMatches()">\n                                <div id="st-company-matches" role="status" aria-live="polite" style="font-size:0.85rem;margin-top:6px;"></div>
                             </div>
-                            <div>
+<div>
                                 <label>Contact Person Name</label>
                                 <input type="text" id="st-contact-person" placeholder="John Doe">
                             </div>
@@ -522,9 +523,9 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 50px; text-align: center;">#</th>
-                                        <th>Work / Service Description</th>
+                                        <th>Package Name / Work Title</th>
                                         <th style="width: 90px; text-align: center;">Qty</th>
-                                        <th style="width: 140px; text-align: right;">Price (AED)</th>
+                                        <th style="width: 140px; text-align: right;">Unit Price (AED)</th>
                                         <th style="width: 70px; text-align: center;">Action</th>
                                     </tr>
                                 </thead>
