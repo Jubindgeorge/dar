@@ -9,7 +9,7 @@ for (const name of required) if (!process.env[name]) throw new Error('Missing re
 const credentials = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 if (credentials.project_id !== 'dar-al-shams') throw new Error('Unexpected Firebase project');
 const databaseURL = process.env.FIREBASE_DATABASE_URL;
-if (!/^https:\/\/dar-al-shams(?:-default-rtdb)?\.[a-z0-9.-]+\.firebasedatabase\.app\/?$/.test(databaseURL)) throw new Error('Unexpected database URL');
+if (databaseURL.replace(/\/$/, '') !== 'https://dar-al-shams-default-rtdb.firebaseio.com') throw new Error('Unexpected database URL');
 initializeApp({credential:cert(credentials),databaseURL});
 const db=getDatabase();
 const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -30,7 +30,6 @@ const paid=d=>{
 };
 const email=v=>typeof v==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())?v.trim():null;
 const company=d=>d.companyName&&!['direct clients','direct client','private','without company'].includes(String(d.companyName).toLowerCase().trim());
-const encode=s=>Buffer.from(s).toString('base64url');
 async function send(to,subject,body){
  const res=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.REMINDER_FROM_EMAIL,to:[to],subject,text:body})});
  if(!res.ok)throw new Error('Resend returned HTTP '+res.status);
@@ -58,13 +57,14 @@ for(const [id,d] of Object.entries(snapshot.val()||{})){
  const subject='DAR AL SHAMS · Expiry reminder · '+id;
  const body='Package: '+title+'\nInvoice: '+id+'\nExpiry: '+expiry+'\nPlease review the renewal requirements.';
  const base=db.ref('expiryReminderDeliveries/'+id+'/'+expiry);
+ // Never guess recipient emails from unrelated fields. A missing address is reported to admin.
  const recipients=[['admin',email(process.env.ADMIN_REMINDER_EMAIL)],['recipient',email(company(d)?d.companyEmail:d.clientEmail)]];
  for(const [role,to] of recipients){
   if(!to){if(role==='recipient')await db.ref('expiryNotificationEvents/'+id+'/'+expiry).update({type:'Email Missing',packageName:title,invoiceRef:id,expiryDate:expiry,createdAt:new Date().toISOString()});continue;}
   try{if(await once(base.child(role),to,subject,body))processed++;}
   catch(e){failed++;console.error('Reminder failed',id,role,e.message);}
  }
- await db.ref('expiryNotificationEvents/'+id+'/'+expiry).update({type:'Expiry Reminder',packageName:title,invoiceRef:id,expiryDate:expiry,reminderDate,updatedAt:new Date().toISOString()});
+ await db.ref('expiryNotificationEvents/'+id+'/'+expiry).update({packageName:title,invoiceRef:id,expiryDate:expiry,reminderDate,updatedAt:new Date().toISOString()});
 }
 console.log('UAE date:',today,'emails sent:',processed,'failures:',failed);
 if(failed)process.exitCode=1;
