@@ -37,6 +37,37 @@ const assert = require('node:assert/strict');
       return {captured,saved};
     });
     assert.deepEqual(pdfResult,{captured:true,saved:true},'PDF export calls capture and save pipeline');
+    const saveFlow = await page.evaluate(async () => {
+      const oldRef=db.ref, oldModal=window.showCustomModal;
+      const calls=[];
+      try {
+        state.documents=[];
+        state.services=[{id:'test-package',title:'Employment Visa Package',items:[{d:'Long service description',p:150,q:1}]}];
+        openStudio('Invoice');
+        document.getElementById('st-service-injector').value='test-package';
+        injectServicePresetToItems();
+        document.getElementById('st-ref-code').value='CI-SAVE-001';
+        document.getElementById('st-client-name').value='Test Staff';
+        document.getElementById('st-company-name').value='Test Company';
+        document.getElementById('st-branch-tag').value='staff';
+        db.ref=path=>({set:(payload,callback)=>{calls.push({path,payload});callback(null);}});
+        window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
+        commitDocumentToMemory();
+        const saved=state.documents.find(d=>d.refCode==='CI-SAVE-001');
+        return {saved,call:calls.find(x=>x.path),modal:calls.find(x=>x.title)};
+      } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
+    });
+    assert.equal(saveFlow.saved?.packageName,'Employment Visa Package','Injected catalog title retained');
+    assert.equal(saveFlow.saved?.branchTag,'staff','Staff invoice stays in Staff branch');
+    assert.match(saveFlow.modal?.actions||'',/Preview \\/ Print/);
+    assert.match(saveFlow.modal?.actions||'',/Create Next/);
+    assert.match(saveFlow.modal?.actions||'',/Back to Ledger/);
+    assert.equal(await page.locator('#doc-table-body').count(),1);
+    await page.evaluate(() => renderDocumentsTable());
+    assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
+    assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),8,'Ledger rows have 8 cells');
+    assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),8,'Ledger headings have 8 cells');
+    console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     if (errors.length) console.log('Browser page errors (external dependencies may be unavailable):',errors.slice(0,6));
   } finally { await browser.close(); }
