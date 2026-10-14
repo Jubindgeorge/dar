@@ -1,0 +1,28 @@
+name: Browser and PDF Smoke Tests
+on:
+  pull_request:
+    paths:
+      - '*.js'
+      - '*.html'
+      - '*.css'
+      - 'tests/browser-smoke.cjs'
+      - 'tests/backup-restore-smoke.cjs'
+      - '.github/workflows/browser-smoke.yml'
+  workflow_dispatch:
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests against local files only
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/dar-test-http.log 2>&1 &
+          node tests/browser-smoke.cjs
+          node tests/backup-restore-smoke.cjs

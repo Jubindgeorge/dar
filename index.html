@@ -39,28 +39,45 @@
     <div id="auth-container" style="display:none;">
         <div class="login-card">
             <h2>DAR AL SHAMS</h2>
-            <p>Enterprise Financial & Document Studio</p>
-            <p class="security-notice">Administrator sign-in required.</p>
-            <form id="login-form" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 15px;">
-                <div style="text-align: left;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">EMAIL</label>
-                    <input type="email" id="login-user" autocomplete="username" required>
-                </div>
-                <div style="text-align: left;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 5px;">PASSWORD</label>
-                    <input type="password" id="login-pin" autocomplete="current-password" required>
-                </div>
+            <p>Enterprise Financial &amp; Document Studio</p>
+            <p class="security-notice">Verified accounts require administrator approval.</p>
+            <form id="login-form" onsubmit="handleLogin(event)" style="display:flex;flex-direction:column;gap:15px;">
+                <div style="text-align:left;"><label for="login-user">EMAIL</label><input type="email" id="login-user" autocomplete="username" required></div>
+                <div style="text-align:left;"><label for="login-pin">PASSWORD</label><input type="password" id="login-pin" autocomplete="current-password" required></div>
                 <label style="display:flex;gap:8px;align-items:center;font-size:0.85rem;"><input type="checkbox" id="remember-device"> Remember this device</label>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 5px;">Authenticate</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Sign in</button>
             </form>
+            <button type="button" onclick="toggleSignup(true)" style="margin-top:14px;">Create an account</button>
+            <form id="signup-form" onsubmit="handleSignup(event)" style="display:none;flex-direction:column;gap:12px;margin-top:15px;">
+                <label for="signup-email">Email</label><input id="signup-email" type="email" autocomplete="email" required>
+                <label for="signup-password">Password (minimum 8 characters)</label><input id="signup-password" type="password" autocomplete="new-password" minlength="8" required>
+                <button class="btn btn-primary" type="submit">Sign up &amp; verify email</button>
+                <button type="button" onclick="toggleSignup(false)">Back to sign in</button>
+            </form>
+            <p id="auth-status" role="status" aria-live="polite" style="margin-top:12px;"></p>
         </div>
     </div>
 
-    <!-- Main System App Container -->
+    <!-- Administrator approval interface, hidden for all other accounts -->
+    <section id="admin-approvals" style="display:none;position:fixed;right:14px;bottom:14px;z-index:1000;max-width:340px;max-height:50vh;overflow:auto;padding:16px;background:var(--card-bg,#fff);color:var(--text-primary,#111);border:1px solid #94a3b8;border-radius:12px;box-shadow:0 8px 28px #0002;">
+      <h3>New user approvals</h3><div id="approval-list">Loading requests...</div>
+    </section>
+    <section id="dar-protection-panel" hidden style="position:fixed;inset:10% 5%;z-index:2000;overflow:auto;background:var(--card-bg,#fff);color:var(--text-primary,#111);padding:20px;border:1px solid #94a3b8;border-radius:12px;box-shadow:0 10px 40px #0005;">
+            <h2>Data Protection</h2>
+            <p>Download an encrypted-storage-ready JSON backup. Keep it private. Deletions can be recovered here.</p>
+            <button type="button" class="btn btn-primary" onclick="exportDarBackup()">Download full backup</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleDarProtection()">Close</button>
+            <h3 style="margin-top:20px;">Recently deleted records</h3>
+            <div id="dar-recovery-list">Loading...</div>
+            <h3 style="margin-top:20px;">Activity history (deletes and restores)</h3>
+            <div id="dar-activity-list">Loading...</div>
+        </section>
+        <!-- Main System App Container -->
     <div id="app-container">
         
+        <button id="dar-mobile-menu-backdrop" type="button" aria-label="Close navigation" onclick="closeDarMobileMenu()" hidden></button>
         <!-- Sidebar Navigation -->
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar" id="sidebar" aria-label="Main navigation">
             <div class="sidebar-header">
                 <h3>DAR AL SHAMS</h3>
                 <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">ERP & Financial Studio</p>
@@ -78,6 +95,7 @@
                 <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
             </ul>
             <div class="sidebar-footer">
+                <button type="button" onclick="toggleDarProtection()" class="btn btn-secondary" style="width:100%;font-size:0.8rem;margin-bottom:8px;">Data Protection</button>
                 <button onclick="handleLogout()" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;">Exit Portal</button>
             </div>
         </aside>
@@ -86,7 +104,7 @@
         <div class="content-area">
             <header class="top-bar">
                 <div class="top-bar-title-section">
-                    <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
                     <div style="display: inline-block; cursor: pointer; margin-left: 10px;" onclick="switchTab('dashboard')">
                         <h2 style="font-size: 1.1rem; color: var(--primary);" id="topbar-title">Dashboard Overview</h2>
                         <span style="font-size: 0.75rem; color: var(--text-muted);">Secure Cloud Connected</span>
@@ -131,6 +149,13 @@
                             <i class="fa-solid fa-clipboard-check fa-2x" style="color: rgba(245,158,11,0.3);"></i>
                         </div>
                     </div>
+                    <div class="dashboard-grid" style="margin-top:16px;">
+                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Business Works — All Time</p><h3 id="dash-business-total">AED 0.00</h3><small id="dash-business-count">0 records</small></div></div>
+                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Staff Works — All Time</p><h3 id="dash-staff-total">AED 0.00</h3><small id="dash-staff-count">0 records</small></div></div>
+                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Recorded Expenses — This Month</p><h3 id="dash-month-expenses">AED 0.00</h3></div></div>
+                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Invoiced Less Expenses — This Month</p><h3 id="dash-month-net">AED 0.00</h3><small style="color:var(--text-muted);">Not cash flow or net profit</small></div></div>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded monthly expenses. Invoice totals are not necessarily payments received.</p>
                 </section>
 
                 <!-- TAB 2: CLIENTS -->
@@ -266,7 +291,18 @@
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                             <span style="font-size: 0.85rem; color: var(--text-muted);">Total Ledger Amount: <strong id="ledger-total-amount" style="color: var(--accent-green);">AED 0.00</strong></span>
-                            <input type="text" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." style="max-width: 300px;">
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;">
+                                <input type="search" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." aria-label="Search financial records" style="flex:2 1 210px;min-width:0;">
+                                <select id="doc-branch-filter" onchange="renderDocumentsTable()" aria-label="Filter records by work type" style="flex:1 1 130px;min-width:0;">
+                                    <option value="all">All work types</option>
+                                    <option value="company">Business Works</option>
+                                    <option value="staff">Staff Works</option>
+                                </select>
+                                <input id="doc-min-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Min AED" aria-label="Minimum amount in AED" style="flex:1 1 100px;min-width:0;">
+                                <input id="doc-max-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Max AED" aria-label="Maximum amount in AED" style="flex:1 1 100px;min-width:0;">
+                                <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters()">Clear filters</button>
+                                <span id="doc-filter-count" role="status" aria-live="polite" style="font-size:0.8rem;color:var(--text-muted);"></span>
+                            </div>
                         </div>
                         <div class="table-responsive" style="margin-top: 0;">
                             <table class="data-table">
