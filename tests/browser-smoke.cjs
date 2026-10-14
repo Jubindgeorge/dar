@@ -59,7 +59,7 @@ const assert = require('node:assert/strict');
     });
     assert.equal(saveFlow.saved?.packageName,'Employment Visa Package','Injected catalog title retained');
     assert.equal(saveFlow.saved?.branchTag,'staff','Staff invoice stays in Staff branch');
-    assert.match(saveFlow.modal?.actions||'',/Preview \\/ Print/);
+    assert.match(saveFlow.modal?.actions||'',/Preview \/ Print/);
     assert.match(saveFlow.modal?.actions||'',/Create Next/);
     assert.match(saveFlow.modal?.actions||'',/Back to Ledger/);
     assert.equal(await page.locator('#doc-table-body').count(),1);
