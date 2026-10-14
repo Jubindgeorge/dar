@@ -59,8 +59,8 @@
     </div>
 
     <!-- Administrator approval interface, hidden for all other accounts -->
-    <section id="admin-approvals" style="display:none;position:fixed;right:14px;bottom:14px;z-index:1000;max-width:340px;max-height:50vh;overflow:auto;padding:16px;background:var(--card-bg,#fff);color:var(--text-primary,#111);border:1px solid #94a3b8;border-radius:12px;box-shadow:0 8px 28px #0002;">
-      <h3>New user approvals</h3><div id="approval-list">Loading requests...</div>
+    <section id="admin-approvals" style="display:none;position:fixed;right:12px;top:85px;z-index:1000;width:min(340px,calc(100vw - 24px));max-height:65vh;overflow:auto;padding:16px;background:var(--card-bg,#fff);color:var(--text-primary,#111);border:1px solid #94a3b8;border-radius:12px;box-shadow:0 8px 28px #0002;">
+      <button type="button" onclick="toggleDarNotifications(false)" aria-label="Close notifications" style="float:right;background:transparent;border:0;color:inherit;font-size:22px;">×</button><h3>Notifications · User approvals</h3><div id="approval-list">Loading requests...</div>
     </section>
     <section id="dar-protection-panel" hidden style="position:fixed;inset:10% 5%;z-index:2000;overflow:auto;background:var(--card-bg,#fff);color:var(--text-primary,#111);padding:20px;border:1px solid #94a3b8;border-radius:12px;box-shadow:0 10px 40px #0005;">
             <h2>Data Protection</h2>
@@ -94,7 +94,7 @@
                 <li onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
                 <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
             </ul>
-            <div class="sidebar-footer">
+            <div style="padding:8px 14px;"><button id="dar-notification-button" type="button" onclick="toggleDarNotifications()" class="btn btn-secondary" style="display:none;width:100%;text-align:left;"><i class="fa-solid fa-bell"></i> Notifications <span id="dar-notification-count" style="display:none;background:#b91c1c;color:white;border-radius:12px;padding:2px 7px;margin-left:6px;"></span></button></div>\n            <div class="sidebar-footer">
                 <button type="button" onclick="toggleDarProtection()" class="btn btn-secondary" style="width:100%;font-size:0.8rem;margin-bottom:8px;">Data Protection</button>
                 <button onclick="handleLogout()" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;">Exit Portal</button>
             </div>
