@@ -323,3 +323,14 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
 @media screen and (min-width: 768px) {
   #dar-mobile-menu-backdrop { display: none !important; }
 }
+
+/* Admin maintenance control: compact and readable on iPhone. */
+.sidebar-maintenance { padding: 12px 16px; border-top: 1px solid var(--border-color, #334155); min-width: 0; }
+.sidebar-maintenance label { display: block; color: var(--text-muted, #94a3b8); font-size: .82rem; font-weight: 600; margin-bottom: 8px; }
+.sidebar-maintenance .btn { display: block; width: 100%; max-width: 100%; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; text-align: center; min-height: 44px; }
+.sidebar-maintenance small { display: block; margin-top: 8px; color: var(--text-muted, #94a3b8); line-height: 1.45; font-size: .75rem; }
+@media (max-width: 768px) {
+  #app-container .sidebar { max-height: 100dvh; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  #app-container .sidebar-menu { flex-grow: 0; overflow-y: visible; }
+  #app-container .sidebar-footer { flex-shrink: 0; }
+}
