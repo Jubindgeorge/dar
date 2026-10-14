@@ -13,7 +13,7 @@ const safe = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const docs = () => (typeof state !== 'undefined' && Array.isArray(state.documents) ? state.documents : []);
 const money = d => Number(typeof getDarDocumentAmount === 'function' ? getDarDocumentAmount(d) : (d.totalAmount || 0)) || 0;
 const paid = d => {
- const logs = Array.isArray(d.paymentLogs) ? d.paymentLogs : [];
+ const logs = Array.isArray(d.paymentLogs) ? d.paymentLogs : Object.values(d.paymentLogs || {});
  const advance = Number(d.advanceAmount ?? d.advanceAmt ?? d.advance ?? 0) || 0;
  // Do not silently double-count an advance explicitly marked as already included in payment logs.
  const included = d.advanceIncludedInPaymentLogs === true;
@@ -82,6 +82,6 @@ window.darRenderExpiryNotifications=function(){
  const now=new Date();now.setHours(0,0,0,0);
  const items=docs().filter(d=>isPaid(d)&&(d.archiveExpiryDate||d.visaExpiryDate)).map(d=>({d,date:new Date((d.archiveExpiryDate||d.visaExpiryDate)+'T00:00:00')})).filter(x=>!Number.isNaN(+x.date)).filter(x=>{const before=new Date(x.date);before.setMonth(before.getMonth()-1);return now>=before;}).sort((a,b)=>a.date-b.date);
  if(!items.length){root.textContent='No expiry reminders due.';return;}
- for(const {d,date} of items){const row=document.createElement('div');row.className='dar-archive-row';const days=Math.ceil((date-now)/86400000);row.textContent=packageName(d)+' · '+d.refCode+' · '+company(d)+' · '+(days<0?'Expired '+(-days)+' days ago':days+' days remaining')+' · Email delivery not configured';root.append(row);}
+ for(const {d,date} of items){const row=document.createElement('div');row.className='dar-archive-row';const days=Math.ceil((date-now)/86400000);row.textContent=packageName(d)+' · '+d.refCode+' · '+company(d)+' · '+(days<0?'Expired '+(-days)+' days ago':days+' days remaining')+' · Email delivery status not verified';root.append(row);}
 };
 })();
