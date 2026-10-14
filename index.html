@@ -89,6 +89,9 @@
                 <li onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works</span></li>
                 <li onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
                 <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Financial Records</span></li>
+                <li onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
+                <li onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
+                <li onclick="switchTab('expiry-notifications')" data-target="expiry-notifications"><i class="fa-solid fa-bell"></i><span>Notification Center</span></li>
                 <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts Ledger</span></li>
                 
                 <!-- Studio Quick Actions -->
@@ -334,6 +337,10 @@
                     </div>
                 </section>
 
+                <!-- Package-first operational tracking; PDF/quotation templates unchanged. -->
+                <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
+                <section id="tab-completed-files" class="view-panel"><h2>Completed Files</h2><p class="dar-hint">Fully paid invoices grouped by Company → Package, or Private → Package.</p><div id="dar-completed-files"></div></section>
+                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Expiry reminders appear here without opening popups. Automated email requires a secure server scheduler.</p><div id="dar-expiry-notifications"></div></section>
                 <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
                 <section id="tab-accounts-ledger" class="view-panel">
                     <div style="margin-bottom: 20px;">
@@ -811,6 +818,7 @@
     <script src="services.js"></script>
     <script src="ledger.js"></script>
     <script src="app.js"></script>
+    <script src="work-tracking.js"></script>
     <script src="translator.js"></script>
 </body>
 </html>
