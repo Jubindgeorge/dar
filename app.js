@@ -52,7 +52,8 @@ const DAR_ALLOWED_UIDS = new Set(['DOoTyjTlQQWpW5Q4p6bZfgcyDYr2', '6J0fXWZkvpgIf
 let darListenersActive = false;
 let darLoginInProgress = false;
 let darApprovalRef = null;
-let darRequestRef = null;\nlet darNotificationsOpen = false;
+let darRequestRef = null;
+let darNotificationsOpen = false;
 let darAuthVersion = 0;
 
 function setAuthStatus(message) {
@@ -87,7 +88,13 @@ function setDarAccess(allowed) {
         switchTab('dashboard');
     }
 }
-window.toggleDarNotifications = function(force) {\n    const panel = document.getElementById('admin-approvals');\n    if (!panel || !firebase.auth().currentUser || !DAR_ALLOWED_UIDS.has(firebase.auth().currentUser.uid)) return;\n    darNotificationsOpen = typeof force === 'boolean' ? force : !darNotificationsOpen;\n    panel.style.display = darNotificationsOpen ? 'block' : 'none';\n};\nfunction showAdminApprovals() {
+window.toggleDarNotifications = function(force) {
+    const panel = document.getElementById('admin-approvals');
+    if (!panel || !firebase.auth().currentUser || !DAR_ALLOWED_UIDS.has(firebase.auth().currentUser.uid)) return;
+    darNotificationsOpen = typeof force === 'boolean' ? force : !darNotificationsOpen;
+    panel.style.display = darNotificationsOpen ? 'block' : 'none';
+};
+function showAdminApprovals() {
     const panel = document.getElementById('admin-approvals');
     const list = document.getElementById('approval-list');
     if (!panel || !list) return;
@@ -97,7 +104,9 @@ window.toggleDarNotifications = function(force) {\n    const panel = document.ge
         const requests = snapshot.val() || {};
         const approvals = (await db.ref('approvals').once('value')).val() || {};
         list.replaceChildren();
-        const pending = Object.entries(requests).filter(([uid]) => approvals[uid] !== true);\n        const badge = document.getElementById('dar-notification-count');\n        if (badge) { badge.textContent = String(pending.length); badge.style.display = pending.length ? 'inline' : 'none'; }
+        const pending = Object.entries(requests).filter(([uid]) => approvals[uid] !== true);
+        const badge = document.getElementById('dar-notification-count');
+        if (badge) { badge.textContent = String(pending.length); badge.style.display = pending.length ? 'inline' : 'none'; }
         if (!pending.length) { list.textContent = 'No pending users.'; return; }
         pending.forEach(([uid, request]) => {
             const item = document.createElement('div');
