@@ -1,0 +1,29 @@
+name: Scheduled Expiry Reminders (Firebase Spark)
+on:
+  schedule:
+    - cron: '15 5 * * *' # 09:15 Asia/Dubai, UTC+4
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dar-expiry-reminders
+  cancel-in-progress: false
+jobs:
+  reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend dependency
+        run: npm install --no-save --no-package-lock firebase-admin@13.5.0
+      - name: Run expiry scheduler
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM_EMAIL: ${{ secrets.REMINDER_FROM_EMAIL }}
+          ADMIN_REMINDER_EMAIL: ${{ secrets.ADMIN_REMINDER_EMAIL }}
+        run: node scripts/expiry-reminders.mjs
