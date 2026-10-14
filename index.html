@@ -303,6 +303,8 @@
                                 </select>
                                 <input id="doc-min-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Min AED" aria-label="Minimum amount in AED" style="flex:1 1 100px;min-width:0;">
                                 <input id="doc-max-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Max AED" aria-label="Maximum amount in AED" style="flex:1 1 100px;min-width:0;">
+                                <label class="v2-filter-date">From <input type="date" id="doc-date-from" onchange="renderDocumentsTable()" aria-label="Records from date"></label>
+                                <label class="v2-filter-date">To <input type="date" id="doc-date-to" onchange="renderDocumentsTable()" aria-label="Records through date"></label>
                                 <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters()">Clear filters</button>
                                 <span id="doc-filter-count" role="status" aria-live="polite" style="font-size:0.8rem;color:var(--text-muted);"></span>
                             </div>
