@@ -365,6 +365,12 @@ function renderDashboardStats() {
     set('dash-staff-count', sums.staffCount + ' records');
     set('dash-month-expenses', currency(expenses));
     set('dash-month-net', currency(sums.month - expenses));
+    if (typeof window.getDarV2FinancialOverview === 'function') {
+        const v2 = window.getDarV2FinancialOverview(documents, state.monthlyExpenses || []);
+        set('dash-v2-received', currency(v2.received));
+        set('dash-v2-outstanding', currency(v2.outstanding));
+        set('dash-v2-unassigned', String(v2.unassigned));
+    }
 }
 
 function normalizeCompanyFolderKey(value) {
