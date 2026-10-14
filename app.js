@@ -839,6 +839,28 @@ function darDownloadJSON(name, data) {
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+// V2: read-only financial overview; does not change ledger or invoice calculations.
+window.getDarV2FinancialOverview = function(documents, expenses) {
+    const docs = Array.isArray(documents) ? documents : [];
+    const costs = Array.isArray(expenses) ? expenses : [];
+    const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0 };
+    docs.forEach(doc => {
+        const total = Math.max(0, Number(getDarDocumentAmount(doc)) || 0);
+        const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
+        const logs = Array.isArray(doc.paymentLogs) ? doc.paymentLogs : [];
+        const paid = Math.max(0, advance + logs.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
+        summary.invoiced += total;
+        summary.received += Math.min(total, paid);
+        summary.outstanding += Math.max(0, total - paid);
+        const branch = getAutomaticWorkBranch(doc);
+        if (branch === 'staff') summary.staff++;
+        else if (branch === 'unassigned') summary.unassigned++;
+        else summary.business++;
+    });
+    summary.expenses = costs.reduce((sum, e) => sum + Math.max(0, Number(e.amount) || 0), 0);
+    return summary;
+};
+
 window.exportDarBackup = async function() {
     try {
         const user = darSignedInUser();
