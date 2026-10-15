@@ -84,7 +84,7 @@ test('expiry notification events are read-only for verified approved users', asy
     await assertFails(db.ref('expiryReminderDeliveries/sample').once('value'));
     await assertFails(db.ref('expiryReminderDeliveries/sample').set({status:'tampered'}));
   }
-  for (const db of [auth(pendingUid),auth(userUid,false),env.unauthenticatedContext().database()]) {
+  for (const db of [auth('unapproved-notification-test-user'),auth(userUid,false),env.unauthenticatedContext().database()]) {
     await assertFails(db.ref('expiryNotificationEvents').once('value'));
     await assertFails(db.ref('expiryNotificationEvents/sample').set({type:'bad'}));
   }
