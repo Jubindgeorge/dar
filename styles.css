@@ -380,3 +380,14 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
   #tab-documents .data-table th { min-width:100px; white-space:nowrap; overflow-wrap:normal; word-break:normal; }
   #tab-documents .data-table td { min-width:100px; overflow-wrap:normal; word-break:normal; }
 }
+
+/* Mobile PRO Work Tracking: keep readable columns with horizontal scrolling. */
+@media screen and (max-width:767px) {
+ #dar-work-tracking { max-width:100%; min-width:0; }
+ #dar-work-tracking .table-responsive { display:block; width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+ #dar-work-tracking .data-table { width:max-content; min-width:100%; table-layout:auto; }
+ #dar-work-tracking .data-table th { min-width:110px; white-space:nowrap; word-break:normal; overflow-wrap:normal; }
+ #dar-work-tracking .data-table td { min-width:110px; max-width:270px; white-space:normal; word-break:normal; overflow-wrap:break-word; vertical-align:top; }
+ #dar-work-tracking .data-table td:last-child, #dar-work-tracking .data-table th:last-child { min-width:140px; }
+ #dar-work-tracking .data-table button, #dar-work-tracking .data-table select { min-width:95px; max-width:100%; }
+}
