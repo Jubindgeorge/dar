@@ -77,11 +77,33 @@ window.darSetExpiry=async function(id){
  if(value===null)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))){alert('Enter a valid YYYY-MM-DD date.');return;}
  try{if(!firebase.auth().currentUser?.emailVerified)throw Error('Verified sign-in required');await db.ref('documents/'+id).update({archiveExpiryDate:value,archiveUpdatedAt:new Date().toISOString()});window.darRenderCompletedFiles();}catch(e){alert('Unable to save expiry: '+e.message);}
 };
+let expiryEvents = null;
+let expiryEventsListening = false;
 window.darRenderExpiryNotifications=function(){
- const root=document.getElementById('dar-expiry-notifications');if(!root)return;root.replaceChildren();
+ const root=document.getElementById('dar-expiry-notifications');if(!root)return;
+ root.replaceChildren();
+ if(!expiryEventsListening && typeof db!=='undefined' && db && firebase.auth().currentUser?.emailVerified){
+  expiryEventsListening=true;
+  db.ref('expiryNotificationEvents').on('value',snapshot=>{
+   expiryEvents=snapshot.val()||{};
+   if(document.getElementById('dar-expiry-notifications'))window.darRenderExpiryNotifications();
+  },error=>{
+   expiryEvents={};
+   const node=document.getElementById('dar-expiry-notifications');
+   if(node){const msg=document.createElement('p');msg.textContent='Backend reminder status unavailable: '+error.message;node.prepend(msg);}
+  });
+ }
  const now=new Date();now.setHours(0,0,0,0);
  const items=docs().filter(d=>isPaid(d)&&(d.archiveExpiryDate||d.visaExpiryDate)).map(d=>({d,date:new Date((d.archiveExpiryDate||d.visaExpiryDate)+'T00:00:00')})).filter(x=>!Number.isNaN(+x.date)).filter(x=>{const before=new Date(x.date);before.setMonth(before.getMonth()-1);return now>=before;}).sort((a,b)=>a.date-b.date);
  if(!items.length){root.textContent='No expiry reminders due.';return;}
- for(const {d,date} of items){const row=document.createElement('div');row.className='dar-archive-row';const days=Math.ceil((date-now)/86400000);row.textContent=packageName(d)+' · '+d.refCode+' · '+company(d)+' · '+(days<0?'Expired '+(-days)+' days ago':days+' days remaining')+' · Email delivery status not verified';root.append(row);}
+ for(const {d,date} of items){
+  const row=document.createElement('div');row.className='dar-archive-row';
+  const days=Math.ceil((date-now)/86400000);
+  const expiry=d.archiveExpiryDate||d.visaExpiryDate;
+  const event=expiryEvents?.[d.refCode]?.[expiry];
+  const status=event?.type==='Email Missing'?'Recipient email missing — admin review required':event?.updatedAt?'Backend reminder reviewed · '+event.updatedAt:'Email delivery not verified';
+  row.textContent=packageName(d)+' · '+d.refCode+' · '+company(d)+' · '+(days<0?'Expired '+(-days)+' days ago':days+' days remaining')+' · '+status;
+  root.append(row);
+ }
 };
 })();
