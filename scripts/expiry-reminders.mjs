@@ -22,7 +22,9 @@ const minusMonth = iso => {
  base.setUTCDate(Math.min(day,last));return base.toISOString().slice(0,10);
 };
 const amount=d=>{for(const n of [d.totalAmount,d.totalAmt,d.total,d.amount]){if(n===null||n===undefined||n==='')continue;const v=Number(String(n).replace(/,/g,''));if(Number.isFinite(v))return v;}return 0;};
-// Legacy invoices may contain the same advance both in advanceAmount and paymentLogs.\n// Without an explicit marker, treat the higher of the two as confirmed (never sum ambiguously).\nconst paid=d=>{
+// Legacy invoices may contain the same advance both in advanceAmount and paymentLogs.
+// Without an explicit marker, treat the higher of the two as confirmed (never sum ambiguously).
+const paid=d=>{
  const logs=Array.isArray(d.paymentLogs)?d.paymentLogs:Object.values(d.paymentLogs||{});
  const advance=Number(d.advanceAmount??d.advanceAmt??0)||0;
  const logged=logs.reduce((sum,p)=>sum+(Number(p?.amount)||0),0);
