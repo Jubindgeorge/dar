@@ -368,3 +368,15 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
 .dar-stage-editor label{display:block;margin:12px 0}
 .dar-stage-editor select,.dar-stage-editor textarea{display:block;width:100%;max-width:520px;padding:10px;background:var(--bg-dark);color:var(--text-main);border:1px solid var(--border-color);border-radius:8px}
 @media(max-width:768px){.dar-archive-row{flex-wrap:wrap}.dar-folder .dar-folder{margin-left:4px}}
+
+/* Mobile navigation and ledger: UI-only, no print/PDF changes. */
+@media screen and (max-width: 767px) {
+  #app-container .sidebar { display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; height:100dvh; max-height:100dvh; box-sizing:border-box; }
+  #app-container .sidebar-header, #app-container .sidebar-maintenance, #app-container .sidebar-footer { position:static; flex:0 0 auto; }
+  #app-container .sidebar-menu { display:block; flex:0 0 auto; overflow:visible; min-height:0; }
+  #app-container .sidebar-menu li { min-height:44px; box-sizing:border-box; }
+  #tab-documents .table-responsive { width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  #tab-documents .data-table { width:max-content; min-width:100%; table-layout:auto; }
+  #tab-documents .data-table th { min-width:100px; white-space:nowrap; overflow-wrap:normal; word-break:normal; }
+  #tab-documents .data-table td { min-width:100px; overflow-wrap:normal; word-break:normal; }
+}
