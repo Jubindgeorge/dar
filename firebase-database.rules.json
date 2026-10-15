@@ -81,6 +81,14 @@
         ".write": "auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2')",
         ".validate": "newData.isBoolean()"
       }
+    },
+    "expiryNotificationEvents": {
+      ".read": "(auth != null && auth.token.email_verified === true && (auth.uid === 'DOoTyjTlQQWpW5Q4p6bZfgcyDYr2' || auth.uid === '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2') || (auth != null && auth.token.email_verified === true && root.child('approvals').child(auth.uid).val() === true))",
+      ".write": false
+    },
+    "expiryReminderDeliveries": {
+      ".read": false,
+      ".write": false
     }
   }
 }

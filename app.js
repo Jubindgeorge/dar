@@ -317,6 +317,9 @@ window.switchTab = function(tabId) {
     if (tabId === 'works-detail' && typeof renderWorksDetailView === 'function') renderWorksDetailView();
     if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
     if (tabId === 'documents' && typeof renderDocumentsTable === 'function') renderDocumentsTable();
+    if (tabId === 'work-tracking' && typeof darRenderWorkTracking === 'function') darRenderWorkTracking();
+    if (tabId === 'completed-files' && typeof darRenderCompletedFiles === 'function') darRenderCompletedFiles();
+    if (tabId === 'expiry-notifications' && typeof darRenderExpiryNotifications === 'function') darRenderExpiryNotifications();
     if (tabId === 'accounts-ledger' && typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
 };
 
@@ -337,7 +340,7 @@ function renderDashboardStats() {
     const sums = {month: 0, year: 0, business: 0, staff: 0, businessCount: 0, staffCount: 0};
     documents.forEach(doc => {
         const amount = darDashboardAmount(doc);
-        const date = String(doc.createdDate || '');
+        const date = String(doc.createdDate || doc.date || '');
         if (date.startsWith(month)) sums.month += amount;
         if (date.startsWith(year)) sums.year += amount;
         if (getAutomaticWorkBranch(doc) === 'staff') { sums.staff += amount; sums.staffCount++; }
@@ -487,12 +490,12 @@ window.viewClientDetail = function(clientId) {
             const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
             return `
                 <tr>
-                    <td><strong>${d.refCode}</strong></td>
+                    <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
                     <td>${workDescriptionCell(d)}</td>
                     <td>${d.visaExpiryDate || '-'}</td>
                     <td>AED ${amt.toFixed(2)}</td>
                     <td style="text-align: center;">
-                        <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
+                        <button onclick="previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> View</button>
                     </td>
                 </tr>
             `;
@@ -570,14 +573,14 @@ function renderWorksDetailView() {
         return `
             <tr>
                 <td><strong>${d.refCode}</strong></td>
-                <td>${d.clientName || '-'}</td>
-                <td>${d.companyName || '-'}</td>
+                <td>${darEscapeHTML(d.clientName || '-')}</td>
+                <td>${darEscapeHTML(d.companyName || '-')}</td>
                 <td>${d.contactPerson || '-'}</td>
                 <td>${workDescriptionCell(d)}</td>
                 <td>AED ${amt.toFixed(2)}</td>
                 <td style="text-align: center;">
                     <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
-                    <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="openStudio('Invoice', ${darSafeDocumentKey(d.refCode)})" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
                 </td>
             </tr>
         `;
@@ -602,6 +605,13 @@ window.clearDocumentFilters = function() {
     if (branch) branch.value = 'all';
     renderDocumentsTable();
 };
+function darEscapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
+}
+function darSafeDocumentKey(value) {
+    return JSON.stringify(String(value ?? '')).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/'/g, '\\u0027');
+}
+
 function renderDocumentsTable() {
     const tbody = document.getElementById('doc-table-body');
     if (!tbody) return;
@@ -652,17 +662,17 @@ function renderDocumentsTable() {
         const rowTotal = getDarDocumentAmount(d);
         return `
         <tr>
-            <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${d.refCode}" onchange="updateBatchDeleteButtonState()"></td>
-            <td><strong>${d.refCode}</strong></td>
-            <td>${d.clientName || '-'}</td>
-            <td>${d.companyName || '-'}</td>
+            <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${darEscapeHTML(d.refCode)}" onchange="updateBatchDeleteButtonState()"></td>
+            <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+            <td>${darEscapeHTML(d.clientName || '-')}</td>
+            <td>${darEscapeHTML(d.companyName || '-')}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${getAutomaticWorkBranch(d) === 'unassigned' ? 'Without Company' : getAutomaticWorkBranch(d) === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
             <td>${workDescriptionCell(d)}</td>
             <td>AED ${rowTotal.toFixed(2)}</td>
             <td style="text-align: center;">
-                <button onclick="previewInvoiceDocument('${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
-                <button onclick="openStudio('Invoice', '${d.refCode}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteSingleDocument('${d.refCode}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
+                <button onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
+                <button onclick='openStudio("Invoice", ${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick='deleteSingleDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
     `;

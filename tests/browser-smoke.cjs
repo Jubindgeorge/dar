@@ -50,7 +50,7 @@ const assert = require('node:assert/strict');
         document.getElementById('st-client-name').value='Test Staff';
         document.getElementById('st-company-name').value='Test Company';
         previewStudioCompanyMatches();
-        db.ref=path=>({set:(payload,callback)=>{calls.push({path,payload});callback(null);}});
+        db.ref=path=>({update:(payload,callback)=>{calls.push({path,payload});callback(null);}});
         window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
         commitDocumentToMemory();
         const saved=state.documents.find(d=>d.refCode==='CI-SAVE-001');

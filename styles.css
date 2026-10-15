@@ -339,3 +339,32 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
 .v2-filter-date { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--text-muted, #94a3b8); flex: 1 1 155px; min-width: 0; }
 .v2-filter-date input { min-width: 0; width: 100%; max-width: 100%; min-height: 40px; }
 @media (max-width: 768px) { #tab-documents input, #tab-documents select { max-width: 100%; box-sizing: border-box; } #tab-documents .table-responsive { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; } }
+
+/* QC Premium UI: application-only styling. Print/PDF templates remain untouched. */
+#app-container { --panel-bg:#17243a; --border-color:#34465f; --text-muted:#aabbd0; }
+#app-container .view-panel { animation:darPanelEnter .22s ease-out; }
+@keyframes darPanelEnter { from {opacity:.6;transform:translateY(5px)} to {opacity:1;transform:translateY(0)} }
+#app-container .metric-card { border:1px solid rgba(203,163,88,.19); border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.12); transition:transform .18s ease,border-color .18s ease; }
+#app-container .metric-card:hover { transform:translateY(-2px); border-color:rgba(203,163,88,.48); }
+#app-container .table-responsive { border-radius:14px; border:1px solid rgba(148,163,184,.16); }
+#app-container .data-table { border-collapse:separate; border-spacing:0; }
+#app-container .data-table thead th { background:#22324b; color:#e9eef7; letter-spacing:.025em; }
+#app-container .data-table tbody tr { transition:background .15s ease; }
+#app-container .data-table tbody tr:hover { background:rgba(203,163,88,.075); }
+#app-container input:focus-visible,#app-container select:focus-visible,#app-container textarea:focus-visible,#app-container button:focus-visible { outline:2px solid #e5bd72; outline-offset:2px; }
+#app-container .btn { transition:filter .15s ease,transform .15s ease; }
+#app-container .btn:hover { filter:brightness(1.08); }
+@media (max-width:768px) { #app-container .dashboard-grid { gap:12px; } #app-container .metric-card { min-width:0; } #app-container .data-table th,#app-container .data-table td { white-space:normal; overflow-wrap:anywhere; } #app-container button,#app-container .btn { min-height:40px; } }
+@media (prefers-reduced-motion:reduce) { #app-container .view-panel,#app-container .metric-card,#app-container .btn { animation:none;transition:none; } }
+
+/* Operational pages only; no PDF/print rules. */
+.dar-hint{color:var(--text-muted);margin:8px 0 18px;line-height:1.55}
+.dar-folder{background:var(--panel-bg);border:1px solid var(--border-color);border-radius:12px;margin:12px 0;padding:12px 16px}
+.dar-folder summary{cursor:pointer;font-weight:650;padding:7px 0;overflow-wrap:anywhere}
+.dar-folder .dar-folder{margin-left:12px}
+.dar-archive-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-bottom:1px solid var(--border-color);overflow-wrap:anywhere}
+.dar-stage-editor{padding:18px;margin:12px 0;background:var(--panel-bg);border:1px solid var(--primary);border-radius:14px}
+.dar-stage-editor[hidden]{display:none}
+.dar-stage-editor label{display:block;margin:12px 0}
+.dar-stage-editor select,.dar-stage-editor textarea{display:block;width:100%;max-width:520px;padding:10px;background:var(--bg-dark);color:var(--text-main);border:1px solid var(--border-color);border-radius:8px}
+@media(max-width:768px){.dar-archive-row{flex-wrap:wrap}.dar-folder .dar-folder{margin-left:4px}}

@@ -71,3 +71,21 @@ test('recovery and audit enforce valid writes', async () => {
     action:'delete',collection:'clients',recordKey:'example',actorUid:pendingUid,at:Date.now()
   }));
 });
+
+test('expiry notification events are read-only for verified approved users', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    await context.database().ref('expiryNotificationEvents/sample/2027-03-31').set({type:'Reminder'});
+    await context.database().ref('expiryReminderDeliveries/sample/2027-03-31/admin').set({status:'sent'});
+  });
+  for (const uid of [adminUid,secondAdminUid,userUid]) {
+    const db=auth(uid);
+    await assertSucceeds(db.ref('expiryNotificationEvents/sample').once('value'));
+    await assertFails(db.ref('expiryNotificationEvents/sample/2027-03-31').set({type:'tampered'}));
+    await assertFails(db.ref('expiryReminderDeliveries/sample').once('value'));
+    await assertFails(db.ref('expiryReminderDeliveries/sample').set({status:'tampered'}));
+  }
+  for (const db of [auth('unapproved-notification-test-user'),auth(userUid,false),env.unauthenticatedContext().database()]) {
+    await assertFails(db.ref('expiryNotificationEvents').once('value'));
+    await assertFails(db.ref('expiryNotificationEvents/sample').set({type:'bad'}));
+  }
+});
