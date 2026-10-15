@@ -1,7 +1,7 @@
 // Scheduled expiry reminders. Server-side only; never import this into GitHub Pages.
 // Requires FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_DATABASE_URL, RESEND_API_KEY,
 // REMINDER_FROM_EMAIL and ADMIN_REMINDER_EMAIL as GitHub Actions secrets.
-import { initializeApp, cert } from 'firebase-admin/app';
+if (process.env.REMINDER_DRY_RUN === 'true') {\n console.log('DRY RUN: no Firebase connection, database writes, or email sends.');\n process.exit(0);\n}\nimport { initializeApp, cert } from 'firebase-admin/app';
 import { getDatabase } from 'firebase-admin/database';
 
 const required = ['FIREBASE_SERVICE_ACCOUNT_JSON','FIREBASE_DATABASE_URL','RESEND_API_KEY','REMINDER_FROM_EMAIL','ADMIN_REMINDER_EMAIL'];
