@@ -1,7 +1,5 @@
 name: Scheduled Expiry Reminders (Firebase Spark)
 on:
-  schedule:
-    - cron: '15 5 * * *' # 09:15 Asia/Dubai, UTC+4
   workflow_dispatch:
     inputs:
       dry_run:
@@ -31,5 +29,5 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM_EMAIL: ${{ secrets.REMINDER_FROM_EMAIL }}
           ADMIN_REMINDER_EMAIL: ${{ secrets.ADMIN_REMINDER_EMAIL }}
-          REMINDER_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          REMINDER_DRY_RUN: 'true'
         run: node scripts/expiry-reminders.mjs
