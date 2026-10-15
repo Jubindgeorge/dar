@@ -60,7 +60,7 @@ for(const [id,d] of Object.entries(snapshot.val()||{})){
  const body='Package: '+title+'\nInvoice: '+id+'\nExpiry: '+expiry+'\nPlease review the renewal requirements.';
  const base=db.ref('expiryReminderDeliveries/'+id+'/'+expiry);
  // Never guess recipient emails from unrelated fields. A missing address is reported to admin.
- const recipients=[['admin',email(process.env.ADMIN_REMINDER_EMAIL)],['recipient',email(company(d)?d.companyEmail:d.clientEmail)]];
+ // Customer delivery is opt-in and disabled until recipient mapping is independently verified.\n const recipients=[['admin',email(process.env.ADMIN_REMINDER_EMAIL)]];\n if(process.env.ENABLE_CUSTOMER_REMINDERS==='true')recipients.push(['recipient',email(company(d)?d.companyEmail:d.clientEmail)]);
  for(const [role,to] of recipients){
   if(!to){if(role==='recipient')await db.ref('expiryNotificationEvents/'+id+'/'+expiry).update({type:'Email Missing',packageName:title,invoiceRef:id,expiryDate:expiry,createdAt:new Date().toISOString()});continue;}
   try{if(await once(base.child(role),to,subject,body))processed++;}
