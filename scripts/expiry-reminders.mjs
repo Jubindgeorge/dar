@@ -22,11 +22,11 @@ const minusMonth = iso => {
  base.setUTCDate(Math.min(day,last));return base.toISOString().slice(0,10);
 };
 const amount=d=>{for(const n of [d.totalAmount,d.totalAmt,d.total,d.amount]){if(n===null||n===undefined||n==='')continue;const v=Number(String(n).replace(/,/g,''));if(Number.isFinite(v))return v;}return 0;};
-const paid=d=>{
+// Legacy invoices may contain the same advance both in advanceAmount and paymentLogs.\n// Without an explicit marker, treat the higher of the two as confirmed (never sum ambiguously).\nconst paid=d=>{
  const logs=Array.isArray(d.paymentLogs)?d.paymentLogs:Object.values(d.paymentLogs||{});
  const advance=Number(d.advanceAmount??d.advanceAmt??0)||0;
  const logged=logs.reduce((sum,p)=>sum+(Number(p?.amount)||0),0);
- return Math.max(0,(d.advanceIncludedInPaymentLogs===true?0:advance)+logged);
+ return Math.max(0,d.advanceIncludedInPaymentLogs===true?logged:d.advanceIncludedInPaymentLogs===false?advance+logged:Math.max(advance,logged));
 };
 const email=v=>typeof v==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())?v.trim():null;
 const company=d=>d.companyName&&!['direct clients','direct client','private','without company'].includes(String(d.companyName).toLowerCase().trim());
@@ -47,7 +47,7 @@ async function once(ref,to,subject,body){
 const snapshot=await db.ref('documents').get();
 let processed=0,failed=0;
 for(const [id,d] of Object.entries(snapshot.val()||{})){
- if(!d||d.type==='Quotation'||!/^[A-Za-z0-9_-]{1,80}$/.test(id))continue;
+ if(!d||!/invoice/i.test(String(d.type||''))||!/^[A-Za-z0-9_-]{1,80}$/.test(id))continue;
  // Only explicitly archived, fully paid invoices are eligible. Legacy visa expiry alone is insufficient.
  const expiry=d.archiveExpiryDate;
  if(!utcDate(expiry)||!(amount(d)>0&&paid(d)>=amount(d)-0.005))continue;
