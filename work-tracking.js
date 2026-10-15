@@ -45,8 +45,15 @@ window.darEditWorkStage = function(id){
  const root=document.getElementById('dar-work-stage-editor');if(!root)return;
  const available=stages[category(d)],current=d.proStage||available[0];
  root.hidden=false;
- root.innerHTML='<h3>Update Work · '+safe(id)+'</h3><p>'+safe(packageName(d))+'</p><label>Stage <select id="dar-pro-stage">'+select([...new Set([...available,current])],current)+'</select></label><label>Status <select id="dar-pro-status">'+select(['Not Started','In Progress','Waiting for Client','Waiting for Government','On Hold','Rejected','Completed'],d.proStatus||'Not Started')+'</select></label><label>Remarks <textarea id="dar-pro-note" rows="2"></textarea></label><button class="btn btn-primary" id="dar-pro-save">Save Stage</button> <button class="btn btn-secondary" id="dar-pro-close">Cancel</button>';
- root.querySelector('#dar-pro-close').onclick=()=>{root.hidden=true;};
+ root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Update Work Stage');
+ const priorFocus=document.activeElement;
+ const closeEditor=()=>{root.hidden=true;document.removeEventListener('keydown',onEscape);priorFocus?.focus?.();};
+ const onEscape=e=>{if(e.key==='Escape')closeEditor();};
+ document.addEventListener('keydown',onEscape);
+ root.onclick=e=>{if(e.target===root)closeEditor();};
+ root.innerHTML='<div class="dar-stage-dialog"><h3>Update Work · '+safe(id)+'</h3><p>'+safe(packageName(d))+'</p><label>Stage <select id="dar-pro-stage">'+select([...new Set([...available,current])],current)+'</select></label><label>Status <select id="dar-pro-status">'+select(['Not Started','In Progress','Waiting for Client','Waiting for Government','On Hold','Rejected','Completed'],d.proStatus||'Not Started')+'</select></label><label>Remarks <textarea id="dar-pro-note" rows="2"></textarea></label><button class="btn btn-primary" id="dar-pro-save">Save Stage</button> <button class="btn btn-secondary" id="dar-pro-close">Cancel</button></div>';
+ root.querySelector('#dar-pro-close').onclick=closeEditor;
+ root.querySelector('#dar-pro-stage').focus();
  root.querySelector('#dar-pro-save').onclick=async()=>{
    const stage=root.querySelector('#dar-pro-stage').value,status=root.querySelector('#dar-pro-status').value,note=root.querySelector('#dar-pro-note').value.trim();
    try{
@@ -55,7 +62,7 @@ window.darEditWorkStage = function(id){
     const now=new Date().toISOString(),uid=firebase.auth().currentUser.uid;
     await ref.child('proHistory').push({stage,status,note,updatedAt:now,updatedBy:uid});
     await ref.update({proStage:stage,proStatus:status,proUpdatedAt:now});
-    root.hidden=true;window.darRenderWorkTracking();
+    closeEditor();window.darRenderWorkTracking();
    }catch(e){alert('Stage update failed: '+e.message);}
  };
 };
