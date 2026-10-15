@@ -399,3 +399,19 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
  #tab-accounts-ledger .data-table th { min-width:115px; white-space:nowrap; word-break:normal; overflow-wrap:normal; }
  #tab-accounts-ledger .data-table td { min-width:115px; max-width:270px; word-break:normal; overflow-wrap:break-word; }
 }
+
+/* iPhone service catalog and safe-area header spacing; application only. */
+@media screen and (max-width:767px) {
+ #app-container .top-bar { box-sizing:border-box; padding-top:max(12px, env(safe-area-inset-top, 0px)); height:auto; min-height:calc(72px + env(safe-area-inset-top, 0px)); align-items:center; }
+ #app-container .top-bar-title-section { min-width:0; flex:1 1 auto; }
+ #app-container .top-bar-title-section > div { min-width:0; }
+ #app-container .user-profile-badge { flex:0 1 auto; min-width:0; }
+ #tab-services-config .services-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; min-width:0; }
+ #tab-services-config .service-card { min-width:0; padding:16px; border:1px solid var(--border-color); border-radius:14px; background:var(--panel-bg); overflow-wrap:break-word; }
+ #tab-services-config .service-card h4 { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:0 0 14px; }
+ #tab-services-config .service-card h4 span { min-width:0; flex:1; overflow-wrap:anywhere; }
+ #tab-services-config .service-card h4 > div { display:flex; flex:0 0 auto; gap:6px; }
+ #tab-services-config .service-item-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid rgba(148,163,184,.12); }
+ #tab-services-config .service-item-row span { flex:1 1 auto; min-width:0; overflow-wrap:break-word; }
+ #tab-services-config .service-item-row strong { flex:0 0 auto; white-space:nowrap; text-align:right; }
+}
