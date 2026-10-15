@@ -391,3 +391,11 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
  #dar-work-tracking .data-table td:last-child, #dar-work-tracking .data-table th:last-child { min-width:140px; }
  #dar-work-tracking .data-table button, #dar-work-tracking .data-table select { min-width:95px; max-width:100%; }
 }
+
+/* Mobile accounts master ledger: horizontal scroll rather than vertical letters. */
+@media screen and (max-width:767px) {
+ #tab-accounts-ledger .table-responsive { display:block; width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+ #tab-accounts-ledger .data-table { width:max-content; min-width:100%; table-layout:auto; }
+ #tab-accounts-ledger .data-table th { min-width:115px; white-space:nowrap; word-break:normal; overflow-wrap:normal; }
+ #tab-accounts-ledger .data-table td { min-width:115px; max-width:270px; word-break:normal; overflow-wrap:break-word; }
+}
