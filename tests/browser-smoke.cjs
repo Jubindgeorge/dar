@@ -11,6 +11,9 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
+    assert.equal(await page.locator('#tab-staff').count(),1,'Company staff page exists');
+    assert.equal(await page.locator('#tab-purchases').count(),1,'Purchases page exists');
+    assert.equal(await page.locator('[data-group-toggle]').count(),7,'Sidebar has grouped navigation controls');
     await page.evaluate(() => {
       document.getElementById('welcome-screen').style.display='none';
       document.getElementById('auth-container').style.display='none';
@@ -67,8 +70,28 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
     assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),8,'Ledger rows have 8 cells');
     assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),8,'Ledger headings have 8 cells');
+    const moduleSmoke = await page.evaluate(() => {
+      state.clients=[{id:'company-test',companyName:'Sample Company'}];
+      state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
+      state.activeStaffCompanyId='';
+      renderStaffTable();
+      state.suppliers=[{id:'supplier-test',name:'Test Supplier'}];
+      state.purchases=[{id:'purchase-test',supplierId:'supplier-test',supplierName:'Test Supplier',reference:'PO-TEST-001',date:'2026-10-20',description:'Test service',amount:125,paymentStatus:'Unpaid'}];
+      renderPurchases();
+      return {
+        staff:document.getElementById('staff-table-body').innerText,
+        purchases:document.getElementById('purchase-table-body').innerText,
+        total:document.getElementById('purchase-total-amount').innerText
+      };
+    });
+    assert.match(moduleSmoke.staff,/ST-001/,'Staff table renders staff ID');
+    assert.match(moduleSmoke.staff,/Visa renewal/,'Staff table renders last work done');
+    assert.match(moduleSmoke.purchases,/PO-TEST-001/,'Purchase table renders reference');
+    assert.match(moduleSmoke.purchases,/Test Supplier/,'Purchase table resolves supplier');
+    assert.equal(moduleSmoke.total,'AED 125.00','Purchase total is calculated');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
+    console.log('PASS: company staff table and purchase/supplier module rendering');
     if (errors.length) console.log('Browser page errors (external dependencies may be unavailable):',errors.slice(0,6));
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});
