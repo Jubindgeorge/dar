@@ -23,7 +23,7 @@
   };
   const skip = '#document-preview-modal, #a4-wrapper-element, .invoice-document, .quotation-document, .preview-modal-body-canvas';
   function translate(language) {
-    document.querySelectorAll('.sidebar, .top-bar, #tab-staff, #tab-purchases, #tab-clients, #tab-documents, #tab-works, #tab-services-config, #tab-work-tracking, #tab-completed-files, #tab-expiry-notifications, #tab-accounts-ledger').forEach(root => {
+    document.querySelectorAll('.sidebar, .top-bar, #tab-staff, #tab-purchases, #tab-clients, #tab-documents, #tab-works, #tab-services-config, #tab-work-tracking, #tab-completed-files, #tab-expiry-notifications, #tab-accounts-ledger, #staff-modal, #purchase-modal, #supplier-modal, #company-client-modal').forEach(root => {
       if (root.closest(skip)) return;
       root.querySelectorAll('*').forEach(element => {
         if (element.closest(skip)) return;
