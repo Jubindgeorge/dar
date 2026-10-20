@@ -5,6 +5,8 @@ let state = {
     services: [],
     staff: [],
     companyClients: [],
+    suppliers: [],
+    purchases: [],
     activeStaffCompanyId: '',
     selectedCompanyClientId: '',
     monthlyExpenses: [],
