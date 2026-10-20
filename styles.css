@@ -524,3 +524,13 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
 .sidebar-menu li.sidebar-subitem { padding-left: 18px; }
 #app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-group-toggle { justify-content: center; padding: 10px 0 5px; }
 #app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-subitem { padding-left: 0; }
+
+/* Arabic UI direction is scoped to the application shell; document preview/PDF surfaces stay untouched. */
+body.dar-arabic-ui .sidebar,
+body.dar-arabic-ui .top-bar,
+body.dar-arabic-ui .view-space { direction: rtl; }
+body.dar-arabic-ui .sidebar { border-right: 0; border-left: 1px solid var(--border-color); }
+body.dar-arabic-ui .sidebar-menu li { text-align: right; }
+body.dar-arabic-ui .staff-filter-row,
+body.dar-arabic-ui .staff-page-heading,
+body.dar-arabic-ui .staff-toolbar { direction: rtl; }
