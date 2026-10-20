@@ -23,7 +23,7 @@ export default function App() {
     event.preventDefault();
     setStatus('');
     setBusy(true);
-    const form = new FormData(event.currentTarget);
+    // Keep a stable DOM reference across the asynchronous request; React may clear event.currentTarget after dispatch.\n    const formElement = event.currentTarget;\n    const form = new FormData(formElement);
     const payload = {
       name: String(form.get('name') || '').trim(),
       phone: String(form.get('phone') || '').trim(),
@@ -38,7 +38,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Lead submission failed');
       setStatus(t.success);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch {
       setStatus(t.error);
     } finally {
