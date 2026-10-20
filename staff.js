@@ -95,6 +95,19 @@
             '</tr>').join('');
     };
 
+    window.openStaffModalFromInvoice = function (refCode) {
+        const doc = (state.documents || []).find(item => item.refCode === refCode);
+        if (!doc) { showCustomModal('Invoice not found','The saved invoice could not be found in the current session.'); return; }
+        window.openStaffModal('', {
+            companyId: companyIdByName(doc.companyName),
+            companyName: doc.companyName,
+            fullName: doc.clientName,
+            visaExpiry: doc.visaExpiryDate,
+            linkedInvoiceRef: doc.refCode,
+            lastWorkDone: doc.packageName || doc.serviceName || ''
+        });
+    };
+
     window.openStaffModal = function (recordId, defaults) {
         const record = (state.staff || []).find(item => item.id === recordId) || {};
         defaults = defaults || {};
