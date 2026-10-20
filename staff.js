@@ -93,6 +93,7 @@
             '<td>'+statusPill(dueStatus(staff))+'</td>'+
             '<td class="staff-actions"><button type="button" class="btn btn-secondary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit</button> '+(staff.linkedInvoiceRef ? '<button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+html(staff.linkedInvoiceRef)+'\')">Invoice</button>' : '')+'</td>'+
             '</tr>').join('');
+        if (window.applyDarLanguage) window.applyDarLanguage();
     };
 
     window.openStaffModalFromInvoice = function (refCode) {
