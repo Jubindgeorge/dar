@@ -23,7 +23,8 @@ export default function App() {
     event.preventDefault();
     setStatus('');
     setBusy(true);
-    // Keep a stable DOM reference across the asynchronous request; React may clear event.currentTarget after dispatch.\n    const formElement = event.currentTarget;\n    const form = new FormData(formElement);
+    // Keep a stable DOM reference across the asynchronous request; React may clear event.currentTarget after dispatch.
+    const formElement = event.currentTarget;\n    const form = new FormData(formElement);
     const payload = {
       name: String(form.get('name') || '').trim(),
       phone: String(form.get('phone') || '').trim(),
