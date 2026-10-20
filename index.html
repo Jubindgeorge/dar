@@ -84,26 +84,26 @@
                 <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">ERP & Financial Studio</p>
             </div>
             <ul class="sidebar-menu">
-                <li class="sidebar-group-label"><span>WORKSPACE</span></li>
-                <li onclick="switchTab('dashboard')" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
-                <li class="sidebar-group-label"><span>CRM</span></li>
-                <li onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-building"></i><span>Companies & Clients</span></li>
-                <li onclick="switchTab('staff')" data-target="staff"><i class="fa-solid fa-id-card"></i><span>Company Staff Data</span></li>
-                <li class="sidebar-group-label"><span>OPERATIONS</span></li>
-                <li onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works Directory</span></li>
-                <li onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
-                <li onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
-                <li onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
-                <li class="sidebar-group-label"><span>SALES</span></li>
-                <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Invoices & Quotations</span></li>
-                <li onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
-                <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
-                <li class="sidebar-group-label"><span>PURCHASE</span></li>
-                <li onclick="switchTab('purchases')" data-target="purchases"><i class="fa-solid fa-cart-shopping"></i><span>Purchases & Suppliers</span></li>
-                <li class="sidebar-group-label"><span>ACCOUNTING</span></li>
-                <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts & Ledger</span></li>
-                <li class="sidebar-group-label"><span>ALERTS</span></li>
-                <li onclick="switchTab('expiry-notifications')" data-target="expiry-notifications"><i class="fa-solid fa-bell"></i><span>Notification Center</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="workspace" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('workspace')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('workspace')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>WORKSPACE</span></li>
+                <li class="sidebar-subitem" data-group="workspace" onclick="switchTab('dashboard')" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="crm" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('crm')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('crm')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>CRM</span></li>
+                <li class="sidebar-subitem" data-group="crm" onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-building"></i><span>Companies & Clients</span></li>
+                <li class="sidebar-subitem" data-group="crm" onclick="switchTab('staff')" data-target="staff"><i class="fa-solid fa-id-card"></i><span>Company Staff Data</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="operations" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('operations')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('operations')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>OPERATIONS</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works Directory</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="sales" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('sales')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('sales')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>SALES</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Invoices & Quotations</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="purchase" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('purchase')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('purchase')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>PURCHASE</span></li>
+                <li class="sidebar-subitem" data-group="purchase" onclick="switchTab('purchases')" data-target="purchases"><i class="fa-solid fa-cart-shopping"></i><span>Purchases & Suppliers</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="accounting" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('accounting')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('accounting')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>ACCOUNTING</span></li>
+                <li class="sidebar-subitem" data-group="accounting" onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts & Ledger</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="alerts" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('alerts')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('alerts')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>ALERTS</span></li>
+                <li class="sidebar-subitem" data-group="alerts" onclick="switchTab('expiry-notifications')" data-target="expiry-notifications"><i class="fa-solid fa-bell"></i><span>Notification Center</span></li>
             </ul>
             <div style="padding:8px 14px;"><button id="dar-notification-button" type="button" onclick="toggleDarNotifications()" class="btn btn-secondary" style="display:none;width:100%;text-align:left;"><i class="fa-solid fa-bell"></i> Notifications <span id="dar-notification-count" style="display:none;background:#b91c1c;color:white;border-radius:12px;padding:2px 7px;margin-left:6px;"></span></button></div>
             <div id="dar-maintenance-admin" class="sidebar-maintenance" style="display:none;"><label for="dar-maintenance-toggle">System Update Notice</label><button type="button" id="dar-maintenance-toggle" class="btn btn-secondary" onclick="toggleDarMaintenance()" style="width:100%;margin-top:6px;">Enable Maintenance Notice</button><small>Login notice only; does not lock accounts.</small></div>
