@@ -13,6 +13,7 @@
         select.innerHTML = '<option value="">Select supplier</option>' + (state.suppliers || []).slice().sort((a,b)=>clean(a.name).localeCompare(clean(b.name))).map(s=>'<option value="'+html(s.id)+'">'+html(s.name)+'</option>').join('');
         select.value = selectedId || '';
     }
+    window.refreshPurchaseSupplierOptions = function () { fillSupplierOptions(); };
 
     window.renderPurchases = function () {
         const body = byId('purchase-table-body');
@@ -85,8 +86,5 @@
         });
     };
 
-    if (typeof db !== 'undefined' && db) {
-        db.ref('suppliers').on('value',snapshot=>{const value=snapshot.val();state.suppliers=value?Object.keys(value).map(id=>({id,...value[id]})):[];fillSupplierOptions();},error=>console.error('Supplier records could not be loaded:',error));
-        db.ref('purchases').on('value',snapshot=>{const value=snapshot.val();state.purchases=value?Object.keys(value).map(id=>({id,...value[id]})):[];renderPurchases();},error=>console.error('Purchase records could not be loaded:',error));
-    }
+    // Firebase listeners are registered by initFirebaseListeners only after the user is authorized.
 })();
