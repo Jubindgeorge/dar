@@ -98,6 +98,8 @@
                 <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Invoices & Quotations</span></li>
                 <li onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
                 <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
+                <li class="sidebar-group-label"><span>PURCHASE</span></li>
+                <li onclick="switchTab('purchases')" data-target="purchases"><i class="fa-solid fa-cart-shopping"></i><span>Purchases & Suppliers</span></li>
                 <li class="sidebar-group-label"><span>ACCOUNTING</span></li>
                 <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts & Ledger</span></li>
                 <li class="sidebar-group-label"><span>ALERTS</span></li>
@@ -278,6 +280,17 @@
                             <tbody id="client-detail-records-body"></tbody>
                         </table>
                     </div>
+                </section>
+
+                <!-- Purchase records are additive and remain separate from invoice/quotation records. -->
+                <section id="tab-purchases" class="view-panel">
+                    <div class="staff-page-heading">
+                        <div><h2 style="color:var(--primary);font-size:1.4rem;">Purchases & Suppliers</h2><p class="dar-hint">Track supplier bills, purchase references, amounts and payment status.</p></div>
+                        <div class="staff-toolbar"><button type="button" class="btn btn-secondary" onclick="openSupplierModal()">+ Add Supplier</button><button type="button" class="btn btn-primary" onclick="openPurchaseModal()">+ Record Purchase</button></div>
+                    </div>
+                    <div class="purchase-summary"><span>Recorded Purchases</span><strong id="purchase-total-amount">AED 0.00</strong></div>
+                    <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
+                    <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
                 </section>
 
                 <!-- Company staff register. Kept separate from the invoice/quotation print templates. -->
@@ -628,6 +641,11 @@
         </div>
     </div>
 
+    <!-- Supplier registration modal -->
+    <div id="supplier-modal" class="custom-modal-backdrop" style="display:none;"><div class="custom-modal-content" style="text-align:left;max-width:500px;"><h3 id="supplier-modal-title" style="margin-bottom:16px;">Add Supplier</h3><input id="su-record-id" type="hidden"><div class="form-group"><label for="su-name">Supplier Name *</label><input id="su-name" type="text" required></div><div class="form-group"><label for="su-contact">Contact Person</label><input id="su-contact" type="text"></div><div class="form-group"><label for="su-phone">Phone</label><input id="su-phone" type="tel"></div><div class="form-group"><label for="su-email">Email</label><input id="su-email" type="email"></div><div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button></div></div></div>
+    <!-- Purchase bill modal -->
+    <div id="purchase-modal" class="custom-modal-backdrop" style="display:none;"><div class="custom-modal-content" style="text-align:left;max-width:600px;max-height:90vh;overflow:auto;"><h3 id="purchase-modal-title" style="margin-bottom:16px;">Record Purchase</h3><input id="pu-record-id" type="hidden"><div class="form-group"><label for="pu-supplier">Supplier *</label><select id="pu-supplier" required></select></div><div class="form-group"><label for="pu-reference">Bill / Reference *</label><input id="pu-reference" type="text" required></div><div class="form-group"><label for="pu-date">Purchase Date *</label><input id="pu-date" type="date" required></div><div class="form-group"><label for="pu-description">Description</label><textarea id="pu-description" rows="2"></textarea></div><div class="form-group"><label for="pu-amount">Amount (AED) *</label><input id="pu-amount" type="number" min="0" step="0.01" required></div><div class="form-group"><label for="pu-status">Payment Status</label><select id="pu-status"><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div><div class="form-group"><label for="pu-notes">Notes</label><textarea id="pu-notes" rows="2"></textarea></div><div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closePurchaseModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="savePurchase()">Save Purchase</button></div></div></div>
+
     <!-- Company-linked client modal; does not alter printed document templates. -->
     <div id="company-client-modal" class="custom-modal-backdrop" style="display:none;">
         <div class="custom-modal-content" style="text-align:left;max-width:480px;">
@@ -899,6 +917,7 @@
     <script src="ledger.js"></script>
     <script src="app.js"></script>
     <script src="staff.js"></script>
+    <script src="purchase.js"></script>
     <script src="work-tracking.js"></script>
     <script src="translator.js"></script>
 </body>
