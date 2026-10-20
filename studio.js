@@ -117,7 +117,7 @@ function populateStudioInjectorSelect() {
 }
 
 function normalizeStudioCompanyName(value) {
-    return String(value || '').toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+    return String(value || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 function previewStudioCompanyMatches() {
