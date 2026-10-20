@@ -3,6 +3,10 @@ let state = {
     clients: [],
     documents: [],
     services: [],
+    staff: [],
+    companyClients: [],
+    activeStaffCompanyId: '',
+    selectedCompanyClientId: '',
     monthlyExpenses: [],
     currentStudioMode: 'Invoice',
     currentStudioItems: [],
@@ -29,6 +33,7 @@ function initFirebaseListeners() {
         state.clients = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderClientsTable === 'function') renderClientsTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
+        if (typeof renderStaffTable === 'function') renderStaffTable();
     }, error => showFirebaseReadError('clients', error));
 
     db.ref('documents').on('value', snapshot => {
