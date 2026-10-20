@@ -50,7 +50,7 @@ export default function App() {
     <div className="topline"><div className="wrap topline-inner"><span><span className="live-dot" /> {t.eyebrow}</span><span className="top-contact"><a href={'tel:+' + company.phoneE164}><Phone size={14} /> {company.phoneDisplay}</a><span className="top-separator">·</span><span>{company.location}</span></span></div></div>
     <header className="header"><div className="wrap nav">
       <a className="brand" href="#home" aria-label="Dar Al Shams home">
-        <img src="/brand/dar-al-shams-logo.png" alt="Dar Al Shams logo" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        <img src="https://raw.githubusercontent.com/Jubindgeorge/dar/main/LOGO.png" alt="Dar Al Shams official logo" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
         <span className="brand-text"><strong>DAR AL SHAMS</strong><small>DOCUMENTS CLEARING SERVICES</small></span>
       </a>
       <nav className={menuOpen ? 'nav-links open' : 'nav-links'}><a href="#services" onClick={() => setMenuOpen(false)}>{t.services}</a><a href="#process" onClick={() => setMenuOpen(false)}>{isArabic ? 'طريقة العمل' : 'How it works'}</a><a href="#contact" onClick={() => setMenuOpen(false)}>{t.contact}</a></nav>
