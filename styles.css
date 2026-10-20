@@ -486,3 +486,17 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
     .staff-toolbar { width: 100%; }
     .staff-toolbar .btn { flex: 1; }
 }
+
+.purchase-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--panel-bg);
+    color: var(--text-muted);
+}
+.purchase-summary strong { color: var(--primary); font-size: 1.15rem; }
