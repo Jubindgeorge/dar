@@ -301,6 +301,7 @@ window.switchTab = function(tabId) {
         'dashboard': 'Dashboard Overview',
         'clients': 'Companies & Clients',
         'staff': 'Company Staff Data',
+        'purchases': 'Purchases & Suppliers',
         'works': 'Works Directory',
         'works-detail': 'Business / Staff Works Folder',
         'client-detail': 'Client Specific Dossier',
@@ -315,6 +316,7 @@ window.switchTab = function(tabId) {
     if (tabId === 'dashboard' && typeof renderDashboardStats === 'function') renderDashboardStats();
     if (tabId === 'clients' && typeof renderClientsTable === 'function') renderClientsTable();
     if (tabId === 'staff' && typeof renderStaffTable === 'function') renderStaffTable();
+    if (tabId === 'purchases' && typeof renderPurchases === 'function') renderPurchases();
     if (tabId === 'works' && typeof renderWorksTable === 'function') renderWorksTable();
     if (tabId === 'works-detail' && typeof renderWorksDetailView === 'function') renderWorksDetailView();
     if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
