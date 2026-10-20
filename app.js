@@ -286,6 +286,17 @@ document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeDarMobileMenu();
 });
 
+window.toggleSidebarGroup = function(group, forceOpen) {
+    const toggle = document.querySelector('[data-group-toggle="' + group + '"]');
+    if (!toggle) return;
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+    document.querySelectorAll('[data-group="' + group + '"]').forEach(item => { item.hidden = !nextOpen; });
+    toggle.setAttribute('aria-expanded', String(nextOpen));
+    const chevron = toggle.querySelector('.group-chevron');
+    if (chevron) chevron.style.transform = nextOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+};
+
 window.switchTab = function(tabId) {
     if (isDarMobileLayout()) closeDarMobileMenu();
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
@@ -295,6 +306,7 @@ window.switchTab = function(tabId) {
     if (target) target.classList.add('active');
     
     const menuBtn = document.querySelector(`.sidebar-menu li[data-target="${tabId}"]`);
+    if (menuBtn && menuBtn.dataset.group && typeof window.toggleSidebarGroup === 'function') window.toggleSidebarGroup(menuBtn.dataset.group, true);
     if (menuBtn) menuBtn.classList.add('active');
 
     const titles = {
