@@ -242,18 +242,7 @@
     };
     window.refreshStaffCompanyClients = function () { /* Reserved for dependent fields; all clients remain company-linked. */ };
 
-    if (typeof db !== 'undefined' && db) {
-        db.ref('staff').on('value', snapshot => {
-            const value = snapshot.val();
-            state.staff = value ? Object.keys(value).map(id => ({id, ...value[id]})) : [];
-            renderStaffTable();
-        }, error => console.error('Staff records could not be loaded:', error));
-        db.ref('companyClients').on('value', snapshot => {
-            const value = snapshot.val();
-            state.companyClients = value ? Object.keys(value).map(id => ({id, ...value[id]})) : [];
-            if (typeof populateCompanyClients === 'function') populateCompanyClients();
-        }, error => console.error('Company-linked clients could not be loaded:', error));
-    }
+    // Firebase listeners are registered by initFirebaseListeners only after the user is authorized.
 
     document.addEventListener('DOMContentLoaded', () => {
         const companyInput = byId('st-company-name');
