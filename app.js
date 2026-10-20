@@ -299,7 +299,8 @@ window.switchTab = function(tabId) {
 
     const titles = {
         'dashboard': 'Dashboard Overview',
-        'clients': 'Clients',
+        'clients': 'Companies & Clients',
+        'staff': 'Company Staff Data',
         'works': 'Works Directory',
         'works-detail': 'Business / Staff Works Folder',
         'client-detail': 'Client Specific Dossier',
@@ -313,6 +314,7 @@ window.switchTab = function(tabId) {
 
     if (tabId === 'dashboard' && typeof renderDashboardStats === 'function') renderDashboardStats();
     if (tabId === 'clients' && typeof renderClientsTable === 'function') renderClientsTable();
+    if (tabId === 'staff' && typeof renderStaffTable === 'function') renderStaffTable();
     if (tabId === 'works' && typeof renderWorksTable === 'function') renderWorksTable();
     if (tabId === 'works-detail' && typeof renderWorksDetailView === 'function') renderWorksDetailView();
     if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
@@ -406,10 +408,11 @@ function renderClientsTable() {
     });
     tbody.innerHTML = uniqueClients.map(cl => `
         <tr>
-            <td><strong>${cl.companyName || '-'}</strong></td>
+            <td><button type="button" class="company-name-link" onclick="openCompanyStaff('${cl.id}')" title="Open staff data for this company">${darEscapeHTML(cl.companyName || '-')}</button></td>
             <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${cl.nameAr || '-'}</td>
             <td>${cl.contactPerson || '-'}</td>
             <td style="text-align: center;">
+                <button onclick="openCompanyStaff('${cl.id}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-id-card"></i> Staff Data</button>
                 <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
                 <button onclick="openClientModal('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
                 <button onclick="deleteClientAccount('${cl.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
