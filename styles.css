@@ -500,3 +500,27 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
     color: var(--text-muted);
 }
 .purchase-summary strong { color: var(--primary); font-size: 1.15rem; }
+
+.sidebar-menu li.sidebar-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin: 8px 0 2px;
+    padding: 10px 12px 5px;
+    color: var(--text-muted);
+    background: transparent;
+    font-size: .67rem;
+    font-weight: 800;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+.sidebar-menu li.sidebar-group-toggle:hover { background: transparent; color: var(--primary); }
+.sidebar-menu li.sidebar-group-toggle .group-chevron {
+    width: 12px;
+    font-size: .65rem;
+    transition: transform .16s ease;
+}
+.sidebar-menu li.sidebar-subitem { padding-left: 18px; }
+#app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-group-toggle { justify-content: center; padding: 10px 0 5px; }
+#app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-subitem { padding-left: 0; }
