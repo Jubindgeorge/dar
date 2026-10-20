@@ -20,6 +20,7 @@ function openStudio(type, editRefCode = null) {
 
     populateStudioInjectorSelect();
     populateStudioClientDropdown();
+    state.selectedCompanyClientId = '';
 
     if (editRefCode && state.documents) {
         const doc = state.documents.find(d => d.refCode === editRefCode);
@@ -38,6 +39,7 @@ function openStudio(type, editRefCode = null) {
 
             const clientNameInput = document.getElementById('st-client-name');
             if (clientNameInput) clientNameInput.value = doc.clientName || '';
+            state.selectedCompanyClientId = doc.companyClientId || '';
 
             const compNameInput = document.getElementById('st-company-name');
             if (compNameInput) compNameInput.value = doc.companyName || '';
@@ -89,6 +91,7 @@ function openStudio(type, editRefCode = null) {
 
         addStudioRow(false);
     }
+    if (typeof populateCompanyClients === 'function') populateCompanyClients();
     recalculateStudioTotals();
 }
 
@@ -167,6 +170,8 @@ function autofillStudioClient(companyName) {
         document.getElementById('st-company-matches')?.replaceChildren();
         const contactInput = document.getElementById('st-contact-person');
         if (contactInput) contactInput.value = client.contactPerson || '';
+        state.selectedCompanyClientId = '';
+        if (typeof populateCompanyClients === 'function') populateCompanyClients();
     }
 }
 
@@ -312,6 +317,7 @@ function commitDocumentToMemory() {
         clientName: clientName || companyName || 'Direct Client',
         companyName: companyName || 'Direct Clients',
         contactPerson,
+        companyClientId: state.selectedCompanyClientId || '',
         createdDate,
         visaExpiryDate,
         govtAmt,
@@ -333,7 +339,10 @@ function commitDocumentToMemory() {
             if (savedIndex >= 0) state.documents[savedIndex] = { ...state.documents[savedIndex], ...payload };
             else { state.documents = state.documents || []; state.documents.push(payload); }
             if (typeof showCustomModal === 'function') {
-                showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
+                const staffAction = payload.branchTag === 'staff' && typeof openStaffModalFromInvoice === 'function'
+                    ? `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); openStaffModalFromInvoice('${refCode}')">Complete Staff Details</button> `
+                    : '';
+                showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
             }
             state.activeEditingId = null;
             // Keep the completed entry visible until the user chooses the next action.

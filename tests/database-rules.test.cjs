@@ -44,6 +44,15 @@ test('verified approved user allowed, pending denied', async () => {
 test('approved but unverified user denied', async () => {
   await assertFails(auth(userUid, false).ref('documents').once('value'));
 });
+test('new staff, company-client and purchase collections retain the existing access gate', async () => {
+  for (const collection of ['staff','companyClients','suppliers','purchases']) {
+    await assertSucceeds(auth(adminUid).ref(collection + '/allowed').set({sample:true}));
+    await assertSucceeds(auth(userUid).ref(collection + '/approved').once('value'));
+    await assertFails(auth(pendingUid).ref(collection).once('value'));
+    await assertFails(env.unauthenticatedContext().database().ref(collection).once('value'));
+  }
+});
+
 test('users cannot approve themselves', async () => {
   await assertFails(auth(pendingUid).ref('approvals/' + pendingUid).set(true));
   await assertSucceeds(auth(adminUid).ref('approvals/' + pendingUid).set(true));

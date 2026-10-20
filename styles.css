@@ -425,3 +425,112 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
  #dar-work-stage-editor .dar-stage-dialog select, #dar-work-stage-editor .dar-stage-dialog textarea { display:block; width:100%; box-sizing:border-box; margin-top:6px; padding:10px; border-radius:8px; }
  #dar-work-stage-editor .dar-stage-dialog button { margin:8px 8px 0 0; min-height:42px; }
 }
+
+
+/* Structured navigation groups and additive staff/client forms. */
+.sidebar-menu li.sidebar-group-label {
+    cursor: default;
+    padding: 12px 12px 4px;
+    margin: 8px 0 2px;
+    color: var(--text-muted);
+    font-size: .66rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    background: transparent;
+}
+.sidebar-menu li.sidebar-group-label:hover { background: transparent; color: var(--text-muted); }
+.sidebar-menu li.sidebar-group-label span { pointer-events: none; }
+#app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-group-label { display: none !important; }
+
+.company-name-link {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--text-main);
+    text-align: left;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
+}
+.company-name-link:hover { color: var(--primary); text-decoration-color: currentColor; }
+
+.staff-page-heading, .staff-toolbar, .staff-filter-row, .client-select-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.staff-page-heading { margin-bottom: 18px; }
+.staff-context { margin-top: 7px; color: var(--primary); font-size: .82rem; font-weight: 600; }
+.staff-filter-row { margin-bottom: 14px; justify-content: flex-start; }
+.staff-filter-row input { flex: 2 1 250px; min-width: 0; }
+.staff-filter-row select { flex: 1 1 180px; min-width: 0; }
+.staff-table { min-width: 980px; }
+.staff-empty { text-align: center; color: var(--text-muted); padding: 24px !important; }
+.staff-status-pill { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.staff-actions { white-space: nowrap; }
+.staff-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+.staff-form-grid .form-group { margin-bottom: 12px; }
+.staff-notes-field { grid-column: 1 / -1; }
+.client-select-line { justify-content: stretch; }
+.client-select-line select { flex: 1; min-width: 0; }
+.dar-hint { color: var(--text-muted); font-size: .78rem; line-height: 1.5; margin-top: 5px; }
+@media (max-width: 640px) {
+    .staff-form-grid { grid-template-columns: 1fr; }
+    .staff-notes-field { grid-column: auto; }
+    .staff-toolbar { width: 100%; }
+    .staff-toolbar .btn { flex: 1; }
+}
+
+.purchase-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--panel-bg);
+    color: var(--text-muted);
+}
+.purchase-summary strong { color: var(--primary); font-size: 1.15rem; }
+
+.sidebar-menu li.sidebar-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin: 8px 0 2px;
+    padding: 10px 12px 5px;
+    color: var(--text-muted);
+    background: transparent;
+    font-size: .67rem;
+    font-weight: 800;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+.sidebar-menu li.sidebar-group-toggle:hover { background: transparent; color: var(--primary); }
+.sidebar-menu li.sidebar-group-toggle .group-chevron {
+    width: 12px;
+    font-size: .65rem;
+    transition: transform .16s ease;
+}
+.sidebar-menu li.sidebar-subitem { padding-left: 18px; }
+#app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-group-toggle { justify-content: center; padding: 10px 0 5px; }
+#app-container.sidebar-collapsed .sidebar .sidebar-menu li.sidebar-subitem { padding-left: 0; }
+
+/* Arabic UI direction is scoped to the application shell; document preview/PDF surfaces stay untouched. */
+body.dar-arabic-ui .sidebar,
+body.dar-arabic-ui .top-bar,
+body.dar-arabic-ui .view-space { direction: rtl; }
+body.dar-arabic-ui .sidebar { border-right: 0; border-left: 1px solid var(--border-color); }
+body.dar-arabic-ui .sidebar-menu li { text-align: right; }
+body.dar-arabic-ui .staff-filter-row,
+body.dar-arabic-ui .staff-page-heading,
+body.dar-arabic-ui .staff-toolbar { direction: rtl; }

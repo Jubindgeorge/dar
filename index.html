@@ -84,19 +84,26 @@
                 <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">ERP & Financial Studio</p>
             </div>
             <ul class="sidebar-menu">
-                <li onclick="switchTab('dashboard')" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
-                <li onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-users"></i><span>Clients</span></li>
-                <li onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works</span></li>
-                <li onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
-                <li onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Financial Records</span></li>
-                <li onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
-                <li onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
-                <li onclick="switchTab('expiry-notifications')" data-target="expiry-notifications"><i class="fa-solid fa-bell"></i><span>Notification Center</span></li>
-                <li onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts Ledger</span></li>
-                
-                <!-- Studio Quick Actions -->
-                <li onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
-                <li onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="workspace" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('workspace')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('workspace')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>WORKSPACE</span></li>
+                <li class="sidebar-subitem active" data-group="workspace" onclick="switchTab('dashboard')" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="crm" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('crm')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('crm')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>CRM</span></li>
+                <li class="sidebar-subitem" data-group="crm" onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-building"></i><span>Companies & Clients</span></li>
+                <li class="sidebar-subitem" data-group="crm" onclick="switchTab('staff')" data-target="staff"><i class="fa-solid fa-id-card"></i><span>Company Staff Data</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="operations" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('operations')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('operations')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>OPERATIONS</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('works')" data-target="works"><i class="fa-solid fa-briefcase"></i><span>Works Directory</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('services-config')" data-target="services-config"><i class="fa-solid fa-list-check"></i><span>Services & Tariffs</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
+                <li class="sidebar-subitem" data-group="operations" onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="sales" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('sales')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('sales')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>SALES</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Invoices & Quotations</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="purchase" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('purchase')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('purchase')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>PURCHASE</span></li>
+                <li class="sidebar-subitem" data-group="purchase" onclick="switchTab('purchases')" data-target="purchases"><i class="fa-solid fa-cart-shopping"></i><span>Purchases & Suppliers</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="accounting" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('accounting')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('accounting')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>ACCOUNTING</span></li>
+                <li class="sidebar-subitem" data-group="accounting" onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts & Ledger</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="alerts" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('alerts')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('alerts')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>ALERTS</span></li>
+                <li class="sidebar-subitem" data-group="alerts" onclick="switchTab('expiry-notifications')" data-target="expiry-notifications"><i class="fa-solid fa-bell"></i><span>Notification Center</span></li>
             </ul>
             <div style="padding:8px 14px;"><button id="dar-notification-button" type="button" onclick="toggleDarNotifications()" class="btn btn-secondary" style="display:none;width:100%;text-align:left;"><i class="fa-solid fa-bell"></i> Notifications <span id="dar-notification-count" style="display:none;background:#b91c1c;color:white;border-radius:12px;padding:2px 7px;margin-left:6px;"></span></button></div>
             <div id="dar-maintenance-admin" class="sidebar-maintenance" style="display:none;"><label for="dar-maintenance-toggle">System Update Notice</label><button type="button" id="dar-maintenance-toggle" class="btn btn-secondary" onclick="toggleDarMaintenance()" style="width:100%;margin-top:6px;">Enable Maintenance Notice</button><small>Login notice only; does not lock accounts.</small></div>
@@ -117,6 +124,7 @@
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 15px;">
+                    <button id="dar-language-toggle" type="button" class="btn btn-secondary" onclick="toggleDarLanguage()" aria-label="Switch interface language">EN / العربية</button>
                     <div class="user-profile-badge">Session: <strong>Administrator</strong></div>
                 </div>
             </header>
@@ -271,6 +279,45 @@
                                 </tr>
                             </thead>
                             <tbody id="client-detail-records-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Purchase records are additive and remain separate from invoice/quotation records. -->
+                <section id="tab-purchases" class="view-panel">
+                    <div class="staff-page-heading">
+                        <div><h2 style="color:var(--primary);font-size:1.4rem;">Purchases & Suppliers</h2><p class="dar-hint">Track supplier bills, purchase references, amounts and payment status.</p></div>
+                        <div class="staff-toolbar"><button type="button" class="btn btn-secondary" onclick="openSupplierModal()">+ Add Supplier</button><button type="button" class="btn btn-primary" onclick="openPurchaseModal()">+ Record Purchase</button></div>
+                    </div>
+                    <div class="purchase-summary"><span>Recorded Purchases</span><strong id="purchase-total-amount">AED 0.00</strong></div>
+                    <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
+                    <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
+                </section>
+
+                <!-- Company staff register. Kept separate from the invoice/quotation print templates. -->
+                <section id="tab-staff" class="view-panel">
+                    <div class="staff-page-heading">
+                        <div>
+                            <h2 style="color:var(--primary);font-size:1.4rem;">Company Staff Data</h2>
+                            <p class="dar-hint">Staff profiles, passport and visa expiries, renewals and linked transactions.</p>
+                            <p id="staff-company-context" class="staff-context">All companies</p>
+                        </div>
+                        <div class="staff-toolbar">
+                            <button type="button" class="btn btn-secondary" onclick="clearStaffCompanyFilter()">All Companies</button>
+                            <button type="button" class="btn btn-primary" onclick="openStaffModal()">+ Add Staff</button>
+                        </div>
+                    </div>
+                    <div class="staff-filter-row">
+                        <input id="staff-search" type="search" placeholder="Search staff ID, name, company or passport..." oninput="renderStaffTable()" aria-label="Search staff">
+                        <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
+                        <select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
+                            <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table staff-table">
+                            <thead><tr><th>Staff ID</th><th>Name</th><th>Company</th><th>Last Work Done</th><th>Visa Expiry</th><th>Passport Expiry</th><th>Renewal Status</th><th>Actions</th></tr></thead>
+                            <tbody id="staff-table-body"><tr><td colspan="8">Loading staff records…</td></tr></tbody>
                         </table>
                     </div>
                 </section>
@@ -502,11 +549,17 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
                             <div>
                                 <label>Client Name</label>
-                                <input type="text" id="st-client-name" placeholder="Primary Account Holder">
+                                <div class="client-select-line">
+                                    <select id="st-company-client-selector" onchange="selectCompanyClient(this.value)" aria-label="Select a client belonging to the selected company"><option value="">-- Select existing company client --</option></select>
+                                    <button type="button" class="btn btn-secondary" onclick="openCompanyClientModal()" style="white-space:nowrap;">+ New Client</button>
+                                </div>
+                                <input type="text" id="st-client-name" placeholder="Primary Account Holder" autocomplete="off">
+                                <small class="dar-hint">Choose a client linked to the selected company, or add a new one.</small>
                             </div>
                             <div>
                                 <label>Company Name</label>
-                                <input type="text" id="st-company-name" placeholder="Search or enter company name" autocomplete="off" oninput="previewStudioCompanyMatches()">\n                                <div id="st-company-matches" role="status" aria-live="polite" style="font-size:0.85rem;margin-top:6px;"></div>
+                                <input type="text" id="st-company-name" placeholder="Search or enter company name" autocomplete="off" oninput="previewStudioCompanyMatches()">
+                                <div id="st-company-matches" role="status" aria-live="polite" style="font-size:0.85rem;margin-top:6px;"></div>
                             </div>
 <div>
                                 <label>Contact Person Name</label>
@@ -587,6 +640,53 @@
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
                 <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Supplier registration modal -->
+    <div id="supplier-modal" class="custom-modal-backdrop" style="display:none;"><div class="custom-modal-content" style="text-align:left;max-width:500px;"><h3 id="supplier-modal-title" style="margin-bottom:16px;">Add Supplier</h3><input id="su-record-id" type="hidden"><div class="form-group"><label for="su-name">Supplier Name *</label><input id="su-name" type="text" required></div><div class="form-group"><label for="su-contact">Contact Person</label><input id="su-contact" type="text"></div><div class="form-group"><label for="su-phone">Phone</label><input id="su-phone" type="tel"></div><div class="form-group"><label for="su-email">Email</label><input id="su-email" type="email"></div><div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button></div></div></div>
+    <!-- Purchase bill modal -->
+    <div id="purchase-modal" class="custom-modal-backdrop" style="display:none;"><div class="custom-modal-content" style="text-align:left;max-width:600px;max-height:90vh;overflow:auto;"><h3 id="purchase-modal-title" style="margin-bottom:16px;">Record Purchase</h3><input id="pu-record-id" type="hidden"><div class="form-group"><label for="pu-supplier">Supplier *</label><select id="pu-supplier" required></select></div><div class="form-group"><label for="pu-reference">Bill / Reference *</label><input id="pu-reference" type="text" required></div><div class="form-group"><label for="pu-date">Purchase Date *</label><input id="pu-date" type="date" required></div><div class="form-group"><label for="pu-description">Description</label><textarea id="pu-description" rows="2"></textarea></div><div class="form-group"><label for="pu-amount">Amount (AED) *</label><input id="pu-amount" type="number" min="0" step="0.01" required></div><div class="form-group"><label for="pu-status">Payment Status</label><select id="pu-status"><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div><div class="form-group"><label for="pu-notes">Notes</label><textarea id="pu-notes" rows="2"></textarea></div><div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closePurchaseModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="savePurchase()">Save Purchase</button></div></div></div>
+
+    <!-- Company-linked client modal; does not alter printed document templates. -->
+    <div id="company-client-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content" style="text-align:left;max-width:480px;">
+            <h3 style="margin-bottom:16px;">Add Client to Company</h3>
+            <p id="company-client-parent" class="dar-hint"></p>
+            <div class="form-group"><label for="cc-input-name">Client Full Name *</label><input id="cc-input-name" type="text" required></div>
+            <div class="form-group"><label for="cc-input-phone">Phone</label><input id="cc-input-phone" type="tel"></div>
+            <div class="form-group"><label for="cc-input-email">Email</label><input id="cc-input-email" type="email"></div>
+            <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
+        </div>
+    </div>
+
+    <!-- Staff profile modal -->
+    <div id="staff-modal" class="custom-modal-backdrop" style="display:none;">
+        <div class="custom-modal-content staff-modal-content" style="text-align:left;max-width:900px;max-height:92vh;overflow:auto;">
+            <h3 id="staff-modal-title" style="margin-bottom:16px;">Staff Profile</h3>
+            <input id="sf-record-id" type="hidden">
+            <input id="sf-linked-invoice" type="hidden">
+            <div class="staff-form-grid">
+                <div class="form-group"><label for="sf-staff-code">Staff ID *</label><input id="sf-staff-code" type="text" required placeholder="e.g. DAS-STAFF-001"></div>
+                <div class="form-group"><label for="sf-full-name">Full Name *</label><input id="sf-full-name" type="text" required></div>
+                <div class="form-group"><label for="sf-company">Company *</label><select id="sf-company" required onchange="refreshStaffCompanyClients()"></select></div>
+                <div class="form-group"><label for="sf-nationality">Nationality</label><input id="sf-nationality" type="text"></div>
+                <div class="form-group"><label for="sf-designation">Designation / Position</label><input id="sf-designation" type="text"></div>
+                <div class="form-group"><label for="sf-last-work">Last Work Done</label><input id="sf-last-work" type="text"></div>
+                <div class="form-group"><label for="sf-passport">Passport Number</label><input id="sf-passport" type="text"></div>
+                <div class="form-group"><label for="sf-passport-expiry">Passport Expiry</label><input id="sf-passport-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-visa-number">Visa Number</label><input id="sf-visa-number" type="text"></div>
+                <div class="form-group"><label for="sf-visa-expiry">Visa Expiry</label><input id="sf-visa-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-visa-status">Visa Status</label><select id="sf-visa-status"><option value="">Select status</option><option>Valid</option><option>Expired</option><option>Under Renewal</option><option>Cancelled</option><option>Pending</option></select></div>
+                <div class="form-group"><label for="sf-renewal-status">Renewal Status</label><select id="sf-renewal-status"><option>Not Required</option><option>Pending</option><option>Due Soon</option><option>In Progress</option><option>Renewed</option></select></div>
+                <div class="form-group"><label for="sf-joining-date">Joining Date</label><input id="sf-joining-date" type="date"></div>
+                <div class="form-group"><label for="sf-phone">Contact Number</label><input id="sf-phone" type="tel"></div>
+                <div class="form-group"><label for="sf-email">Email</label><input id="sf-email" type="email"></div>
+                <div class="form-group"><label for="sf-document-reference">Document Reference / Secure URL</label><input id="sf-document-reference" type="text" placeholder="Storage reference or secure document URL"></div>
+                <div class="form-group staff-notes-field"><label for="sf-notes">Notes</label><textarea id="sf-notes" rows="3"></textarea></div>
+            </div>
+            <p class="dar-hint">For safety, this form stores document references only. Actual passport/visa file uploads require a configured private Firebase Storage bucket and rules.</p>
+            <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeStaffModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveStaffRecord()">Save Staff</button></div>
         </div>
     </div>
 
@@ -818,7 +918,10 @@
     <script src="services.js"></script>
     <script src="ledger.js"></script>
     <script src="app.js"></script>
+    <script src="staff.js"></script>
+    <script src="purchase.js"></script>
     <script src="work-tracking.js"></script>
     <script src="translator.js"></script>
+    <script src="language.js"></script>
 </body>
 </html>

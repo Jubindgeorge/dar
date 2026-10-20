@@ -3,6 +3,12 @@ let state = {
     clients: [],
     documents: [],
     services: [],
+    staff: [],
+    companyClients: [],
+    suppliers: [],
+    purchases: [],
+    activeStaffCompanyId: '',
+    selectedCompanyClientId: '',
     monthlyExpenses: [],
     currentStudioMode: 'Invoice',
     currentStudioItems: [],
@@ -29,6 +35,7 @@ function initFirebaseListeners() {
         state.clients = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderClientsTable === 'function') renderClientsTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
+        if (typeof renderStaffTable === 'function') renderStaffTable();
     }, error => showFirebaseReadError('clients', error));
 
     db.ref('documents').on('value', snapshot => {
@@ -46,6 +53,30 @@ function initFirebaseListeners() {
         if (typeof renderServicesCatalog === 'function') renderServicesCatalog();
         if (typeof populateStudioInjectorSelect === 'function') populateStudioInjectorSelect();
     }, error => showFirebaseReadError('services', error));
+
+    db.ref('staff').on('value', snapshot => {
+        const val = snapshot.val();
+        state.staff = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
+        if (typeof renderStaffTable === 'function') renderStaffTable();
+    }, error => showFirebaseReadError('staff', error));
+
+    db.ref('companyClients').on('value', snapshot => {
+        const val = snapshot.val();
+        state.companyClients = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
+        if (typeof populateCompanyClients === 'function') populateCompanyClients();
+    }, error => showFirebaseReadError('company clients', error));
+
+    db.ref('suppliers').on('value', snapshot => {
+        const val = snapshot.val();
+        state.suppliers = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
+        if (typeof refreshPurchaseSupplierOptions === 'function') refreshPurchaseSupplierOptions();
+    }, error => showFirebaseReadError('suppliers', error));
+
+    db.ref('purchases').on('value', snapshot => {
+        const val = snapshot.val();
+        state.purchases = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
+        if (typeof renderPurchases === 'function') renderPurchases();
+    }, error => showFirebaseReadError('purchases', error));
 
     db.ref('monthlyExpenses').on('value', snapshot => {
         const val = snapshot.val();
