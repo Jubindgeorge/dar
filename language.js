@@ -42,11 +42,14 @@
       });
     });
   }
+  window.applyDarLanguage = function () {
+    translate(document.body.classList.contains('dar-arabic-ui') ? 'ar' : 'en');
+  };
   window.toggleDarLanguage = function () {
     const arabic = !document.body.classList.contains('dar-arabic-ui');
     document.body.classList.toggle('dar-arabic-ui', arabic);
     document.documentElement.lang = arabic ? 'ar' : 'en';
-    translate(arabic ? 'ar' : 'en');
+    window.applyDarLanguage();
     const button = document.getElementById('dar-language-toggle');
     if (button) button.textContent = arabic ? 'العربية / EN' : 'EN / العربية';
   };
