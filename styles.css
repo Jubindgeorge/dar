@@ -534,3 +534,7 @@ body.dar-arabic-ui .sidebar-menu li { text-align: right; }
 body.dar-arabic-ui .staff-filter-row,
 body.dar-arabic-ui .staff-page-heading,
 body.dar-arabic-ui .staff-toolbar { direction: rtl; }
+
+
+/* Ensure collapsed sidebar subitems stay hidden despite the menu's display:flex rule. */
+.sidebar-menu li[hidden] { display: none !important; }
