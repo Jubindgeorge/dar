@@ -79,6 +79,18 @@ test('recovery and audit enforce valid writes', async () => {
   await assertFails(db.ref('activityLog/log2').set({
     action:'delete',collection:'clients',recordKey:'example',actorUid:pendingUid,at:Date.now()
   }));
+  await assertFails(db.ref('activityLog/log3').set({
+    action:'delete',collection:'approvals',recordKey:'example',actorUid:adminUid,at:Date.now()
+  }));
+  await assertFails(db.ref('activityLog/log4').set({
+    action:'tamper',collection:'clients',recordKey:'example',actorUid:adminUid,at:Date.now()
+  }));
+  await assertFails(db.ref('activityLog/log5').set({
+    action:'delete',collection:'clients',recordKey:'example',actorUid:adminUid,at:Date.now(),extra:'not allowed'
+  }));
+  await assertFails(db.ref('activityLog/log6').set({
+    action:'delete',collection:'clients',recordKey:'',actorUid:adminUid,at:Date.now()
+  }));
 });
 
 test('expiry notification events are read-only for verified approved users', async () => {

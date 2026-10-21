@@ -49,7 +49,21 @@ window.exitWelcomeScreen = function() {
 };
 
 const DAR_ALLOWED_UIDS = new Set(['DOoTyjTlQQWpW5Q4p6bZfgcyDYr2', '6J0fXWZkvpgIfw9lj4KH1D5Bh4u2']);
+const DAR_DATA_LISTENER_PATHS = ['clients', 'documents', 'services', 'staff', 'companyClients', 'suppliers', 'purchases', 'monthlyExpenses'];
 let darListenersActive = false;
+
+function clearDarUserData() {
+    ['clients', 'documents', 'services', 'staff', 'companyClients', 'suppliers', 'purchases', 'monthlyExpenses'].forEach(key => {
+        state[key] = [];
+    });
+    state.activeStaffCompanyId = '';
+    state.selectedCompanyClientId = '';
+    state.currentStudioItems = [];
+    state.activeEditingId = null;
+    state.activeViewingClientId = null;
+    state.activeViewingCompanyWorksName = null;
+    state.activeWorksBranch = 'company';
+}
 let darLoginInProgress = false;
 let darApprovalRef = null;
 let darRequestRef = null;
@@ -97,7 +111,7 @@ function stopDarListeners() {
     if (darApprovalRef) { darApprovalRef.off(); darApprovalRef = null; }
     if (darRequestRef) { darRequestRef.off(); darRequestRef = null; }
     if (darListenersActive) {
-        ['clients', 'documents', 'services', 'monthlyExpenses'].forEach(path => db.ref(path).off());
+        DAR_DATA_LISTENER_PATHS.forEach(path => db.ref(path).off());
         darListenersActive = false;
     }
     const panel = document.getElementById('admin-approvals');
@@ -165,7 +179,7 @@ function initializeFirebaseLogin() {
         setDarAccess(false);
         updateDarMaintenanceUi();
         if (!user) {
-            state.clients = []; state.documents = []; state.services = []; state.monthlyExpenses = [];
+            clearDarUserData();
             return;
         }
         if (!user.emailVerified) {
@@ -189,9 +203,9 @@ function initializeFirebaseLogin() {
                 setDarAccess(approved);
                 setAuthStatus(approved ? '' : 'Email verified. Waiting for an administrator to approve your account.');
                 if (!approved && darListenersActive) {
-                    ['clients', 'documents', 'services', 'monthlyExpenses'].forEach(path => db.ref(path).off());
+                    DAR_DATA_LISTENER_PATHS.forEach(path => db.ref(path).off());
                     darListenersActive = false;
-                    state.clients = []; state.documents = []; state.services = []; state.monthlyExpenses = [];
+                    clearDarUserData();
                 }
             }, error => setAuthStatus('Approval check failed: ' + error.message));
         } catch (error) {
