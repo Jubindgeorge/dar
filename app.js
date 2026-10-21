@@ -311,6 +311,13 @@ window.toggleSidebarGroup = function(group, forceOpen) {
     if (chevron) chevron.style.transform = nextOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
 };
 
+// Keep every sidebar group collapsed on initial load. Only its main heading toggles it.
+document.querySelectorAll('[data-group-toggle]').forEach(toggle => {
+    const group = toggle.dataset.groupToggle;
+    toggle.setAttribute('aria-expanded', 'false');
+    window.toggleSidebarGroup(group, false);
+});
+
 window.switchTab = function(tabId) {
     if (isDarMobileLayout()) closeDarMobileMenu();
     document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
@@ -320,7 +327,6 @@ window.switchTab = function(tabId) {
     if (target) target.classList.add('active');
     
     const menuBtn = document.querySelector(`.sidebar-menu li[data-target="${tabId}"]`);
-    if (menuBtn && menuBtn.dataset.group && typeof window.toggleSidebarGroup === 'function') window.toggleSidebarGroup(menuBtn.dataset.group, true);
     if (menuBtn) menuBtn.classList.add('active');
 
     const titles = {
