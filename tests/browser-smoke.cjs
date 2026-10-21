@@ -15,6 +15,11 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#tab-purchases').count(),1,'Purchases page exists');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),7,'Sidebar has grouped navigation controls');
+    await page.evaluate(() => {
+      document.getElementById('welcome-screen').style.display='none';
+      document.getElementById('auth-container').style.display='none';
+      document.getElementById('app-container').style.display='flex';
+    });
     const initialGroups = await page.locator('[data-group-toggle]').evaluateAll(toggles => toggles.map(toggle => ({
       group: toggle.dataset.groupToggle,
       expanded: toggle.getAttribute('aria-expanded'),
