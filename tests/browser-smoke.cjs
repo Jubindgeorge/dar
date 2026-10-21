@@ -15,6 +15,20 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#tab-purchases').count(),1,'Purchases page exists');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),7,'Sidebar has grouped navigation controls');
+    const initialGroups = await page.locator('[data-group-toggle]').evaluateAll(toggles => toggles.map(toggle => ({
+      group: toggle.dataset.groupToggle,
+      expanded: toggle.getAttribute('aria-expanded'),
+      allChildrenHidden: Array.from(document.querySelectorAll('[data-group="' + toggle.dataset.groupToggle + '"]')).every(item => item.hidden)
+    })));
+    assert.ok(initialGroups.every(group => group.expanded === 'false' && group.allChildrenHidden), 'All sidebar groups start collapsed');
+    await page.locator('[data-group-toggle="crm"]').click();
+    assert.equal(await page.locator('[data-group-toggle="crm"]').getAttribute('aria-expanded'), 'true', 'Clicking CRM main heading opens CRM');
+    assert.ok(await page.locator('[data-group="crm"]').evaluateAll(items => items.every(item => !item.hidden)), 'CRM sub-items become visible');
+    assert.equal(await page.locator('[data-group-toggle="sales"]').getAttribute('aria-expanded'), 'false', 'Opening CRM does not open Sales');
+    await page.locator('[data-group-toggle="crm"]').click();
+    await page.evaluate(() => window.switchTab('clients'));
+    assert.equal(await page.locator('[data-group-toggle="crm"]').getAttribute('aria-expanded'), 'false', 'Selecting a sub-tab does not auto-open its parent group');
+    assert.ok(await page.locator('[data-group="crm"]').evaluateAll(items => items.every(item => item.hidden)), 'Collapsed parent remains collapsed after sub-tab selection');
     await page.evaluate(() => {
       document.getElementById('welcome-screen').style.display='none';
       document.getElementById('auth-container').style.display='none';
