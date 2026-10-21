@@ -21,6 +21,8 @@ const assert = require('node:assert/strict');
       allChildrenHidden: Array.from(document.querySelectorAll('[data-group="' + toggle.dataset.groupToggle + '"]')).every(item => item.hidden)
     })));
     assert.ok(initialGroups.every(group => group.expanded === 'false' && group.allChildrenHidden), 'All sidebar groups start collapsed');
+    await page.locator('.sidebar-toggle-btn').click();
+    assert.equal(await page.locator('.sidebar-toggle-btn').getAttribute('aria-expanded'), 'true', 'Mobile sidebar opens before testing group controls');
     await page.locator('[data-group-toggle="crm"]').click();
     assert.equal(await page.locator('[data-group-toggle="crm"]').getAttribute('aria-expanded'), 'true', 'Clicking CRM main heading opens CRM');
     assert.ok(await page.locator('[data-group="crm"]').evaluateAll(items => items.every(item => !item.hidden)), 'CRM sub-items become visible');
