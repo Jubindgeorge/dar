@@ -1,0 +1,37 @@
+name: One-time favicon fix
+
+on:
+  push:
+    branches: [fix/favicon-logo-png]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set PNG logo as tab icon
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          if 'href="LOGO.png"' not in s:
+              needle = '    <title>Dar Al Shams | ERP Portal</title>\n'
+              replacement = needle + '    <link rel="icon" type="image/png" href="LOGO.png">\n    <link rel="apple-touch-icon" href="LOGO.png">\n'
+              if needle not in s:
+                  raise SystemExit('Expected title line not found')
+              s = s.replace(needle, replacement, 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/_favicon_fix.yml
+          git commit -m 'Set PNG logo as browser tab icon'
+          git rm .github/workflows/_favicon_fix.yml
+          git commit --amend --no-edit
+          git push origin HEAD:fix/favicon-logo-png
