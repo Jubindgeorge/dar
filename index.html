@@ -104,6 +104,8 @@
                 <li class="sidebar-subitem" data-group="purchase" onclick="switchTab('purchases')" data-target="purchases"><i class="fa-solid fa-cart-shopping"></i><span>Purchases & Suppliers</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="accounting" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('accounting')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('accounting')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>ACCOUNTING</span></li>
                 <li class="sidebar-subitem" data-group="accounting" onclick="switchTab('accounts-ledger')" data-target="accounts-ledger"><i class="fa-solid fa-wallet"></i><span>Accounts & Ledger</span></li>
+                <li class="sidebar-group-toggle" data-group-toggle="website-info" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('website-info')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('website-info')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>WEBSITE INFO</span></li>
+                <li class="sidebar-subitem" data-group="website-info" onclick="switchTab('website-info')" data-target="website-info"><i class="fa-solid fa-globe"></i><span>Marketing Website</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="alerts" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('alerts')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('alerts')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>ALERTS</span></li>
                 <li class="sidebar-subitem" data-group="alerts" onclick="switchTab('expiry-notifications')" data-target="expiry-notifications"><i class="fa-solid fa-bell"></i><span>Notification Center</span></li>
             </ul>
@@ -132,6 +134,22 @@
             </header>
 
             <main class="view-space">
+
+                <!-- WEBSITE INFO: Marketing website admin shortcut. External admin login remains enforced. -->
+                <section id="tab-website-info" class="view-panel">
+                    <div class="metric-card" style="display:block;max-width:760px;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                            <i class="fa-solid fa-globe fa-2x" style="color:var(--primary);"></i>
+                            <div>
+                                <h3 style="margin:0;color:var(--primary);">Dar Al Shams Marketing Website</h3>
+                                <p style="margin:5px 0 0;color:var(--text-muted);">Manage public website content and enquiries without changing ERP records.</p>
+                            </div>
+                        </div>
+                        <p style="margin-bottom:16px;">Open the separate website admin dashboard to edit website settings, services, and review enquiries. Your website admin login may be required because the ERP and marketing website use separate secure sessions.</p>
+                        <button type="button" class="btn btn-primary" onclick="window.open('https://dar-al-shams-marketing-website.onrender.com/admin','_blank','noopener,noreferrer')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Marketing Website Admin</button>
+                        <p style="font-size:.78rem;color:var(--text-muted);margin-top:12px;">Opens in a new tab. ERP accounting data, invoices, quotations, and Firebase rules are not modified by this shortcut.</p>
+                    </div>
+                </section>
 
                 <!-- TAB 1: DASHBOARD -->
                 <section id="tab-dashboard" class="view-panel active">
