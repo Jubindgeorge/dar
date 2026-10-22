@@ -331,6 +331,7 @@ window.switchTab = function(tabId) {
 
     const titles = {
         'dashboard': 'Dashboard Overview',
+        'website-info': 'Website Info · Marketing Website',
         'clients': 'Companies & Clients',
         'staff': 'Company Staff Data',
         'purchases': 'Purchases & Suppliers',

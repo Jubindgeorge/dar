@@ -14,7 +14,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#tab-staff').count(),1,'Company staff page exists');
     assert.equal(await page.locator('#tab-purchases').count(),1,'Purchases page exists');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
-    assert.equal(await page.locator('[data-group-toggle]').count(),7,'Sidebar has grouped navigation controls');
+    assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
       document.getElementById('welcome-screen').style.display='none';
       document.getElementById('auth-container').style.display='none';
