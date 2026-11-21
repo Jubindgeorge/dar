@@ -800,14 +800,19 @@ window.previewInvoiceDocument = async function(refCode) {
             return sum + p * q;
         }, 0);
         const legacyTotal = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? doc.grandTotal) || 0;
+        const hasPaymentBreakdown = Number(doc.paymentBreakdownVersion) >= 1;
         const storedSubtotal = Number(doc.subtotalAmount ?? doc.subTotal);
-        const subtotalAmount = Number.isFinite(storedSubtotal) && storedSubtotal >= 0 ? storedSubtotal : (itemSubtotal || legacyTotal);
-        const processingCharges = Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0);
-        const discountAmount = Math.max(0, Number(doc.discountAmount ?? doc.discountAmt) || 0);
+        const subtotalAmount = hasPaymentBreakdown && Number.isFinite(storedSubtotal) && storedSubtotal >= 0
+            ? storedSubtotal
+            : (itemSubtotal || legacyTotal);
+        const processingCharges = hasPaymentBreakdown ? Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0) : 0;
+        const discountAmount = hasPaymentBreakdown ? Math.max(0, Number(doc.discountAmount ?? doc.discountAmt) || 0) : 0;
         const advanceAmount = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance) || 0);
-        // totalAmount stays before advance so the existing payment ledger deducts the advance once.
-        const amountBeforeAdvance = legacyTotal > 0 ? legacyTotal : Math.max(0, subtotalAmount + processingCharges - discountAmount);
-        const finalAmountDue = Math.max(0, amountBeforeAdvance - advanceAmount);
+        // New breakdown invoices store totalAmount before advance; legacy invoices retain their original total semantics.
+        const amountBeforeAdvance = hasPaymentBreakdown
+            ? (legacyTotal > 0 ? legacyTotal : Math.max(0, subtotalAmount + processingCharges - discountAmount))
+            : legacyTotal;
+        const finalAmountDue = hasPaymentBreakdown ? Math.max(0, amountBeforeAdvance - advanceAmount) : amountBeforeAdvance;
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: subtotalAmount }] : []);
         const money = value => 'AED ' + value.toFixed(2);
         const summaryRow = (label, value, strong = false) => `
