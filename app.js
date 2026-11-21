@@ -830,7 +830,7 @@ window.previewInvoiceDocument = async function(refCode) {
         summaryRow('Sub Total / المجموع الفرعي', subtotalAmount) +
         summaryRow('Advance Amount / الدفعة المقدمة', advanceAmount) +
         summaryRow('Processing Charges / رسوم المعالجة', processingCharges) +
-        summaryRow('Discounts / الخصم', discountAmount) +
+        summaryRow('Discounts % / الخصم', discountAmount) +
         summaryRow('Total Amount / المبلغ الإجمالي', finalAmountDue, true);
     }
 
