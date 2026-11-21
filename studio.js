@@ -53,12 +53,22 @@ function openStudio(type, editRefCode = null) {
             const totalInput = document.getElementById('st-total-amt');
             if (totalInput) totalInput.value = doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0;
 
+            const processingInput = document.getElementById('st-processing-charges');
+            if (processingInput) processingInput.value = doc.processingCharges ?? doc.processingCharge ?? 0;
+            const discountInput = document.getElementById('st-discount-amt');
+            if (discountInput) discountInput.value = doc.discountAmount ?? doc.discountAmt ?? 0;
             const advanceInput = document.getElementById('st-advance-amt');
             if (advanceInput) advanceInput.value = doc.advanceAmt ?? doc.advanceAmount ?? doc.advance ?? 0;
 
             const tbody = document.getElementById('st-spreadsheet-body');
-            if (tbody && doc.items) {
-                tbody.innerHTML = doc.items.map((item, idx) => `
+            if (tbody) {
+                const editItems = Array.isArray(doc.items) && doc.items.length ? doc.items : [{
+                    packageName: doc.packageName || doc.serviceName || doc.title || 'Service Record',
+                    serviceName: doc.packageName || doc.serviceName || doc.title || 'Service Record',
+                    q: 1,
+                    p: Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount) || 0
+                }];
+                tbody.innerHTML = editItems.map((item, idx) => `
                     <tr>
                         <td style="text-align: center;">${idx + 1}</td>
                         <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Package name"></td>
@@ -86,6 +96,10 @@ function openStudio(type, editRefCode = null) {
         if (govtInput) govtInput.value = 0;
         const totalInput = document.getElementById('st-total-amt');
         if (totalInput) totalInput.value = 0;
+        const processingInput = document.getElementById('st-processing-charges');
+        if (processingInput) processingInput.value = 0;
+        const discountInput = document.getElementById('st-discount-amt');
+        if (discountInput) discountInput.value = 0;
         const advanceInput = document.getElementById('st-advance-amt');
         if (advanceInput) advanceInput.value = 0;
 
@@ -226,8 +240,14 @@ function recalculateStudioTotals() {
         sumTotal += (q * p);
     });
 
+    const processing = Math.max(0, Number(document.getElementById('st-processing-charges')?.value) || 0);
+    const discount = Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0);
+    const advance = Math.max(0, Number(document.getElementById('st-advance-amt')?.value) || 0);
+    const amountBeforeAdvance = Math.max(0, sumTotal + processing - discount);
     const totalInput = document.getElementById('st-total-amt');
-    if (totalInput) totalInput.value = sumTotal.toFixed(2);
+    if (totalInput) totalInput.value = amountBeforeAdvance.toFixed(2);
+    const finalInput = document.getElementById('st-final-amt');
+    if (finalInput) finalInput.value = Math.max(0, amountBeforeAdvance - advance).toFixed(2);
 }
 
 function commitDocumentToMemory() {
@@ -239,7 +259,14 @@ function commitDocumentToMemory() {
     const companyName = document.getElementById('st-company-name')?.value.trim() || '';
     const contactPerson = document.getElementById('st-contact-person')?.value.trim() || '';
     const govtAmt = parseFloat(document.getElementById('st-govt-amt')?.value) || 0;
-    const totalAmt = parseFloat(document.getElementById('st-total-amt')?.value) || 0;
+    const subtotalAmt = [...document.querySelectorAll('#st-spreadsheet-body tr')].reduce((sum, row) => {
+        const qty = Number(row.querySelector('.st-item-qty')?.value) || 0;
+        const price = Number(row.querySelector('.st-item-price')?.value) || 0;
+        return sum + qty * price;
+    }, 0);
+    const processingCharges = parseFloat(document.getElementById('st-processing-charges')?.value) || 0;
+    const discountAmount = parseFloat(document.getElementById('st-discount-amt')?.value) || 0;
+    const totalAmt = Math.max(0, subtotalAmt + processingCharges - discountAmount);
     const advanceAmt = parseFloat(document.getElementById('st-advance-amt')?.value) || 0;
 
     if (!db) {
@@ -271,8 +298,8 @@ function commitDocumentToMemory() {
         showCustomModal('Reference locked', 'To preserve the original record ID, the reference cannot be changed while editing.');
         return;
     }
-    if (![govtAmt, totalAmt, advanceAmt].every(Number.isFinite) || govtAmt < 0 || totalAmt < 0 || advanceAmt < 0) {
-        showCustomModal('Invalid amounts', 'Amounts cannot be negative. Please check the government fee, total and advance fields.');
+    if (![govtAmt, subtotalAmt, processingCharges, discountAmount, totalAmt, advanceAmt].every(Number.isFinite) || [govtAmt, subtotalAmt, processingCharges, discountAmount, totalAmt, advanceAmt].some(value => value < 0) || discountAmount > subtotalAmt + processingCharges) {
+        showCustomModal('Invalid amounts', 'Amounts must be valid and non-negative. Discounts cannot exceed the subtotal plus processing charges.');
         return;
     }
     const recordedPayments = (state.documents || []).find(d => d.refCode === refCode)?.paymentLogs || [];
@@ -322,6 +349,13 @@ function commitDocumentToMemory() {
         visaExpiryDate,
         govtAmt,
         govtFee: govtAmt,
+        paymentBreakdownVersion: 1,
+        subtotalAmount: subtotalAmt,
+        subTotal: subtotalAmt,
+        processingCharges,
+        processingCharge: processingCharges,
+        discountAmount,
+        discountAmt: discountAmount,
         advanceAmt,
         advanceAmount: advanceAmt,
         totalAmount: totalAmt,

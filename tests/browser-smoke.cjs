@@ -52,6 +52,22 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
+    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\\s+AED 200\\.00/, 'Legacy invoice total remains unchanged');
+    await page.evaluate(() => {
+      state.documents.push({
+        refCode:'CI-BREAKDOWN-001',type:'Invoice',clientName:'Breakdown Client',companyName:'Breakdown Co',
+        createdDate:'2026-11-21',items:[{serviceName:'Services',p:4907,q:1}],
+        paymentBreakdownVersion:1,subtotalAmount:4907,processingCharges:200,discountAmount:250,
+        advanceAmount:500,advanceAmt:500,totalAmount:4857
+      });
+    });
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
+    const breakdownText = await page.locator('#p-table-body').innerText();
+    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\\s+AED 4907\\.00/);
+    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\\s+AED 500\\.00/);
+    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\\s+AED 200\\.00/);
+    assert.match(breakdownText,/Discounts % \/ الخصم\\s+AED 250\\.00/);
+    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\\s+AED 4357\\.00/);
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
