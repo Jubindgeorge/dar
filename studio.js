@@ -61,8 +61,14 @@ function openStudio(type, editRefCode = null) {
             if (advanceInput) advanceInput.value = doc.advanceAmt ?? doc.advanceAmount ?? doc.advance ?? 0;
 
             const tbody = document.getElementById('st-spreadsheet-body');
-            if (tbody && doc.items) {
-                tbody.innerHTML = doc.items.map((item, idx) => `
+            if (tbody) {
+                const editItems = Array.isArray(doc.items) && doc.items.length ? doc.items : [{
+                    packageName: doc.packageName || doc.serviceName || doc.title || 'Service Record',
+                    serviceName: doc.packageName || doc.serviceName || doc.title || 'Service Record',
+                    q: 1,
+                    p: Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount) || 0
+                }];
+                tbody.innerHTML = editItems.map((item, idx) => `
                     <tr>
                         <td style="text-align: center;">${idx + 1}</td>
                         <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Package name"></td>
@@ -343,6 +349,7 @@ function commitDocumentToMemory() {
         visaExpiryDate,
         govtAmt,
         govtFee: govtAmt,
+        paymentBreakdownVersion: 1,
         subtotalAmount: subtotalAmt,
         subTotal: subtotalAmt,
         processingCharges,
