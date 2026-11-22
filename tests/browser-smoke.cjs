@@ -63,22 +63,10 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    await page.evaluate(() => state.documents.push({
-      refCode:'CI-PERCENT-001',type:'Invoice',clientName:'Percent Client',companyName:'Percent Co',
-      createdDate:'2026-11-22',transactionDate:'2026-11-22',items:[{serviceName:'Services',p:4907,q:1}],
-      paymentBreakdownVersion:1,subtotalAmount:4907,processingCharges:200,discountPercent:10,
-      discountAmount:510.7,advanceAmount:500,totalAmount:4596.3
-    }));
-    await page.evaluate(async () => window.previewInvoiceDocument('CI-PERCENT-001'));
-    const percentText = await page.locator('#p-table-body').innerText();
-    assert.match(percentText,/Discounts \(10%\) \/ الخصم\s+AED 510\.70/,'new invoices calculate discounts as a percentage');
-    assert.match(percentText,/Total Amount \/ المبلغ الإجمالي\s+AED 4596\.30/,'advance is displayed separately and does not reduce invoice total');
-    assert.ok(await page.locator('#a4-wrapper-element .section-terms li').count() === 3,'invoice shows all three approved terms');
-    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
-    assert.match(breakdownText,/Advance Payment \/ الدفعة المقدمة\s+AED 500\.00/);
-    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
-    assert.match(breakdownText,/Discounts \/ الخصم\s+AED 250\.00/);
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'advance remains separate from invoice total');
+    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\\s+AED 4857\\.00/,'October invoice shows the stored final total only');
+    assert.doesNotMatch(breakdownText,/Sub Total|Advance Payment|Processing Charges|Discounts/,'October invoice hides newer breakdown rows');
+    assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
