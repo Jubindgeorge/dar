@@ -330,7 +330,7 @@ window.renderMonthlyExpensesTable = function() {
     expenses.forEach((exp, index) => {
         tbody.innerHTML += `
             <tr>
-                <td>${window.darFormatTableDate ? window.darFormatTableDate(exp.date || (exp.month ? exp.month + '-01' : '')) : escapeHtml(exp.month)}</td>
+                <td>${exp.date && window.darFormatTableDate ? window.darFormatTableDate(exp.date) : escapeHtml(exp.month)}</td>
                 <td>${escapeHtml(exp.title)}</td>
                 <td style="color: var(--accent-green);">AED ${Number(exp.amount).toFixed(2)}</td>
                 <td style="text-align: center;"><button onclick="deleteMonthlyExpense(${index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
