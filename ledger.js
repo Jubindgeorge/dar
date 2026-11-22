@@ -109,7 +109,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
                 } else {
                     tbody.innerHTML += `
                         <tr>
-                            <td>${pay.date}</td>
+                            <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
                             <td>${pay.note}</td>
                             <td style="text-align: center;"><button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
@@ -263,7 +263,7 @@ window.savePaymentLogData = function() {
     }
 
     doc.paymentLogs = doc.paymentLogs || [];
-    doc.paymentLogs.push({ date, amount, note });
+    doc.paymentLogs.push({ date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
 
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
     closeAddPaymentModal();
@@ -293,6 +293,7 @@ window.closeMonthlyExpenseModal = function() {
 
 window.saveMonthlyExpenseData = function() {
     const month = document.getElementById('exp-input-month').value;
+    const expenseDate = document.getElementById('exp-input-date')?.value || (window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10));
     const title = document.getElementById('exp-input-title').value;
     const amount = Number(document.getElementById('exp-input-amount').value);
 
@@ -305,7 +306,7 @@ window.saveMonthlyExpenseData = function() {
     if (!month) { alert('Please select the expense month.'); return; }
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter an expense amount greater than zero.'); return; }
     const id = db && db.ref('monthlyExpenses').push().key;
-    state.monthlyExpenses.push({ id, month, title: title.trim(), amount });
+    state.monthlyExpenses.push({ id, month, date: expenseDate, transactionDate: expenseDate, title: title.trim(), amount, createdDate: expenseDate, updatedAt: new Date().toISOString(), updatedBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
 
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
     closeMonthlyExpenseModal();
@@ -327,7 +328,7 @@ window.renderMonthlyExpensesTable = function() {
     expenses.forEach((exp, index) => {
         tbody.innerHTML += `
             <tr>
-                <td>${escapeHtml(exp.month)}</td>
+                <td>${window.darFormatTableDate ? window.darFormatTableDate(exp.date || (exp.month ? exp.month + '-01' : '')) : escapeHtml(exp.month)}</td>
                 <td>${escapeHtml(exp.title)}</td>
                 <td style="color: var(--accent-green);">AED ${Number(exp.amount).toFixed(2)}</td>
                 <td style="text-align: center;"><button onclick="deleteMonthlyExpense(${index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
