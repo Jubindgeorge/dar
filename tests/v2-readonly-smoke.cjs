@@ -38,3 +38,7 @@ assert.match(html, /st-legacy-discount-amt/, 'legacy discount compatibility');
 assert.match(app, /exportDarFinancialReport/, 'period report export');
 assert.match(app, /duplicateInvoiceDraft/, 'duplicate invoice draft');
 assert.match(app, /viewDocumentHistory/, 'document audit history');
+
+assert.match(app, /exportDarFinancialReportPDF/, 'financial report PDF export');
+assert.match(app, /buildDarFinancialReportRows/, 'shared daily/monthly/yearly report data');
+assert.match(html, /xlsx\.full\.min\.js/, 'XLSX export library loaded');
