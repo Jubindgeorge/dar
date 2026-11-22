@@ -313,7 +313,7 @@
                         <div class="staff-toolbar"><button type="button" class="btn btn-secondary" onclick="openSupplierModal()">+ Add Supplier</button><button type="button" class="btn btn-primary" onclick="openPurchaseModal()">+ Record Purchase</button></div>
                     </div>
                     <div class="purchase-summary"><span>Recorded Purchases</span><strong id="purchase-total-amount">AED 0.00</strong></div>
-                    <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
+                    <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><label class="v2-filter-date">From <input type="date" id="purchase-date-from" onchange="renderPurchases()" aria-label="Purchases from date"></label><label class="v2-filter-date">To <input type="date" id="purchase-date-to" onchange="renderPurchases()" aria-label="Purchases through date"></label><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
                     <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
                 </section>
 
@@ -333,7 +333,7 @@
                     <div class="staff-filter-row">
                         <input id="staff-search" type="search" placeholder="Search staff ID, name, company or passport..." oninput="renderStaffTable()" aria-label="Search staff">
                         <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
-                        <select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
+                        <label class="v2-filter-date">From <input type="date" id="staff-date-from" onchange="renderStaffTable()" aria-label="Staff joined from date"></label><label class="v2-filter-date">To <input type="date" id="staff-date-to" onchange="renderStaffTable()" aria-label="Staff joined through date"></label><select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
                             <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
                         </select>
                     </div>
