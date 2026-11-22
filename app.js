@@ -494,7 +494,9 @@ window.saveClientModalData = async function() {
         try { nameAr = await autoTranslateToArabic(companyName); } catch (error) { console.warn('Arabic translation failed:', error); }
     }
 
-    db.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson }, (err) => {
+    const previous = (state.clients || []).find(item => item.id === id) || {};
+    const audit = window.darDates ? window.darDates.audit(previous) : { createdDate: previous.createdDate || localISODate(), updatedAt: new Date().toISOString() };
+    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...audit }, (err) => {
         if (!err) { closeClientModal(); }
         else showCustomModal('Save failed', 'Client details could not be saved. Check Firebase permissions and your connection.');
     });
