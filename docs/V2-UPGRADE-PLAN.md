@@ -50,7 +50,7 @@
 
 ## Latest invoice release candidate
 - [x] Compact A4 gold frame (6mm × 7mm inner padding), 9px item table and tighter row spacing.
-- [x] Boxed subtotal row and Advance Payment summary row; invoice print surface does not include Notes, Taxable Amount, Payment Status or Balance Due.
+- [x] Boxed subtotal row and Advance Payment summary row; advance is shown separately and is not deducted again from Invoice Total. Invoice print surface does not include Notes, Taxable Amount, Payment Status or Balance Due.
 - [x] Discounts entered as a percentage for new/edited records; legacy fixed-value discounts remain readable and preserved.
 - [x] Three approved terms are wrapped in a compact half-width gold-bordered box.
 - [x] Invoice references use sequential DAS-YYYY-0001 numbering; quotations use QTN-YYYY-0001 numbering.
