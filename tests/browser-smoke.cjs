@@ -63,11 +63,11 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\\.00/);
-    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\s+AED 500\\.00/);
-    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\\.00/);
-    assert.match(breakdownText,/Discounts % \/ الخصم\s+AED 250\\.00/);
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4357\\.00/);
+    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
+    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\s+AED 500\.00/);
+    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
+    assert.match(breakdownText,/Discounts % \/ الخصم\s+AED 250\.00/);
+    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4357\.00/);
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
