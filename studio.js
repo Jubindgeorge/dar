@@ -284,16 +284,21 @@ function commitDocumentToMemory() {
         return;
     }
     if (!refCode) {
-        const yearMonth = createdDate.slice(0, 7).replace('-', '');
-        let attempts = 0;
-        do {
-            const year = createdDate.slice(0, 4) || String(new Date().getFullYear());
-            const prefix = type === 'Quotation' ? 'QTN' : 'DAS';
-            const sequence = (state.documents || []).reduce((max, d) => {
-                const match = String(d.refCode || '').match(new RegExp('^' + prefix + '-' + year + '-(\\d{4})
-            attempts++;
-        } while ((state.documents || []).some(d => d.refCode === refCode) && attempts < 30);
-        if ((state.documents || []).some(d => d.refCode === refCode)) {
+        const year = createdDate.slice(0, 4) || String(new Date().getFullYear());
+        const prefix = type === 'Quotation' ? 'QTN' : 'DAS';
+        const sequencePrefix = prefix + '-' + year + '-';
+        let sequence = (state.documents || []).reduce((max, doc) => {
+            const ref = String(doc.refCode || '');
+            if (!ref.startsWith(sequencePrefix)) return max;
+            const suffix = Number(ref.slice(sequencePrefix.length));
+            return Number.isInteger(suffix) ? Math.max(max, suffix) : max;
+        }, 0) + 1;
+        refCode = sequencePrefix + String(sequence).padStart(4, '0');
+        while ((state.documents || []).some(doc => doc.refCode === refCode) && sequence < 9999) {
+            sequence++;
+            refCode = sequencePrefix + String(sequence).padStart(4, '0');
+        }
+        if ((state.documents || []).some(doc => doc.refCode === refCode)) {
             showCustomModal('Reference generation failed', 'Please enter a unique document reference and try again.');
             return;
         }
