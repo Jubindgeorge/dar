@@ -525,13 +525,14 @@ window.viewClientDetail = function(clientId) {
     const tbody = document.getElementById('client-detail-records-body');
     
     if (clientDocs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
     } else {
         tbody.innerHTML = clientDocs.map(d => {
             const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
             return `
                 <tr>
                     <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+                    <td>${window.darFormatTableDate(d.transactionDate || d.createdDate || d.date)}</td>
                     <td>${workDescriptionCell(d)}</td>
                     <td>${d.visaExpiryDate || '-'}</td>
                     <td>AED ${amt.toFixed(2)}</td>
@@ -605,7 +606,7 @@ function renderWorksDetailView() {
     if (!tbody) return;
 
     if (activeDocs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No invoice records found in this branch.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No invoice records found in this branch.</td></tr>`;
         return;
     }
 
@@ -613,7 +614,8 @@ function renderWorksDetailView() {
         const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
         return `
             <tr>
-                <td><strong>${d.refCode}</strong></td>
+                <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+                <td>${window.darFormatTableDate(d.transactionDate || d.createdDate || d.date)}</td>
                 <td>${darEscapeHTML(d.clientName || '-')}</td>
                 <td>${darEscapeHTML(d.companyName || '-')}</td>
                 <td>${d.contactPerson || '-'}</td>
@@ -637,8 +639,20 @@ function getDarDocumentAmount(d) {
     }
     return 0;
 }
+window.applyDarDocumentDatePreset = function(preset) {
+    const from = document.getElementById('doc-date-from'), to = document.getElementById('doc-date-to');
+    if (!from || !to) return;
+    const today = window.darDates ? window.darDates.todayISO() : localISODate();
+    const d = new Date(today + 'T12:00:00');
+    let start = '', end = today;
+    if (preset === 'today') start = today;
+    else if (preset === 'week') { const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    else if (preset === 'month') start = today.slice(0,7)+'-01';
+    else if (preset === 'previous-month') { d.setDate(1); d.setMonth(d.getMonth()-1); start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'; d.setMonth(d.getMonth()+1); d.setDate(0); end=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    from.value=start; to.value=end; renderDocumentsTable();
+};
 window.clearDocumentFilters = function() {
-    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount', 'doc-date-from', 'doc-date-to']) {
+    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount', 'doc-date-from', 'doc-date-to', 'doc-date-preset']) {
         const input = document.getElementById(id);
         if (input) input.value = '';
     }
