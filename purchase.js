@@ -20,9 +20,13 @@
         if (!body) return;
         const query = clean(byId('purchase-search')?.value).toLocaleLowerCase();
         const status = clean(byId('purchase-status-filter')?.value);
+        const fromDate = clean(byId('purchase-date-from')?.value);
+        const toDate = clean(byId('purchase-date-to')?.value);
         const records = (state.purchases || []).filter(p => {
             const searchText = [supplierName(p.supplierId) || p.supplierName,p.reference,p.description,p.date].map(v=>clean(v).toLocaleLowerCase()).join(' ');
-            return (!query || searchText.includes(query)) && (!status || p.paymentStatus === status);
+            const recordDate = window.darDates ? window.darDates.normalize(p.date) : clean(p.date).slice(0,10);
+            const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) && (!toDate || (recordDate && recordDate <= toDate));
+            return (!query || searchText.includes(query)) && (!status || p.paymentStatus === status) && matchesDate;
         }).sort((a,b)=>clean(b.date).localeCompare(clean(a.date)));
         const total = records.reduce((sum,p)=>sum+(Number(p.amount)||0),0);
         if (byId('purchase-total-amount')) byId('purchase-total-amount').textContent = 'AED ' + total.toFixed(2);
@@ -76,7 +80,8 @@
         if (!supplierId || !reference || !date || byId('pu-amount').value === '' || !Number.isFinite(amount) || amount < 0) {
             showCustomModal('Required fields','Supplier, reference, date and a non-negative amount are required.'); return;
         }
-        const record = {id,supplierId,supplierName:supplierName(supplierId),reference,date,description:clean(byId('pu-description').value),amount,paymentStatus:clean(byId('pu-status').value)||'Unpaid',notes:clean(byId('pu-notes').value),updatedAt:new Date().toISOString()};
+        const previous = (state.purchases || []).find(item => item.id === id) || {};
+        const record = {id,supplierId,supplierName:supplierName(supplierId),reference,date,createdDate:previous.id ? (previous.createdDate || previous.createdAt || '') : (window.darDates ? window.darDates.todayISO() : date),description:clean(byId('pu-description').value),amount,paymentStatus:clean(byId('pu-status').value)||'Unpaid',notes:clean(byId('pu-notes').value),updatedAt:new Date().toISOString(),updatedBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
         const payload={...record};delete payload.id;
         db.ref('purchases/'+id).update(payload,error=>{
             if(error){showCustomModal('Save failed','Purchase could not be saved. Check Firebase permissions and connection.');return;}

@@ -43,12 +43,13 @@ window.renderAccountsLedgerDetail = function(refCode) {
     const totalPaid = doc.advanceAmount + logsTotal;
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
 
-    const docMonth = doc.createdDate ? doc.createdDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    const invoiceDate = doc.transactionDate || doc.createdDate || doc.date || '';
+    const docMonth = invoiceDate ? invoiceDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
     const monthlyExpenses = state.monthlyExpenses || [];
     const matchingExpenses = monthlyExpenses.filter(e => e.month === docMonth);
     const totalMonthExp = matchingExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
     
-    const totalInvoicesInMonth = (state.documents || []).filter(d => (d.createdDate || '').startsWith(docMonth)).length || 1;
+    const totalInvoicesInMonth = (state.documents || []).filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
     const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
     const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
@@ -74,7 +75,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
         let allPayments = [];
         if (doc.advanceAmount > 0) {
             allPayments.push({
-                date: doc.createdDate || 'Initial',
+                date: doc.transactionDate || doc.createdDate || 'Initial',
                 amount: doc.advanceAmount,
                 note: 'Advance Payment',
                 isAdvance: true
@@ -109,7 +110,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
                 } else {
                     tbody.innerHTML += `
                         <tr>
-                            <td>${pay.date}</td>
+                            <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
                             <td>${pay.note}</td>
                             <td style="text-align: center;"><button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
@@ -135,10 +136,11 @@ window.renderFullLedgerTableBody = function() {
     }
 
     docs.forEach(doc => {
-        const docMonth = doc.createdDate ? doc.createdDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
+        const invoiceDate = doc.transactionDate || doc.createdDate || doc.date || '';
+        const docMonth = invoiceDate ? invoiceDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
         const matchingExpenses = monthlyExpenses.filter(e => e.month === docMonth);
         const totalMonthExp = matchingExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-        const totalInvoicesInMonth = docs.filter(d => (d.createdDate || '').startsWith(docMonth)).length || 1;
+        const totalInvoicesInMonth = docs.filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
@@ -153,7 +155,7 @@ window.renderFullLedgerTableBody = function() {
         tbody.innerHTML += `
             <tr>
                 <td><strong>${doc.refCode}</strong></td>
-                <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
+                <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.transactionDate || doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
                 <td>${clientLabel}</td>
                 <td>AED ${govtFee.toFixed(2)}</td>
                 <td>AED ${expenseShare.toFixed(2)}</td>
@@ -263,7 +265,7 @@ window.savePaymentLogData = function() {
     }
 
     doc.paymentLogs = doc.paymentLogs || [];
-    doc.paymentLogs.push({ date, amount, note });
+    doc.paymentLogs.push({ date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
 
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
     closeAddPaymentModal();
@@ -284,6 +286,8 @@ window.deletePaymentLog = function(refCode, index) {
 window.openMonthlyExpenseModal = function() {
     document.getElementById('exp-input-amount').value = '';
     document.getElementById('exp-input-title').value = '';
+    const expenseDate = document.getElementById('exp-input-date');
+    if (expenseDate) expenseDate.value = window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10);
     document.getElementById('monthly-expense-modal').style.display = 'flex';
 };
 
@@ -293,6 +297,7 @@ window.closeMonthlyExpenseModal = function() {
 
 window.saveMonthlyExpenseData = function() {
     const month = document.getElementById('exp-input-month').value;
+    const expenseDate = document.getElementById('exp-input-date')?.value || (window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10));
     const title = document.getElementById('exp-input-title').value;
     const amount = Number(document.getElementById('exp-input-amount').value);
 
@@ -305,7 +310,7 @@ window.saveMonthlyExpenseData = function() {
     if (!month) { alert('Please select the expense month.'); return; }
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter an expense amount greater than zero.'); return; }
     const id = db && db.ref('monthlyExpenses').push().key;
-    state.monthlyExpenses.push({ id, month, title: title.trim(), amount });
+    state.monthlyExpenses.push({ id, month, date: expenseDate, transactionDate: expenseDate, title: title.trim(), amount, createdDate: expenseDate, updatedAt: new Date().toISOString(), updatedBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
 
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
     closeMonthlyExpenseModal();
@@ -318,7 +323,7 @@ window.renderMonthlyExpensesTable = function() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const expenses = state.monthlyExpenses || [];
+    const expenses = (state.monthlyExpenses || []).slice().sort((a,b) => String(b.date || b.month || '').localeCompare(String(a.date || a.month || '')));
     if (expenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No monthly operating expenses added.</td></tr>`;
         return;
@@ -327,7 +332,7 @@ window.renderMonthlyExpensesTable = function() {
     expenses.forEach((exp, index) => {
         tbody.innerHTML += `
             <tr>
-                <td>${escapeHtml(exp.month)}</td>
+                <td>${exp.date && window.darFormatTableDate ? window.darFormatTableDate(exp.date) : escapeHtml(exp.month)}</td>
                 <td>${escapeHtml(exp.title)}</td>
                 <td style="color: var(--accent-green);">AED ${Number(exp.amount).toFixed(2)}</td>
                 <td style="text-align: center;"><button onclick="deleteMonthlyExpense(${index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>

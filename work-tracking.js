@@ -31,9 +31,9 @@ window.darRenderWorkTracking = function () {
  const table=document.createElement('div');table.className='table-responsive';
  table.innerHTML='<table class="data-table"><thead><tr><th>Date</th><th>Package (Main)</th><th>Service / Invoice</th><th>Company / Client</th><th>Current Stage</th><th>Work Status</th><th>Actions</th></tr></thead><tbody></tbody></table>';
  const tbody=table.querySelector('tbody');
- docs().filter(d=>d.type!=='Quotation').forEach(d=>{
+ docs().filter(d=>d.type!=='Quotation').slice().sort((a,b)=>String(b.transactionDate||b.createdDate||b.date||'').localeCompare(String(a.transactionDate||a.createdDate||a.date||''))).forEach(d=>{
    const tr=document.createElement('tr'),id=String(d.refCode||''),step=d.proStage||'Not Started',status=d.proStatus||'Not Started';
-   for(const value of [(window.darFormatTableDate ? window.darFormatTableDate(d.createdDate||d.date) : String(d.createdDate||d.date||'').slice(0,10)),packageName(d),id+' · '+(d.items||[]).map(i=>i.title||i.serviceName||'').filter(Boolean).join(', '),company(d)==='Private'?(d.clientName||'Private'):company(d),step,status]){
+   for(const value of [(window.darFormatTableDate ? window.darFormatTableDate(d.transactionDate||d.createdDate||d.date) : String(d.createdDate||d.date||'').slice(0,10)),packageName(d),id+' · '+(d.items||[]).map(i=>i.title||i.serviceName||'').filter(Boolean).join(', '),company(d)==='Private'?(d.clientName||'Private'):company(d),step,status]){
       const td=document.createElement('td');td.textContent=value;tr.append(td);
    }
    const td=document.createElement('td'),button=document.createElement('button');button.className='btn btn-secondary';button.textContent='Update Stage';button.addEventListener('click',()=>window.darEditWorkStage(id));td.append(button);tr.append(td);tbody.append(tr);

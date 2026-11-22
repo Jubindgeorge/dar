@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const app = fs.readFileSync('app.js', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const styles = fs.readFileSync('styles.css', 'utf8');
+const dates = fs.readFileSync('date-utils.js', 'utf8');
+const ledger = fs.readFileSync('ledger.js', 'utf8');
+const staff = fs.readFileSync('staff.js', 'utf8');
+const purchases = fs.readFileSync('purchase.js', 'utf8');
 for (const id of ['doc-date-from','doc-date-to','dash-v2-received','dash-v2-outstanding','dash-v2-unassigned']) {
   assert.match(html, new RegExp('id="' + id + '"'), 'missing UI element: ' + id);
 }
@@ -12,4 +16,15 @@ assert.match(app, /matchesText && matchesBranch && matchesDate/);
 assert.match(app, /window\.getDarV2FinancialOverview = function/);
 assert.match(app, /set\('dash-v2-outstanding', currency\(v2\.outstanding\)\)/);
 assert.match(styles, /\.v2-filter-date/);
-console.log('V2 read-only UI wiring checks passed');
+assert.match(html, /date-utils\.js/, 'shared date helper is loaded');
+assert.match(html, /Registered Date/, 'client register displays registration date');
+assert.match(html, /Latest Work Date/, 'company works directory displays latest work date');
+assert.match(html, /Joining Date/, 'staff register displays joining date');
+assert.match(html, /Expense Date/, 'expense entry captures transaction date');
+assert.match(app, /applyDarDocumentDatePreset/, 'invoice register has quick date presets');
+assert.match(app, /amount-desc/, 'invoice register supports amount sorting');
+assert.match(dates, /updatedAt/, 'shared audit metadata includes update timestamp');
+assert.match(staff, /staff-date-from/, 'staff register supports date filtering');
+assert.match(purchases, /purchase-date-from/, 'purchase register supports date filtering');
+assert.match(ledger, /transactionDate: date/, 'payment records store transaction date');
+console.log('V2 date and audit source checks passed');

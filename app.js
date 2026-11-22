@@ -377,7 +377,7 @@ function renderDashboardStats() {
     const sums = {month: 0, year: 0, business: 0, staff: 0, businessCount: 0, staffCount: 0};
     documents.forEach(doc => {
         const amount = darDashboardAmount(doc);
-        const date = String(doc.createdDate || doc.date || '');
+        const date = String(doc.transactionDate || doc.createdDate || doc.date || '');
         if (date.startsWith(month)) sums.month += amount;
         if (date.startsWith(year)) sums.year += amount;
         if (getAutomaticWorkBranch(doc) === 'staff') { sums.staff += amount; sums.staffCount++; }
@@ -429,7 +429,7 @@ function renderClientsTable() {
     if (!tbody) return;
 
     if (!state.clients || state.clients.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No corporate client accounts found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No corporate client accounts found.</td></tr>`;
         return;
     }
 
@@ -445,7 +445,8 @@ function renderClientsTable() {
         <tr>
             <td><button type="button" class="company-name-link" onclick="openCompanyStaff('${cl.id}')" title="Open staff data for this company">${darEscapeHTML(cl.companyName || '-')}</button></td>
             <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${cl.nameAr || '-'}</td>
-            <td>${cl.contactPerson || '-'}</td>
+            <td>${darEscapeHTML(cl.contactPerson || '-')}</td>
+            <td>${window.darFormatTableDate(cl.createdDate || cl.createdAt)}</td>
             <td style="text-align: center;">
                 <button onclick="openCompanyStaff('${cl.id}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-id-card"></i> Staff Data</button>
                 <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
@@ -493,7 +494,9 @@ window.saveClientModalData = async function() {
         try { nameAr = await autoTranslateToArabic(companyName); } catch (error) { console.warn('Arabic translation failed:', error); }
     }
 
-    db.ref(`clients/${id}`).set({ companyName, nameAr, contactPerson }, (err) => {
+    const previous = (state.clients || []).find(item => item.id === id) || {};
+    const audit = window.darDates ? window.darDates.audit(previous) : { createdDate: previous.createdDate || localISODate(), updatedAt: new Date().toISOString() };
+    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...audit }, (err) => {
         if (!err) { closeClientModal(); }
         else showCustomModal('Save failed', 'Client details could not be saved. Check Firebase permissions and your connection.');
     });
@@ -522,13 +525,14 @@ window.viewClientDetail = function(clientId) {
     const tbody = document.getElementById('client-detail-records-body');
     
     if (clientDocs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
     } else {
         tbody.innerHTML = clientDocs.map(d => {
             const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
             return `
                 <tr>
                     <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+                    <td>${window.darFormatTableDate(d.transactionDate || d.createdDate || d.date)}</td>
                     <td>${workDescriptionCell(d)}</td>
                     <td>${d.visaExpiryDate || '-'}</td>
                     <td>AED ${amt.toFixed(2)}</td>
@@ -558,19 +562,22 @@ function renderWorksTable() {
 
     const keys = Object.keys(companyMap);
     if (keys.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = keys.map(comp => `
+    tbody.innerHTML = keys.map(comp => {
+        const latestDate = companyMap[comp].map(doc => String(doc.transactionDate || doc.createdDate || doc.date || '')).filter(Boolean).sort().pop() || '';
+        return `
         <tr>
             <td><strong>${escapeHtml(companyLabels[comp])}</strong></td>
+            <td>${window.darFormatTableDate(latestDate)}</td>
             <td>${companyMap[comp].length} Invoices</td>
             <td style="text-align: center;">
                 <button onclick="openWorksDetailView('${escapeHtml(companyLabels[comp]).replace(/'/g, '&#39;')}')" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
             </td>
         </tr>
-    `).join('');
+    `; }).join('');
 }
 
 window.openWorksDetailView = function(companyName) {
@@ -602,7 +609,7 @@ function renderWorksDetailView() {
     if (!tbody) return;
 
     if (activeDocs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No invoice records found in this branch.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No invoice records found in this branch.</td></tr>`;
         return;
     }
 
@@ -610,7 +617,8 @@ function renderWorksDetailView() {
         const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
         return `
             <tr>
-                <td><strong>${d.refCode}</strong></td>
+                <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+                <td>${window.darFormatTableDate(d.transactionDate || d.createdDate || d.date)}</td>
                 <td>${darEscapeHTML(d.clientName || '-')}</td>
                 <td>${darEscapeHTML(d.companyName || '-')}</td>
                 <td>${d.contactPerson || '-'}</td>
@@ -634,8 +642,20 @@ function getDarDocumentAmount(d) {
     }
     return 0;
 }
+window.applyDarDocumentDatePreset = function(preset) {
+    const from = document.getElementById('doc-date-from'), to = document.getElementById('doc-date-to');
+    if (!from || !to) return;
+    const today = window.darDates ? window.darDates.todayISO() : localISODate();
+    const d = new Date(today + 'T12:00:00');
+    let start = '', end = today;
+    if (preset === 'today') start = today;
+    else if (preset === 'week') { const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    else if (preset === 'month') start = today.slice(0,7)+'-01';
+    else if (preset === 'previous-month') { d.setDate(1); d.setMonth(d.getMonth()-1); start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'; d.setMonth(d.getMonth()+1); d.setDate(0); end=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    from.value=start; to.value=end; renderDocumentsTable();
+};
 window.clearDocumentFilters = function() {
-    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount', 'doc-date-from', 'doc-date-to']) {
+    for (const id of ['doc-search-input', 'doc-min-amount', 'doc-max-amount', 'doc-date-from', 'doc-date-to', 'doc-date-preset']) {
         const input = document.getElementById(id);
         if (input) input.value = '';
     }
@@ -671,7 +691,7 @@ function renderDocumentsTable() {
     const toDate = document.getElementById('doc-date-to')?.value || '';
     const all = state.documents || [];
     const filtered = all.filter(d => {
-        const recordDate = String(d.createdDate || d.date || '').slice(0, 10);
+        const recordDate = String(d.transactionDate || d.createdDate || d.date || '').slice(0, 10);
         const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) &&
             (!toDate || (recordDate && recordDate <= toDate));
         const matchesText = [d.refCode, d.clientName, d.companyName]
@@ -681,6 +701,16 @@ function renderDocumentsTable() {
         const amount = getDarDocumentAmount(d);
         return matchesText && matchesBranch && matchesDate &&
             (min === null || amount >= min) && (max === null || amount <= max);
+    });
+    const sortMode = document.getElementById('doc-sort-order')?.value || 'newest';
+    const dateOf = record => String(record.transactionDate || record.createdDate || record.date || '');
+    filtered.sort((left, right) => {
+        if (sortMode === 'oldest') return dateOf(left).localeCompare(dateOf(right));
+        if (sortMode === 'amount-desc') return getDarDocumentAmount(right) - getDarDocumentAmount(left);
+        if (sortMode === 'amount-asc') return getDarDocumentAmount(left) - getDarDocumentAmount(right);
+        if (sortMode === 'client') return String(left.clientName || left.companyName || '').localeCompare(String(right.clientName || right.companyName || ''));
+        if (sortMode === 'reference') return String(left.refCode || '').localeCompare(String(right.refCode || ''));
+        return dateOf(right).localeCompare(dateOf(left));
     });
     const count = document.getElementById('doc-filter-count');
     if (count) count.textContent = filtered.length + ' of ' + all.length + ' records';
@@ -709,7 +739,7 @@ function renderDocumentsTable() {
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${darEscapeHTML(d.refCode)}" onchange="updateBatchDeleteButtonState()"></td>
             <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
-            <td>${darEscapeHTML(window.darFormatTableDate(d.createdDate || d.date))}</td>
+            <td>${darEscapeHTML(window.darFormatTableDate(d.transactionDate || d.createdDate || d.date))}</td>
             <td>${darEscapeHTML(d.clientName || '-')}</td>
             <td>${darEscapeHTML(d.companyName || '-')}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${getAutomaticWorkBranch(d) === 'unassigned' ? 'Without Company' : getAutomaticWorkBranch(d) === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>

@@ -52,7 +52,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
-    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\\s+AED 200\\.00/, 'Legacy invoice total remains unchanged');
+    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
     await page.evaluate(() => {
       state.documents.push({
         refCode:'CI-BREAKDOWN-001',type:'Invoice',clientName:'Breakdown Client',companyName:'Breakdown Co',
@@ -63,11 +63,11 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\\s+AED 4907\\.00/);
-    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\\s+AED 500\\.00/);
-    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\\s+AED 200\\.00/);
-    assert.match(breakdownText,/Discounts % \/ الخصم\\s+AED 250\\.00/);
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\\s+AED 4357\\.00/);
+    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
+    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\s+AED 500\.00/);
+    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
+    assert.match(breakdownText,/Discounts % \/ الخصم\s+AED 250\.00/);
+    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4357\.00/);
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
@@ -106,8 +106,8 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#doc-table-body').count(),1);
     await page.evaluate(() => renderDocumentsTable());
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
-    assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),8,'Ledger rows have 8 cells');
-    assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),8,'Ledger headings have 8 cells');
+    assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),9,'Invoice register rows have 9 cells including Invoice Date');
+    assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),9,'Invoice register headings have 9 cells including Invoice Date');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];

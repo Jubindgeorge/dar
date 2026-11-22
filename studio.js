@@ -27,7 +27,7 @@ function openStudio(type, editRefCode = null) {
         if (doc) {
             if (docTypeEl) docTypeEl.value = doc.type || type;
             if (editRefEl) editRefEl.value = doc.refCode || '';
-            if (dateEl) dateEl.value = doc.createdDate || studioLocalISODate();
+            if (dateEl) dateEl.value = doc.transactionDate || doc.createdDate || studioLocalISODate();
             const branchEl = document.getElementById('st-branch-tag');
             if (branchEl) branchEl.value = doc.branchTag === 'staff' ? 'staff' : 'company';
             
@@ -335,6 +335,7 @@ function commitDocumentToMemory() {
     const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
     const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
 
+    const auditUser = window.firebase?.auth?.().currentUser;
     const payload = {
         refCode,
         type,
@@ -345,7 +346,10 @@ function commitDocumentToMemory() {
         companyName: companyName || 'Direct Clients',
         contactPerson,
         companyClientId: state.selectedCompanyClientId || '',
-        createdDate,
+        createdDate: previousDocument ? (previousDocument.createdDate || previousDocument.createdAt || '') : createdDate,
+        transactionDate: createdDate,
+        updatedAt: new Date().toISOString(),
+        updatedBy: auditUser?.email || auditUser?.uid || 'Unknown',
         visaExpiryDate,
         govtAmt,
         govtFee: govtAmt,

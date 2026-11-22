@@ -213,6 +213,7 @@
                                     <th>Company Name</th>
                                     <th style="text-align: right;">Company Name (Arabic)</th>
                                     <th>Contact</th>
+                                    <th>Registered Date</th>
                                     <th style="text-align: center;">Actions</th>
                                 </tr>
                             </thead>
@@ -234,7 +235,7 @@
                             <thead>
                                 <tr>
                                     <th>Company Name</th>
-                                    <th>Client Name</th>
+                                    <th>Latest Work Date</th>
                                     <th>Total Invoices</th>
                                     <th style="text-align: center;">Actions</th>
                                 </tr>
@@ -263,6 +264,7 @@
                             <thead>
                                 <tr>
                                     <th>Reference ID</th>
+                                    <th>Work Date</th>
                                     <th>Client Name</th>
                                     <th>Company Name</th>
                                     <th>Contact Person</th>
@@ -292,6 +294,7 @@
                             <thead>
                                 <tr>
                                     <th>Reference ID</th>
+                                    <th>Record Date</th>
                                     <th>Specific Work Details</th>
                                     <th>Visa Expiry</th>
                                     <th>Total Amount</th>
@@ -310,8 +313,8 @@
                         <div class="staff-toolbar"><button type="button" class="btn btn-secondary" onclick="openSupplierModal()">+ Add Supplier</button><button type="button" class="btn btn-primary" onclick="openPurchaseModal()">+ Record Purchase</button></div>
                     </div>
                     <div class="purchase-summary"><span>Recorded Purchases</span><strong id="purchase-total-amount">AED 0.00</strong></div>
-                    <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
-                    <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
+                    <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><label class="v2-filter-date">From <input type="date" id="purchase-date-from" onchange="renderPurchases()" aria-label="Purchases from date"></label><label class="v2-filter-date">To <input type="date" id="purchase-date-to" onchange="renderPurchases()" aria-label="Purchases through date"></label><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
+                    <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Purchase Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
                 </section>
 
                 <!-- Company staff register. Kept separate from the invoice/quotation print templates. -->
@@ -330,14 +333,14 @@
                     <div class="staff-filter-row">
                         <input id="staff-search" type="search" placeholder="Search staff ID, name, company or passport..." oninput="renderStaffTable()" aria-label="Search staff">
                         <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
-                        <select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
+                        <label class="v2-filter-date">From <input type="date" id="staff-date-from" onchange="renderStaffTable()" aria-label="Staff joined from date"></label><label class="v2-filter-date">To <input type="date" id="staff-date-to" onchange="renderStaffTable()" aria-label="Staff joined through date"></label><select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
                             <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
                         </select>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table staff-table">
-                            <thead><tr><th>Staff ID</th><th>Name</th><th>Company</th><th>Last Work Done</th><th>Visa Expiry</th><th>Passport Expiry</th><th>Renewal Status</th><th>Actions</th></tr></thead>
-                            <tbody id="staff-table-body"><tr><td colspan="8">Loading staff records…</td></tr></tbody>
+                            <thead><tr><th>Staff ID</th><th>Name</th><th>Company</th><th>Last Work Done</th><th>Joining Date</th><th>Visa Expiry</th><th>Passport Expiry</th><th>Renewal Status</th><th>Actions</th></tr></thead>
+                            <tbody id="staff-table-body"><tr><td colspan="9">Loading staff records…</td></tr></tbody>
                         </table>
                     </div>
                 </section>
@@ -380,6 +383,8 @@
                                 <input id="doc-max-amount" type="number" min="0" step="0.01" oninput="renderDocumentsTable()" placeholder="Max AED" aria-label="Maximum amount in AED" style="flex:1 1 100px;min-width:0;">
                                 <label class="v2-filter-date">From <input type="date" id="doc-date-from" onchange="renderDocumentsTable()" aria-label="Records from date"></label>
                                 <label class="v2-filter-date">To <input type="date" id="doc-date-to" onchange="renderDocumentsTable()" aria-label="Records through date"></label>
+                                <select id="doc-sort-order" aria-label="Sort invoice records" onchange="renderDocumentsTable()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="amount-desc">Highest amount</option><option value="amount-asc">Lowest amount</option><option value="client">Client A–Z</option><option value="reference">Reference A–Z</option></select>
+                                <select id="doc-date-preset" aria-label="Quick date range" onchange="applyDarDocumentDatePreset(this.value)"><option value="">Custom range</option><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="previous-month">Previous Month</option></select>
                                 <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters()">Clear filters</button>
                                 <span id="doc-filter-count" role="status" aria-live="polite" style="font-size:0.8rem;color:var(--text-muted);"></span>
                             </div>
@@ -429,7 +434,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Expense Month</th>
+                                        <th>Expense Date</th>
                                         <th>Expense Title</th>
                                         <th>Expense Amount (AED)</th>
                                         <th style="text-align: center;">Actions</th>
@@ -488,7 +493,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Date</th>
+                                        <th>Payment Date</th>
                                         <th>Amount Paid (AED)</th>
                                         <th>Payment Note / Remarks</th>
                                         <th style="text-align: center;">Action</th>
@@ -507,7 +512,7 @@
                                 <thead>
                                     <tr>
                                         <th>Invoice Ref</th>
-                                        <th>Date</th>
+                                        <th>Invoice Date</th>
                                         <th>Client Name</th>
                                         <th>Govt Fees (AED)</th>
                                         <th>Monthly Expense Share (AED)</th>
@@ -744,6 +749,8 @@
             <div class="form-group">
                 <label>Target Month & Year</label>
                 <input type="month" id="exp-input-month">
+                <label>Expense Date</label>
+                <input type="date" id="exp-input-date">
             </div>
             <div class="form-group">
                 <label>Expense Name / Title</label>
@@ -928,6 +935,7 @@
     
     <!-- System JavaScript Modules -->
     <script src="config.js"></script>
+    <script src="date-utils.js"></script>
     <script src="state.js"></script>
     <script src="ui.js"></script>
     <script src="studio.js"></script>
