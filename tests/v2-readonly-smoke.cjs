@@ -42,3 +42,7 @@ assert.match(app, /viewDocumentHistory/, 'document audit history');
 assert.match(app, /exportDarFinancialReportPDF/, 'financial report PDF export');
 assert.match(app, /buildDarFinancialReportRows/, 'shared daily/monthly/yearly report data');
 assert.match(html, /xlsx\.full\.min\.js/, 'XLSX export library loaded');
+
+assert.match(app, /getDarDocumentPaymentStatus/, 'read-only payment status rules');
+assert.match(app, /paymentDueDate/, 'overdue requires an explicit due date');
+assert.match(html, /dash-v2-payment-status/, 'dashboard displays derived payment status counts');
