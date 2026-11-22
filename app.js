@@ -441,11 +441,10 @@ function renderClientsTable() {
     state.clients.forEach(cl => {
         const key = (cl.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
         if (!key || seenCompanies.has(key)) return;
-        seenCompanies.add(key);
         const registered = String(cl.createdDate || cl.createdAt || '').slice(0,10);
         const matchesDate = (!clientFrom || (registered && registered >= clientFrom)) && (!clientTo || (registered && registered <= clientTo));
         const matchesSearch = [cl.companyName,cl.nameAr,cl.contactPerson].some(v=>String(v||'').toLowerCase().includes(clientSearch));
-        if (matchesDate && matchesSearch) uniqueClients.push(cl);
+        if (matchesDate && matchesSearch) { seenCompanies.add(key); uniqueClients.push(cl); }
     });
     if (!uniqueClients.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No clients match the selected filters.</td></tr>`; return; }
     tbody.innerHTML = uniqueClients.map(cl => `
@@ -833,7 +832,7 @@ window.previewInvoiceDocument = async function(refCode) {
     const compName = doc.clientName || doc.companyName || 'N/A';
     if (clientName) clientName.innerText = compName;
     if (companyNameEl) companyNameEl.innerText = doc.companyName || doc.clientName || '-';
-    if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
+    if (createdDate) createdDate.innerText = `Date: ${doc.transactionDate || doc.createdDate || '-'}`;
 
     let arName = '';
     const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
