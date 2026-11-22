@@ -433,14 +433,21 @@ function renderClientsTable() {
         return;
     }
 
+    const clientFrom = document.getElementById('client-date-from')?.value || '';
+    const clientTo = document.getElementById('client-date-to')?.value || '';
+    const clientSearch = (document.getElementById('client-search')?.value || '').trim().toLowerCase();
     const uniqueClients = [];
     const seenCompanies = new Set();
     state.clients.forEach(cl => {
         const key = (cl.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
         if (!key || seenCompanies.has(key)) return;
         seenCompanies.add(key);
-        uniqueClients.push(cl);
+        const registered = String(cl.createdDate || cl.createdAt || '').slice(0,10);
+        const matchesDate = (!clientFrom || (registered && registered >= clientFrom)) && (!clientTo || (registered && registered <= clientTo));
+        const matchesSearch = [cl.companyName,cl.nameAr,cl.contactPerson].some(v=>String(v||'').toLowerCase().includes(clientSearch));
+        if (matchesDate && matchesSearch) uniqueClients.push(cl);
     });
+    if (!uniqueClients.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No clients match the selected filters.</td></tr>`; return; }
     tbody.innerHTML = uniqueClients.map(cl => `
         <tr>
             <td><button type="button" class="company-name-link" onclick="openCompanyStaff('${cl.id}')" title="Open staff data for this company">${darEscapeHTML(cl.companyName || '-')}</button></td>
@@ -553,14 +560,20 @@ function renderWorksTable() {
 
     const companyMap = {};
     const companyLabels = {};
+    const workFrom = document.getElementById('works-date-from')?.value || '';
+    const workTo = document.getElementById('works-date-to')?.value || '';
+    const workSearch = (document.getElementById('works-search')?.value || '').trim().toLowerCase();
     (state.documents || []).forEach(doc => {
+        const date = String(doc.transactionDate || doc.createdDate || doc.date || '').slice(0,10);
+        if (workFrom && (!date || date < workFrom)) return;
+        if (workTo && (!date || date > workTo)) return;
         const label = (doc.companyName || 'Without Company').trim();
         const key = normalizeCompanyFolderKey(label);
         if (!companyMap[key]) { companyMap[key] = []; companyLabels[key] = label; }
         companyMap[key].push(doc);
     });
 
-    const keys = Object.keys(companyMap);
+    const keys = Object.keys(companyMap).filter(key => companyLabels[key].toLowerCase().includes(workSearch));
     if (keys.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
         return;
@@ -604,7 +617,12 @@ function renderWorksDetailView() {
     if (countCompany) countCompany.innerText = companyWorks.length;
     if (countStaff) countStaff.innerText = staffWorks.length;
 
-    const activeDocs = state.activeWorksBranch === 'staff' ? staffWorks : companyWorks;
+    const detailFrom = document.getElementById('works-detail-date-from')?.value || '';
+    const detailTo = document.getElementById('works-detail-date-to')?.value || '';
+    const activeDocs = (state.activeWorksBranch === 'staff' ? staffWorks : companyWorks).filter(d => {
+        const date = String(d.transactionDate || d.createdDate || d.date || '').slice(0,10);
+        return (!detailFrom || (date && date >= detailFrom)) && (!detailTo || (date && date <= detailTo));
+    });
     const tbody = document.getElementById('works-detail-records-body');
     if (!tbody) return;
 
@@ -748,6 +766,8 @@ function renderDocumentsTable() {
             <td style="text-align: center;">
                 <button onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
                 <button onclick='openStudio("Invoice", ${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick='duplicateInvoiceDraft(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" title="Duplicate as a new draft" style="padding:4px 8px;font-size:.75rem;"><i class="fa-solid fa-copy"></i></button>
+                <button onclick='viewDocumentHistory(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" title="Record history" style="padding:4px 8px;font-size:.75rem;"><i class="fa-solid fa-clock-rotate-left"></i></button>
                 <button onclick='deleteSingleDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
@@ -885,6 +905,30 @@ window.previewInvoiceDocument = async function(refCode) {
     if (modal) modal.style.display = 'flex';
 };
 
+
+window.viewDocumentHistory = function(refCode) {
+    const doc = (state.documents || []).find(d => d.refCode === refCode);
+    if (!doc) return;
+    const esc = value => darEscapeHTML(value || '-');
+    const rows = [['Created / Invoice Date',doc.createdDate||doc.createdAt||doc.transactionDate||'-'],['Last Updated',doc.updatedAt||'-'],['Updated By',doc.updatedBy||'-'],['Recorded Advance','AED '+Number(doc.advanceAmount??doc.advanceAmt??doc.advance??0).toFixed(2)]];
+    (doc.paymentLogs||[]).forEach((p,i)=>rows.push(['Payment '+(i+1),(p.date||p.transactionDate||'-')+' · AED '+Number(p.amount||0).toFixed(2)+' · '+(p.createdBy||p.note||'Recorded')]));
+    showCustomModal('Record History · '+esc(refCode),'<div style="text-align:left">'+rows.map(([k,v])=>'<p style="padding:7px 0;border-bottom:1px solid var(--border-color)"><strong>'+esc(k)+':</strong> '+esc(v)+'</p>').join('')+'</div>');
+};
+window.duplicateInvoiceDraft = function(refCode) {
+    const source=(state.documents||[]).find(d=>d.refCode===refCode); if(!source)return;
+    openStudio(source.type||'Invoice');
+    const set=(id,value)=>{const el=document.getElementById(id);if(el)el.value=value??'';};
+    set('st-ref-code','');set('st-created-date',window.darDates?window.darDates.todayISO():localISODate());
+    set('st-client-name',source.clientName||'');set('st-company-name',source.companyName||'');set('st-contact-person',source.contactPerson||'');
+    set('st-govt-amt',source.govtAmt??source.govtFee??0);set('st-processing-charges',source.processingCharges??source.processingCharge??0);
+    set('st-discount-amt',source.discountPercent??0);set('st-legacy-discount-amt',source.discountPercent==null?(source.discountAmount??source.discountAmt??0):(source.legacyDiscountAmount||0));set('st-advance-amt',0);
+    const tbody=document.getElementById('st-spreadsheet-body');
+    if(tbody)tbody.innerHTML=(Array.isArray(source.items)?source.items:[]).map((item,i)=>'<tr><td style="text-align:center">'+(i+1)+'</td><td><input type="text" class="st-item-title" value="'+escapeHtml(getWorkItemDescription(item))+'"></td><td style="text-align:center"><input type="number" class="st-item-qty" value="'+(Number(item.q??item.quantity)||1)+'" oninput="recalculateStudioTotals()"></td><td style="text-align:right"><input type="number" class="st-item-price" value="'+(Number(item.p??item.price)||0)+'" oninput="recalculateStudioTotals()"></td><td style="text-align:center"><button type="button" onclick="this.closest(\'tr\').remove();recalculateStudioTotals()" class="btn btn-danger">×</button></td></tr>').join('');
+    if(tbody&&!tbody.rows.length)addStudioRow();
+    state.selectedCompanyClientId='';recalculateStudioTotals();
+    const title=document.getElementById('studio-mode-title');if(title)title.textContent='New Draft · copied from '+refCode;
+};
+
 // Export the existing invoice design as one correctly fitted A4 page.
 // Capture the original desktop-width invoice, not the scaled mobile preview.
 window.saveAsPDF = async function() {
@@ -971,6 +1015,20 @@ window.getDarV2FinancialOverview = function(documents, expenses) {
     });
     summary.expenses = costs.reduce((sum, e) => sum + Math.max(0, Number(e.amount) || 0), 0);
     return summary;
+};
+
+
+window.exportDarFinancialReport = function() {
+    const period=document.getElementById('dar-report-period')?.value||'monthly';
+    const keyFor=date=>{const d=String(date||'').slice(0,10);if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d))return 'Undated';return period==='daily'?d:period==='yearly'?d.slice(0,4):d.slice(0,7);};
+    const groups=new Map(),get=key=>{if(!groups.has(key))groups.set(key,{period:key,invoiced:0,received:0,outstanding:0,expenses:0,invoices:0});return groups.get(key);};
+    (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{const row=get(keyFor(d.transactionDate||d.createdDate||d.date));const total=Math.max(0,Number(getDarDocumentAmount(d))||0);const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(d.paymentLogs||[]).reduce((s,p)=>s+(Number(p.amount)||0),0));row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;});
+    (state.monthlyExpenses||[]).forEach(e=>{get(keyFor(e.transactionDate||e.date||((e.month||'')+'-01'))).expenses+=Math.max(0,Number(e.amount)||0);});
+    const rows=[['Period','Invoices','Invoiced AED','Received AED','Outstanding AED','Expenses AED','Invoiced Less Expenses AED']];
+    [...groups.values()].sort((x,y)=>x.period.localeCompare(y.period)).forEach(r=>rows.push([r.period,r.invoices,r.invoiced.toFixed(2),r.received.toFixed(2),r.outstanding.toFixed(2),r.expenses.toFixed(2),(r.invoiced-r.expenses).toFixed(2)]));
+    const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
+    const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download='dar-financial-report-'+period+'-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 };
 
 window.exportDarBackup = async function() {
