@@ -20,9 +20,13 @@
         if (!body) return;
         const query = clean(byId('purchase-search')?.value).toLocaleLowerCase();
         const status = clean(byId('purchase-status-filter')?.value);
+        const fromDate = clean(byId('purchase-date-from')?.value);
+        const toDate = clean(byId('purchase-date-to')?.value);
         const records = (state.purchases || []).filter(p => {
             const searchText = [supplierName(p.supplierId) || p.supplierName,p.reference,p.description,p.date].map(v=>clean(v).toLocaleLowerCase()).join(' ');
-            return (!query || searchText.includes(query)) && (!status || p.paymentStatus === status);
+            const recordDate = window.darDates ? window.darDates.normalize(p.date) : clean(p.date).slice(0,10);
+            const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) && (!toDate || (recordDate && recordDate <= toDate));
+            return (!query || searchText.includes(query)) && (!status || p.paymentStatus === status) && matchesDate;
         }).sort((a,b)=>clean(b.date).localeCompare(clean(a.date)));
         const total = records.reduce((sum,p)=>sum+(Number(p.amount)||0),0);
         if (byId('purchase-total-amount')) byId('purchase-total-amount').textContent = 'AED ' + total.toFixed(2);
