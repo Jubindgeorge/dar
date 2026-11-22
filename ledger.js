@@ -284,6 +284,8 @@ window.deletePaymentLog = function(refCode, index) {
 window.openMonthlyExpenseModal = function() {
     document.getElementById('exp-input-amount').value = '';
     document.getElementById('exp-input-title').value = '';
+    const expenseDate = document.getElementById('exp-input-date');
+    if (expenseDate) expenseDate.value = window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10);
     document.getElementById('monthly-expense-modal').style.display = 'flex';
 };
 
@@ -319,7 +321,7 @@ window.renderMonthlyExpensesTable = function() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const expenses = state.monthlyExpenses || [];
+    const expenses = (state.monthlyExpenses || []).slice().sort((a,b) => String(b.date || b.month || '').localeCompare(String(a.date || a.month || '')));
     if (expenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No monthly operating expenses added.</td></tr>`;
         return;
