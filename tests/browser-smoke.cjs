@@ -52,7 +52,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
-    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\\s+AED 200\\.00/, 'Legacy invoice total remains unchanged');
+    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
     await page.evaluate(() => {
       state.documents.push({
         refCode:'CI-BREAKDOWN-001',type:'Invoice',clientName:'Breakdown Client',companyName:'Breakdown Co',
