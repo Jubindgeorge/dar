@@ -833,7 +833,7 @@ window.previewInvoiceDocument = async function(refCode) {
     const compName = doc.clientName || doc.companyName || 'N/A';
     if (clientName) clientName.innerText = compName;
     if (companyNameEl) companyNameEl.innerText = doc.companyName || doc.clientName || '-';
-    if (createdDate) createdDate.innerText = `Date: ${doc.transactionDate || doc.createdDate || '-'}`;
+    if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
 
     let arName = '';
     const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
@@ -852,39 +852,19 @@ window.previewInvoiceDocument = async function(refCode) {
     if (tbody) {
         const items = doc.items || [];
         
-        const itemSubtotal = items.reduce((sum, item) => {
-            const p = Number(item.p ?? item.price) || 0;
-            const q = Number(item.q ?? item.quantity) || 1;
-            return sum + p * q;
-        }, 0);
-        const legacyTotal = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? doc.grandTotal) || 0;
-        const hasPaymentBreakdown = Number(doc.paymentBreakdownVersion) >= 1;
-        const storedSubtotal = Number(doc.subtotalAmount ?? doc.subTotal);
-        const subtotalAmount = hasPaymentBreakdown && Number.isFinite(storedSubtotal) && storedSubtotal >= 0
-            ? storedSubtotal
-            : (itemSubtotal || legacyTotal);
-        const processingCharges = hasPaymentBreakdown ? Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0) : 0;
-        const discountPercent = hasPaymentBreakdown && Number.isFinite(Number(doc.discountPercent)) ? Math.min(100, Math.max(0, Number(doc.discountPercent))) : 0;
-        const legacyDiscountAmount = hasPaymentBreakdown && doc.discountPercent == null ? Math.max(0, Number(doc.discountAmount ?? doc.discountAmt) || 0) : Math.max(0, Number(doc.legacyDiscountAmount) || 0);
-        const discountAmount = hasPaymentBreakdown
-            ? (subtotalAmount + processingCharges) * discountPercent / 100 + legacyDiscountAmount
-            : 0;
-        const advanceAmount = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance) || 0);
-        // New breakdown invoices store totalAmount before advance; legacy invoices retain their original total semantics.
-        const amountBeforeAdvance = hasPaymentBreakdown
-            ? (legacyTotal > 0 ? legacyTotal : Math.max(0, subtotalAmount + processingCharges - discountAmount))
-            : legacyTotal;
-        const finalAmountDue = amountBeforeAdvance; // Advance is shown separately; it does not reduce the invoice total.
-        const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: subtotalAmount }] : []);
-        const money = value => 'AED ' + value.toFixed(2);
-        const summaryRow = (label, value, strong = false, kind = '') => `
-            <tr class="invoice-summary-row ${kind}" style="font-weight:${strong ? '800' : '600'}; background:${strong ? '#f8fafc' : '#ffffff'};">
-                <td colspan="3" style="text-align:right;padding:5px 8px;">${label}</td>
-                <td style="text-align:right;padding:5px 8px;color:${strong ? '#b58f46' : '#334155'};">${money(value)}</td>
-            </tr>`;
+        let docTotal = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
+        if (docTotal === 0 && items.length > 0) {
+            docTotal = items.reduce((sum, item) => {
+                const p = parseFloat(item.p || item.price) || 0;
+                const q = parseFloat(item.q || item.quantity) || 1;
+                return sum + (p * q);
+            }, 0);
+        }
+
+        const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
         tbody.innerHTML = normalizedItems.map((item, idx) => {
-            const p = Number(item.p ?? item.price) || 0;
-            const q = Number(item.q ?? item.quantity) || 1;
+            const p = parseFloat(item.p ?? item.price) || 0;
+            const q = parseFloat(item.q ?? item.quantity) || 1;
             return `
                 <tr>
                     <td style="text-align: center;">${idx + 1}</td>
@@ -893,40 +873,16 @@ window.previewInvoiceDocument = async function(refCode) {
                     <td style="text-align: right;">${(p * q).toFixed(2)}</td>
                 </tr>
             `;
-        }).join('') +
-        summaryRow('Sub Total / المجموع الفرعي', subtotalAmount, false, 'subtotal') +
-        summaryRow('Advance Payment / الدفعة المقدمة', advanceAmount) +
-        summaryRow('Processing Charges / رسوم المعالجة', processingCharges) +
-        summaryRow(discountPercent > 0 ? `Discounts (${discountPercent}%) / الخصم` : 'Discounts / الخصم', discountAmount) +
-        summaryRow('Total Amount / المبلغ الإجمالي', finalAmountDue, true, 'grand-total');
+        }).join('') + `
+            <tr style="font-weight: bold; background: #f8fafc;">
+                <td colspan="3" style="text-align: right;">Total Amount / المبلغ الإجمالي</td>
+                <td style="text-align: right; color: #b58f46;">AED ${docTotal.toFixed(2)}</td>
+            </tr>
+        `;
     }
 
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
-};
-
-
-window.viewDocumentHistory = function(refCode) {
-    const doc = (state.documents || []).find(d => d.refCode === refCode);
-    if (!doc) return;
-    const esc = value => darEscapeHTML(value || '-');
-    const rows = [['Created / Invoice Date',doc.createdDate||doc.createdAt||doc.transactionDate||'-'],['Last Updated',doc.updatedAt||'-'],['Updated By',doc.updatedBy||'-'],['Recorded Advance','AED '+Number(doc.advanceAmount??doc.advanceAmt??doc.advance??0).toFixed(2)]];
-    (doc.paymentLogs||[]).forEach((p,i)=>rows.push(['Payment '+(i+1),(p.date||p.transactionDate||'-')+' · AED '+Number(p.amount||0).toFixed(2)+' · '+(p.createdBy||p.note||'Recorded')]));
-    showCustomModal('Record History · '+esc(refCode),'<div style="text-align:left">'+rows.map(([k,v])=>'<p style="padding:7px 0;border-bottom:1px solid var(--border-color)"><strong>'+esc(k)+':</strong> '+esc(v)+'</p>').join('')+'</div>');
-};
-window.duplicateInvoiceDraft = function(refCode) {
-    const source=(state.documents||[]).find(d=>d.refCode===refCode); if(!source)return;
-    openStudio(source.type||'Invoice');
-    const set=(id,value)=>{const el=document.getElementById(id);if(el)el.value=value??'';};
-    set('st-ref-code','');set('st-created-date',window.darDates?window.darDates.todayISO():localISODate());
-    set('st-client-name',source.clientName||'');set('st-company-name',source.companyName||'');set('st-contact-person',source.contactPerson||'');
-    set('st-govt-amt',source.govtAmt??source.govtFee??0);set('st-processing-charges',source.processingCharges??source.processingCharge??0);
-    set('st-discount-amt',source.discountPercent??0);set('st-legacy-discount-amt',source.discountPercent==null?(source.discountAmount??source.discountAmt??0):(source.legacyDiscountAmount||0));set('st-advance-amt',0);
-    const tbody=document.getElementById('st-spreadsheet-body');
-    if(tbody)tbody.innerHTML=(Array.isArray(source.items)?source.items:[]).map((item,i)=>'<tr><td style="text-align:center">'+(i+1)+'</td><td><input type="text" class="st-item-title" value="'+escapeHtml(getWorkItemDescription(item))+'"></td><td style="text-align:center"><input type="number" class="st-item-qty" value="'+(Number(item.q??item.quantity)||1)+'" oninput="recalculateStudioTotals()"></td><td style="text-align:right"><input type="number" class="st-item-price" value="'+(Number(item.p??item.price)||0)+'" oninput="recalculateStudioTotals()"></td><td style="text-align:center"><button type="button" onclick="this.closest(\'tr\').remove();recalculateStudioTotals()" class="btn btn-danger">×</button></td></tr>').join('');
-    if(tbody&&!tbody.rows.length)addStudioRow();
-    state.selectedCompanyClientId='';recalculateStudioTotals();
-    const title=document.getElementById('studio-mode-title');if(title)title.textContent='New Draft · copied from '+refCode;
 };
 
 // Export the existing invoice design as one correctly fitted A4 page.
