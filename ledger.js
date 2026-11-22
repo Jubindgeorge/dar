@@ -43,12 +43,13 @@ window.renderAccountsLedgerDetail = function(refCode) {
     const totalPaid = doc.advanceAmount + logsTotal;
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
 
-    const docMonth = doc.createdDate ? doc.createdDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    const invoiceDate = doc.transactionDate || doc.createdDate || doc.date || '';
+    const docMonth = invoiceDate ? invoiceDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
     const monthlyExpenses = state.monthlyExpenses || [];
     const matchingExpenses = monthlyExpenses.filter(e => e.month === docMonth);
     const totalMonthExp = matchingExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
     
-    const totalInvoicesInMonth = (state.documents || []).filter(d => (d.createdDate || '').startsWith(docMonth)).length || 1;
+    const totalInvoicesInMonth = (state.documents || []).filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
     const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
     const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
@@ -74,7 +75,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
         let allPayments = [];
         if (doc.advanceAmount > 0) {
             allPayments.push({
-                date: doc.createdDate || 'Initial',
+                date: doc.transactionDate || doc.createdDate || 'Initial',
                 amount: doc.advanceAmount,
                 note: 'Advance Payment',
                 isAdvance: true
@@ -135,10 +136,11 @@ window.renderFullLedgerTableBody = function() {
     }
 
     docs.forEach(doc => {
-        const docMonth = doc.createdDate ? doc.createdDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
+        const invoiceDate = doc.transactionDate || doc.createdDate || doc.date || '';
+        const docMonth = invoiceDate ? invoiceDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
         const matchingExpenses = monthlyExpenses.filter(e => e.month === docMonth);
         const totalMonthExp = matchingExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-        const totalInvoicesInMonth = docs.filter(d => (d.createdDate || '').startsWith(docMonth)).length || 1;
+        const totalInvoicesInMonth = docs.filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
@@ -153,7 +155,7 @@ window.renderFullLedgerTableBody = function() {
         tbody.innerHTML += `
             <tr>
                 <td><strong>${doc.refCode}</strong></td>
-                <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
+                <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.transactionDate || doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
                 <td>${clientLabel}</td>
                 <td>AED ${govtFee.toFixed(2)}</td>
                 <td>AED ${expenseShare.toFixed(2)}</td>
