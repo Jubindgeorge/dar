@@ -27,6 +27,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -197,7 +198,7 @@
                     <div class="v2-report-toolbar">
                         <strong>Financial Reports</strong>
                         <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
-                        <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export CSV</button>
+                        <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export Excel</button><button type="button" class="btn btn-secondary" onclick="exportDarFinancialReportPDF()">Export PDF</button>
                     </div>
                     <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded expenses. Invoice totals are not necessarily payments received. Report exports group by the selected period and do not modify records.</p>
                 </section>
