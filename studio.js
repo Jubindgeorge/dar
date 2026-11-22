@@ -346,7 +346,7 @@ function commitDocumentToMemory() {
         companyName: companyName || 'Direct Clients',
         contactPerson,
         companyClientId: state.selectedCompanyClientId || '',
-        createdDate: previousDocument?.createdDate || createdDate,
+        createdDate: previousDocument ? (previousDocument.createdDate || previousDocument.createdAt || '') : createdDate,
         transactionDate: createdDate,
         updatedAt: new Date().toISOString(),
         updatedBy: auditUser?.email || auditUser?.uid || 'Unknown',
