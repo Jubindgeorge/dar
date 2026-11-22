@@ -874,7 +874,7 @@ window.previewInvoiceDocument = async function(refCode) {
         const amountBeforeAdvance = hasPaymentBreakdown
             ? (legacyTotal > 0 ? legacyTotal : Math.max(0, subtotalAmount + processingCharges - discountAmount))
             : legacyTotal;
-        const finalAmountDue = hasPaymentBreakdown ? Math.max(0, amountBeforeAdvance - advanceAmount) : amountBeforeAdvance;
+        const finalAmountDue = amountBeforeAdvance; // Advance is shown separately; it does not reduce the invoice total.
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: subtotalAmount }] : []);
         const money = value => 'AED ' + value.toFixed(2);
         const summaryRow = (label, value, strong = false, kind = '') => `
