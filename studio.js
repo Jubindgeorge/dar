@@ -56,7 +56,9 @@ function openStudio(type, editRefCode = null) {
             const processingInput = document.getElementById('st-processing-charges');
             if (processingInput) processingInput.value = doc.processingCharges ?? doc.processingCharge ?? 0;
             const discountInput = document.getElementById('st-discount-amt');
-            if (discountInput) discountInput.value = doc.discountAmount ?? doc.discountAmt ?? 0;
+            if (discountInput) discountInput.value = doc.discountPercent ?? 0;
+            const legacyDiscountInput = document.getElementById('st-legacy-discount-amt');
+            if (legacyDiscountInput) legacyDiscountInput.value = doc.discountPercent == null ? (doc.discountAmount ?? doc.discountAmt ?? 0) : (doc.legacyDiscountAmount || 0);
             const advanceInput = document.getElementById('st-advance-amt');
             if (advanceInput) advanceInput.value = doc.advanceAmt ?? doc.advanceAmount ?? doc.advance ?? 0;
 
@@ -100,6 +102,8 @@ function openStudio(type, editRefCode = null) {
         if (processingInput) processingInput.value = 0;
         const discountInput = document.getElementById('st-discount-amt');
         if (discountInput) discountInput.value = 0;
+        const legacyDiscountInput = document.getElementById('st-legacy-discount-amt');
+        if (legacyDiscountInput) legacyDiscountInput.value = 0;
         const advanceInput = document.getElementById('st-advance-amt');
         if (advanceInput) advanceInput.value = 0;
 
@@ -241,9 +245,13 @@ function recalculateStudioTotals() {
     });
 
     const processing = Math.max(0, Number(document.getElementById('st-processing-charges')?.value) || 0);
-    const discount = Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0);
+    const discountPercent = Math.min(100, Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0));
+    const legacyDiscount = Math.max(0, Number(document.getElementById('st-legacy-discount-amt')?.value) || 0);
     const advance = Math.max(0, Number(document.getElementById('st-advance-amt')?.value) || 0);
-    const amountBeforeAdvance = Math.max(0, sumTotal + processing - discount);
+    const discountValue = (sumTotal + processing) * discountPercent / 100 + legacyDiscount;
+    const amountBeforeAdvance = Math.max(0, sumTotal + processing - discountValue);
+    const discountPreview = document.getElementById('st-discount-preview');
+    if (discountPreview) discountPreview.textContent = `Discount amount: AED ${discountValue.toFixed(2)}`;
     const totalInput = document.getElementById('st-total-amt');
     if (totalInput) totalInput.value = amountBeforeAdvance.toFixed(2);
     const finalInput = document.getElementById('st-final-amt');
@@ -265,7 +273,9 @@ function commitDocumentToMemory() {
         return sum + qty * price;
     }, 0);
     const processingCharges = parseFloat(document.getElementById('st-processing-charges')?.value) || 0;
-    const discountAmount = parseFloat(document.getElementById('st-discount-amt')?.value) || 0;
+    const discountPercent = Math.min(100, Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0));
+    const legacyDiscountAmount = Math.max(0, Number(document.getElementById('st-legacy-discount-amt')?.value) || 0);
+    const discountAmount = (subtotalAmt + processingCharges) * discountPercent / 100 + legacyDiscountAmount;
     const totalAmt = Math.max(0, subtotalAmt + processingCharges - discountAmount);
     const advanceAmt = parseFloat(document.getElementById('st-advance-amt')?.value) || 0;
 
@@ -277,7 +287,10 @@ function commitDocumentToMemory() {
         const yearMonth = createdDate.slice(0, 7).replace('-', '');
         let attempts = 0;
         do {
-            refCode = `${type === 'Quotation' ? 'QTN' : 'INV'}-${yearMonth}-${Math.floor(1000 + Math.random() * 9000)}`;
+            const year = createdDate.slice(0, 4) || String(new Date().getFullYear());
+            const prefix = type === 'Quotation' ? 'QTN' : 'DAS';
+            const sequence = (state.documents || []).reduce((max, d) => {
+                const match = String(d.refCode || '').match(new RegExp('^' + prefix + '-' + year + '-(\\d{4})
             attempts++;
         } while ((state.documents || []).some(d => d.refCode === refCode) && attempts < 30);
         if ((state.documents || []).some(d => d.refCode === refCode)) {
@@ -298,7 +311,7 @@ function commitDocumentToMemory() {
         showCustomModal('Reference locked', 'To preserve the original record ID, the reference cannot be changed while editing.');
         return;
     }
-    if (![govtAmt, subtotalAmt, processingCharges, discountAmount, totalAmt, advanceAmt].every(Number.isFinite) || [govtAmt, subtotalAmt, processingCharges, discountAmount, totalAmt, advanceAmt].some(value => value < 0) || discountAmount > subtotalAmt + processingCharges) {
+    if (![govtAmt, subtotalAmt, processingCharges, discountPercent, legacyDiscountAmount, discountAmount, totalAmt, advanceAmt].every(Number.isFinite) || [govtAmt, subtotalAmt, processingCharges, discountPercent, legacyDiscountAmount, discountAmount, totalAmt, advanceAmt].some(value => value < 0) || discountPercent > 100 || discountAmount > subtotalAmt + processingCharges) {
         showCustomModal('Invalid amounts', 'Amounts must be valid and non-negative. Discounts cannot exceed the subtotal plus processing charges.');
         return;
     }
@@ -360,6 +373,125 @@ function commitDocumentToMemory() {
         processingCharge: processingCharges,
         discountAmount,
         discountAmt: discountAmount,
+        discountPercent,
+        legacyDiscountAmount,
+        advanceAmt,
+        advanceAmount: advanceAmt,
+        totalAmount: totalAmt,
+        totalAmt,
+        total: totalAmt,
+        amount: totalAmt,
+        items,
+        branchTag: companyName && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
+    };
+
+    // Update only editable invoice fields; preserve PRO history, expiry metadata and payment logs.
+    db.ref(`documents/${refCode}`).update(payload, (err) => {
+        if (!err) {
+            const savedIndex = (state.documents || []).findIndex(d => d.refCode === refCode);
+            if (savedIndex >= 0) state.documents[savedIndex] = { ...state.documents[savedIndex], ...payload };
+            else { state.documents = state.documents || []; state.documents.push(payload); }
+            if (typeof showCustomModal === 'function') {
+                const staffAction = payload.branchTag === 'staff' && typeof openStaffModalFromInvoice === 'function'
+                    ? `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); openStaffModalFromInvoice('${refCode}')">Complete Staff Details</button> `
+                    : '';
+                showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
+            }
+            state.activeEditingId = null;
+            // Keep the completed entry visible until the user chooses the next action.
+        } else if (typeof showCustomModal === 'function') {
+            showCustomModal('Save failed', 'The document could not be saved. Please check your connection and try again.');
+        }
+    });
+}
+));
+                return match ? Math.max(max, Number(match[1])) : max;
+            }, 0) + 1;
+            refCode = `${prefix}-${year}-${String(sequence + attempts - 1).padStart(4, '0')}`;
+            attempts++;
+        } while ((state.documents || []).some(d => d.refCode === refCode) && attempts < 30);
+        if ((state.documents || []).some(d => d.refCode === refCode)) {
+            showCustomModal('Reference generation failed', 'Please enter a unique document reference and try again.');
+            return;
+        }
+    }
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(refCode)) {
+        showCustomModal('Invalid reference', 'Use only letters, numbers, hyphens and underscores in the document reference.');
+        return;
+    }
+    const existing = (state.documents || []).find(d => d.refCode === refCode);
+    if (existing && state.activeEditingId !== refCode) {
+        showCustomModal('Duplicate reference', `The reference ${refCode} already exists. Please use a unique reference.`);
+        return;
+    }
+    if (state.activeEditingId && refCode !== state.activeEditingId) {
+        showCustomModal('Reference locked', 'To preserve the original record ID, the reference cannot be changed while editing.');
+        return;
+    }
+    if (![govtAmt, subtotalAmt, processingCharges, discountPercent, legacyDiscountAmount, discountAmount, totalAmt, advanceAmt].every(Number.isFinite) || [govtAmt, subtotalAmt, processingCharges, discountPercent, legacyDiscountAmount, discountAmount, totalAmt, advanceAmt].some(value => value < 0) || discountPercent > 100 || discountAmount > subtotalAmt + processingCharges) {
+        showCustomModal('Invalid amounts', 'Amounts must be valid and non-negative. Discounts cannot exceed the subtotal plus processing charges.');
+        return;
+    }
+    const recordedPayments = (state.documents || []).find(d => d.refCode === refCode)?.paymentLogs || [];
+    const paidInLogs = recordedPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+    if (advanceAmt + paidInLogs > totalAmt) {
+        showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
+        return;
+    }
+    if (advanceAmt > totalAmt) {
+        showCustomModal('Advance exceeds total', 'The advance payment cannot be greater than the invoice total.');
+        return;
+    }
+
+    const items = [];
+    const rows = document.querySelectorAll('#st-spreadsheet-body tr');
+    rows.forEach(row => {
+        const rowTitle = row.querySelector('.st-item-title')?.value.trim() || 'Service Record';
+        items.push({
+            packageName: rowTitle,
+            serviceName: rowTitle,
+            title: rowTitle,
+            q: parseFloat(row.querySelector('.st-item-qty')?.value) || 1,
+            p: parseFloat(row.querySelector('.st-item-price')?.value) || 0
+        });
+    });
+
+    const selectedCatalogId = document.getElementById('st-service-injector')?.value;
+    const selectedCatalog = (state.services || []).find(service => service.id === selectedCatalogId);
+    const previousTitle = (state.documents || []).find(d => d.refCode === refCode);
+    const mainPackageName = selectedCatalog?.title || previousTitle?.packageName || items[0]?.packageName || 'Service Record';
+
+    // Preserve recorded payments when editing an invoice; never silently reset the ledger.
+    const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
+    const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
+
+    const auditUser = window.firebase?.auth?.().currentUser;
+    const payload = {
+        refCode,
+        type,
+        packageName: mainPackageName,
+        serviceName: mainPackageName,
+        title: mainPackageName,
+        clientName: clientName || companyName || 'Direct Client',
+        companyName: companyName || 'Direct Clients',
+        contactPerson,
+        companyClientId: state.selectedCompanyClientId || '',
+        createdDate: previousDocument ? (previousDocument.createdDate || previousDocument.createdAt || '') : createdDate,
+        transactionDate: createdDate,
+        updatedAt: new Date().toISOString(),
+        updatedBy: auditUser?.email || auditUser?.uid || 'Unknown',
+        visaExpiryDate,
+        govtAmt,
+        govtFee: govtAmt,
+        paymentBreakdownVersion: 1,
+        subtotalAmount: subtotalAmt,
+        subTotal: subtotalAmt,
+        processingCharges,
+        processingCharge: processingCharges,
+        discountAmount,
+        discountAmt: discountAmount,
+        discountPercent,
+        legacyDiscountAmount,
         advanceAmt,
         advanceAmount: advanceAmt,
         totalAmount: totalAmt,
