@@ -73,12 +73,17 @@
         if (companyContext) companyContext.textContent = state.activeStaffCompanyId ? ('Company: ' + companyNameById(state.activeStaffCompanyId)) : 'All companies';
         const search = norm(byId('staff-search')?.value);
         const renewal = clean(byId('staff-renewal-filter')?.value);
+        const fromDate = clean(byId('staff-date-from')?.value);
+        const toDate = clean(byId('staff-date-to')?.value);
         const records = (state.staff || []).filter(staff => {
             if (state.activeStaffCompanyId && staff.companyId !== state.activeStaffCompanyId && norm(staff.companyName) !== norm(companyNameById(state.activeStaffCompanyId))) return false;
             if (renewal && dueStatus(staff) !== renewal && clean(staff.renewalStatus) !== renewal) return false;
+            const joined = window.darDates ? window.darDates.normalize(staff.joiningDate) : clean(staff.joiningDate).slice(0,10);
+            if (fromDate && (!joined || joined < fromDate)) return false;
+            if (toDate && (!joined || joined > toDate)) return false;
             const searchable = [staff.staffCode,staff.fullName,staff.companyName,staff.lastWorkDone,staff.passportNumber,staff.visaNumber].map(norm).join(' ');
             return !search || searchable.includes(search);
-        }).sort((a,b)=>clean(a.fullName).localeCompare(clean(b.fullName)));
+        }).sort((a,b)=>clean(b.joiningDate).localeCompare(clean(a.joiningDate)));
         if (!records.length) {
             body.innerHTML = '<tr><td colspan="9" class="staff-empty">No staff records found. Use “Add Staff” to create the first profile.</td></tr>';
             return;
