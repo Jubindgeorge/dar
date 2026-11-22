@@ -1052,8 +1052,8 @@ window.exportDarFinancialReport = function() {
         window.XLSX.writeFile(book,name+'.xlsx');
         return;
     }
-    const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
-    const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+    const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join(String.fromCharCode(13,10));
+    const blob=new Blob([String.fromCharCode(0xfeff)+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
     link.href=url;link.download=name+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 };
 window.exportDarFinancialReportPDF = async function() {
