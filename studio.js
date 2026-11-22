@@ -27,7 +27,7 @@ function openStudio(type, editRefCode = null) {
         if (doc) {
             if (docTypeEl) docTypeEl.value = doc.type || type;
             if (editRefEl) editRefEl.value = doc.refCode || '';
-            if (dateEl) dateEl.value = doc.createdDate || studioLocalISODate();
+            if (dateEl) dateEl.value = doc.transactionDate || doc.createdDate || studioLocalISODate();
             const branchEl = document.getElementById('st-branch-tag');
             if (branchEl) branchEl.value = doc.branchTag === 'staff' ? 'staff' : 'company';
             
