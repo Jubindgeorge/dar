@@ -1017,17 +1017,58 @@ window.getDarV2FinancialOverview = function(documents, expenses) {
 };
 
 
-window.exportDarFinancialReport = function() {
+
+window.buildDarFinancialReportRows = function() {
     const period=document.getElementById('dar-report-period')?.value||'monthly';
-    const keyFor=date=>{const d=String(date||'').slice(0,10);if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d))return 'Undated';return period==='daily'?d:period==='yearly'?d.slice(0,4):d.slice(0,7);};
-    const groups=new Map(),get=key=>{if(!groups.has(key))groups.set(key,{period:key,invoiced:0,received:0,outstanding:0,expenses:0,invoices:0});return groups.get(key);};
-    (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{const row=get(keyFor(d.transactionDate||d.createdDate||d.date));const total=Math.max(0,Number(getDarDocumentAmount(d))||0);const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(d.paymentLogs||[]).reduce((s,p)=>s+(Number(p.amount)||0),0));row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;});
-    (state.monthlyExpenses||[]).forEach(e=>{get(keyFor(e.transactionDate||e.date||((e.month||'')+'-01'))).expenses+=Math.max(0,Number(e.amount)||0);});
+    const keyFor=date=>{
+        const d=String(date||'').slice(0,10);
+        if(!(d.length===10&&d[4]==='-'&&d[7]==='-'))return 'Undated';
+        return period==='daily'?d:period==='yearly'?d.slice(0,4):d.slice(0,7);
+    };
+    const groups=new Map();
+    const get=key=>{if(!groups.has(key))groups.set(key,{period:key,invoiced:0,received:0,outstanding:0,expenses:0,invoices:0});return groups.get(key);};
+    (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{
+        const row=get(keyFor(d.transactionDate||d.createdDate||d.date));
+        const total=Math.max(0,Number(getDarDocumentAmount(d))||0);
+        const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(d.paymentLogs||[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0));
+        row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;
+    });
+    (state.monthlyExpenses||[]).forEach(e=>{
+        const date=e.transactionDate||e.date||((e.month||'')+'-01');
+        get(keyFor(date)).expenses+=Math.max(0,Number(e.amount)||0);
+    });
     const rows=[['Period','Invoices','Invoiced AED','Received AED','Outstanding AED','Expenses AED','Invoiced Less Expenses AED']];
     [...groups.values()].sort((x,y)=>x.period.localeCompare(y.period)).forEach(r=>rows.push([r.period,r.invoices,r.invoiced.toFixed(2),r.received.toFixed(2),r.outstanding.toFixed(2),r.expenses.toFixed(2),(r.invoiced-r.expenses).toFixed(2)]));
+    return rows;
+};
+window.exportDarFinancialReport = function() {
+    const rows=window.buildDarFinancialReportRows();
+    const period=document.getElementById('dar-report-period')?.value||'monthly';
+    const name='dar-financial-report-'+period+'-'+new Date().toISOString().slice(0,10);
+    if(window.XLSX?.utils){
+        const sheet=window.XLSX.utils.aoa_to_sheet(rows);
+        const book=window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(book,sheet,'Financial Report');
+        window.XLSX.writeFile(book,name+'.xlsx');
+        return;
+    }
     const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\\r\\n');
     const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
-    link.href=url;link.download='dar-financial-report-'+period+'-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    link.href=url;link.download=name+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+};
+window.exportDarFinancialReportPDF = async function() {
+    const rows=window.buildDarFinancialReportRows();
+    const period=document.getElementById('dar-report-period')?.value||'monthly';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;left:-10000px;top:0;width:277mm;padding:12mm;background:#fff;color:#1f2937;font:10px Arial,sans-serif;';
+    const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    wrap.innerHTML='<h2 style="color:#1c365d">DAR AL SHAMS · Financial Report</h2><p>Period grouping: '+esc(period)+' · Generated: '+new Date().toLocaleDateString()+'</p><table style="width:100%;border-collapse:collapse"><thead><tr>'+rows[0].map(v=>'<th style="border:1px solid #b8860b;padding:7px;background:#f8f5ed;text-align:left">'+esc(v)+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(1).map(row=>'<tr>'+row.map(v=>'<td style="border:1px solid #d1d5db;padding:6px">'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    document.body.appendChild(wrap);
+    try{
+        if(typeof html2pdf==='undefined')throw new Error('PDF library unavailable');
+        await html2pdf().set({margin:8,filename:'dar-financial-report-'+period+'-'+new Date().toISOString().slice(0,10)+'.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(wrap).save();
+    }catch(error){console.error('Financial PDF export failed:',error);alert('PDF report export failed. Please reload and try again.');}
+    finally{wrap.remove();}
 };
 
 window.exportDarBackup = async function() {
