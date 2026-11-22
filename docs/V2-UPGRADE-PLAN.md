@@ -24,8 +24,8 @@
 - [ ] Test missing fields and business/staff categorization.
 
 ## Stage 4 — Financial insights and payments
-- [x] Read-only dashboard totals: income, expenses, outstanding, and business/staff breakdown.
-- [x] Define paid/partial balance calculations as read-only derived values; do not rewrite historical amounts.
+- [x] Read-only dashboard totals: income, expenses, outstanding, business/staff breakdown and payment-status counts.
+- [x] Define paid/partial/unpaid/overdue as read-only derived statuses; overdue is only assigned when an explicit dueDate/paymentDueDate exists, and historical amounts are never rewritten.
 - [ ] Confirm payment logs, advance amounts, and currency calculations against existing ledger.
 
 ## Stage 5 — Workflow and audit
