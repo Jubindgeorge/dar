@@ -314,7 +314,7 @@
                     </div>
                     <div class="purchase-summary"><span>Recorded Purchases</span><strong id="purchase-total-amount">AED 0.00</strong></div>
                     <div class="staff-filter-row"><input id="purchase-search" type="search" placeholder="Search supplier, reference or description..." oninput="renderPurchases()" aria-label="Search purchases"><label class="v2-filter-date">From <input type="date" id="purchase-date-from" onchange="renderPurchases()" aria-label="Purchases from date"></label><label class="v2-filter-date">To <input type="date" id="purchase-date-to" onchange="renderPurchases()" aria-label="Purchases through date"></label><select id="purchase-status-filter" onchange="renderPurchases()" aria-label="Filter purchase payment status"><option value="">All payment statuses</option><option>Unpaid</option><option>Partial</option><option>Paid</option></select></div>
-                    <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
+                    <div class="table-responsive"><table class="data-table" style="min-width:850px;"><thead><tr><th>Supplier</th><th>Bill / Reference</th><th>Purchase Date</th><th>Description</th><th>Amount (AED)</th><th>Payment Status</th><th>Actions</th></tr></thead><tbody id="purchase-table-body"><tr><td colspan="7">Loading purchase records…</td></tr></tbody></table></div>
                 </section>
 
                 <!-- Company staff register. Kept separate from the invoice/quotation print templates. -->
@@ -493,7 +493,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Date</th>
+                                        <th>Payment Date</th>
                                         <th>Amount Paid (AED)</th>
                                         <th>Payment Note / Remarks</th>
                                         <th style="text-align: center;">Action</th>
@@ -512,7 +512,7 @@
                                 <thead>
                                     <tr>
                                         <th>Invoice Ref</th>
-                                        <th>Date</th>
+                                        <th>Invoice Date</th>
                                         <th>Client Name</th>
                                         <th>Govt Fees (AED)</th>
                                         <th>Monthly Expense Share (AED)</th>
