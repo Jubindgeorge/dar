@@ -699,6 +699,16 @@ function renderDocumentsTable() {
         return matchesText && matchesBranch && matchesDate &&
             (min === null || amount >= min) && (max === null || amount <= max);
     });
+    const sortMode = document.getElementById('doc-sort-order')?.value || 'newest';
+    const dateOf = record => String(record.transactionDate || record.createdDate || record.date || '');
+    filtered.sort((left, right) => {
+        if (sortMode === 'oldest') return dateOf(left).localeCompare(dateOf(right));
+        if (sortMode === 'amount-desc') return getDarDocumentAmount(right) - getDarDocumentAmount(left);
+        if (sortMode === 'amount-asc') return getDarDocumentAmount(left) - getDarDocumentAmount(right);
+        if (sortMode === 'client') return String(left.clientName || left.companyName || '').localeCompare(String(right.clientName || right.companyName || ''));
+        if (sortMode === 'reference') return String(left.refCode || '').localeCompare(String(right.refCode || ''));
+        return dateOf(right).localeCompare(dateOf(left));
+    });
     const count = document.getElementById('doc-filter-count');
     if (count) count.textContent = filtered.length + ' of ' + all.length + ' records';
     const master = document.getElementById('th-select-all');
