@@ -650,6 +650,13 @@ function darSafeDocumentKey(value) {
     return JSON.stringify(String(value ?? '')).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/'/g, '\\u0027');
 }
 
+window.darFormatTableDate = window.darFormatTableDate || function(value) {
+    const raw = String(value || '').slice(0, 10);
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(raw)) return raw || '-';
+    const [year, month, day] = raw.split('-');
+    return day + '/' + month + '/' + year;
+};
+
 function renderDocumentsTable() {
     const tbody = document.getElementById('doc-table-body');
     if (!tbody) return;
@@ -692,7 +699,7 @@ function renderDocumentsTable() {
     }
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No financial records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">No financial records found.</td></tr>`;
         return;
     }
 
@@ -702,6 +709,7 @@ function renderDocumentsTable() {
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${darEscapeHTML(d.refCode)}" onchange="updateBatchDeleteButtonState()"></td>
             <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+            <td>${darEscapeHTML(window.darFormatTableDate(d.createdDate || d.date))}</td>
             <td>${darEscapeHTML(d.clientName || '-')}</td>
             <td>${darEscapeHTML(d.companyName || '-')}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${getAutomaticWorkBranch(d) === 'unassigned' ? 'Without Company' : getAutomaticWorkBranch(d) === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
