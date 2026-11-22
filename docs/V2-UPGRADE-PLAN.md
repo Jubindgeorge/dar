@@ -56,5 +56,5 @@
 - [x] Invoice references use sequential DAS-YYYY-0001 numbering; quotations use QTN-YYYY-0001 numbering.
 - [x] Invoice duplicate action opens an unsaved copy with no copied payments or original reference.
 - [x] Record history shows creation, update and payment metadata in the portal, not on the printed customer invoice.
-- [x] Daily/monthly/yearly financial CSV report export added.
+- [x] Daily/monthly/yearly financial reports export to XLSX and PDF, with Excel-compatible CSV fallback.
 - [ ] Manual PDF visual comparison and mobile Safari verification remain release gates.
