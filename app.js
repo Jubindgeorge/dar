@@ -377,7 +377,7 @@ function renderDashboardStats() {
     const sums = {month: 0, year: 0, business: 0, staff: 0, businessCount: 0, staffCount: 0};
     documents.forEach(doc => {
         const amount = darDashboardAmount(doc);
-        const date = String(doc.createdDate || doc.date || '');
+        const date = String(doc.transactionDate || doc.createdDate || doc.date || '');
         if (date.startsWith(month)) sums.month += amount;
         if (date.startsWith(year)) sums.year += amount;
         if (getAutomaticWorkBranch(doc) === 'staff') { sums.staff += amount; sums.staffCount++; }
@@ -691,7 +691,7 @@ function renderDocumentsTable() {
     const toDate = document.getElementById('doc-date-to')?.value || '';
     const all = state.documents || [];
     const filtered = all.filter(d => {
-        const recordDate = String(d.createdDate || d.date || '').slice(0, 10);
+        const recordDate = String(d.transactionDate || d.createdDate || d.date || '').slice(0, 10);
         const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) &&
             (!toDate || (recordDate && recordDate <= toDate));
         const matchesText = [d.refCode, d.clientName, d.companyName]
@@ -739,7 +739,7 @@ function renderDocumentsTable() {
         <tr>
             <td style="text-align: center;"><input type="checkbox" class="doc-row-checkbox" value="${darEscapeHTML(d.refCode)}" onchange="updateBatchDeleteButtonState()"></td>
             <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
-            <td>${darEscapeHTML(window.darFormatTableDate(d.createdDate || d.date))}</td>
+            <td>${darEscapeHTML(window.darFormatTableDate(d.transactionDate || d.createdDate || d.date))}</td>
             <td>${darEscapeHTML(d.clientName || '-')}</td>
             <td>${darEscapeHTML(d.companyName || '-')}</td>
             <td><span class="branch-badge ${d.branchTag === 'staff' ? 'branch-staff' : 'branch-company'}">${getAutomaticWorkBranch(d) === 'unassigned' ? 'Without Company' : getAutomaticWorkBranch(d) === 'staff' ? 'Staff Works' : 'Business Works'}</span></td>
