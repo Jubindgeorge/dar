@@ -80,7 +80,7 @@
             return !search || searchable.includes(search);
         }).sort((a,b)=>clean(a.fullName).localeCompare(clean(b.fullName)));
         if (!records.length) {
-            body.innerHTML = '<tr><td colspan="8" class="staff-empty">No staff records found. Use “Add Staff” to create the first profile.</td></tr>';
+            body.innerHTML = '<tr><td colspan="9" class="staff-empty">No staff records found. Use “Add Staff” to create the first profile.</td></tr>';
             return;
         }
         body.innerHTML = records.map(staff => '<tr>'+
@@ -88,6 +88,7 @@
             '<td>'+html(staff.fullName || '-')+'</td>'+
             '<td>'+html(staff.companyName || companyNameById(staff.companyId) || '-')+'</td>'+
             '<td>'+html(staff.lastWorkDone || '-')+'</td>'+
+            '<td>'+html(window.darFormatTableDate(staff.joiningDate))+'</td>'+
             '<td>'+html(staff.visaExpiry || '-')+'</td>'+
             '<td>'+html(staff.passportExpiry || '-')+'</td>'+
             '<td>'+statusPill(dueStatus(staff))+'</td>'+
@@ -168,7 +169,8 @@
             documentReference: clean(byId('sf-document-reference').value),
             notes: clean(byId('sf-notes').value),
             linkedInvoiceRef: linkedInvoiceRef || previous.linkedInvoiceRef || '',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            updatedBy: firebase.auth().currentUser?.email || firebase.auth().currentUser?.uid || 'Unknown'
         };
         db.ref('staff/' + id).update((() => { const copy={...record}; delete copy.id; return copy; })(), error => {
             if (error) { showCustomModal('Save failed','Staff details could not be saved. Check Firebase permissions and connection.'); return; }
