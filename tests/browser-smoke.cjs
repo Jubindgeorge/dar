@@ -63,6 +63,17 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
+    await page.evaluate(() => state.documents.push({
+      refCode:'CI-PERCENT-001',type:'Invoice',clientName:'Percent Client',companyName:'Percent Co',
+      createdDate:'2026-11-22',transactionDate:'2026-11-22',items:[{serviceName:'Services',p:4907,q:1}],
+      paymentBreakdownVersion:1,subtotalAmount:4907,processingCharges:200,discountPercent:10,
+      discountAmount:510.7,advanceAmount:500,totalAmount:4596.3
+    }));
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-PERCENT-001'));
+    const percentText = await page.locator('#p-table-body').innerText();
+    assert.match(percentText,/Discounts \(10%\) \/ الخصم\s+AED 510\.70/,'new invoices calculate discounts as a percentage');
+    assert.match(percentText,/Total Amount \/ المبلغ الإجمالي\s+AED 4096\.30/,'advance is deducted from final amount');
+    assert.ok(await page.locator('#a4-wrapper-element .section-terms li').count() === 3,'invoice shows all three approved terms');
     assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
     assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\s+AED 500\.00/);
     assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
