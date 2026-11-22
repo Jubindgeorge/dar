@@ -76,7 +76,8 @@
         if (!supplierId || !reference || !date || byId('pu-amount').value === '' || !Number.isFinite(amount) || amount < 0) {
             showCustomModal('Required fields','Supplier, reference, date and a non-negative amount are required.'); return;
         }
-        const record = {id,supplierId,supplierName:supplierName(supplierId),reference,date,description:clean(byId('pu-description').value),amount,paymentStatus:clean(byId('pu-status').value)||'Unpaid',notes:clean(byId('pu-notes').value),updatedAt:new Date().toISOString()};
+        const previous = (state.purchases || []).find(item => item.id === id) || {};
+        const record = {id,supplierId,supplierName:supplierName(supplierId),reference,date,createdDate:previous.createdDate || (window.darDates ? window.darDates.todayISO() : date),description:clean(byId('pu-description').value),amount,paymentStatus:clean(byId('pu-status').value)||'Unpaid',notes:clean(byId('pu-notes').value),updatedAt:new Date().toISOString(),updatedBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
         const payload={...record};delete payload.id;
         db.ref('purchases/'+id).update(payload,error=>{
             if(error){showCustomModal('Save failed','Purchase could not be saved. Check Firebase permissions and connection.');return;}
