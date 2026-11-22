@@ -844,7 +844,11 @@ window.previewInvoiceDocument = async function(refCode) {
             ? storedSubtotal
             : (itemSubtotal || legacyTotal);
         const processingCharges = hasPaymentBreakdown ? Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0) : 0;
-        const discountAmount = hasPaymentBreakdown ? Math.max(0, Number(doc.discountAmount ?? doc.discountAmt) || 0) : 0;
+        const discountPercent = hasPaymentBreakdown && Number.isFinite(Number(doc.discountPercent)) ? Math.min(100, Math.max(0, Number(doc.discountPercent))) : 0;
+        const legacyDiscountAmount = hasPaymentBreakdown && doc.discountPercent == null ? Math.max(0, Number(doc.discountAmount ?? doc.discountAmt) || 0) : Math.max(0, Number(doc.legacyDiscountAmount) || 0);
+        const discountAmount = hasPaymentBreakdown
+            ? (subtotalAmount + processingCharges) * discountPercent / 100 + legacyDiscountAmount
+            : 0;
         const advanceAmount = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance) || 0);
         // New breakdown invoices store totalAmount before advance; legacy invoices retain their original total semantics.
         const amountBeforeAdvance = hasPaymentBreakdown
@@ -853,10 +857,10 @@ window.previewInvoiceDocument = async function(refCode) {
         const finalAmountDue = hasPaymentBreakdown ? Math.max(0, amountBeforeAdvance - advanceAmount) : amountBeforeAdvance;
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: subtotalAmount }] : []);
         const money = value => 'AED ' + value.toFixed(2);
-        const summaryRow = (label, value, strong = false) => `
-            <tr style="font-weight:${strong ? '800' : '600'}; background:${strong ? '#f8fafc' : '#ffffff'};">
-                <td colspan="3" style="text-align:right;padding:8px 10px;">${label}</td>
-                <td style="text-align:right;padding:8px 10px;color:${strong ? '#b58f46' : '#334155'};">${money(value)}</td>
+        const summaryRow = (label, value, strong = false, kind = '') => `
+            <tr class="invoice-summary-row ${kind}" style="font-weight:${strong ? '800' : '600'}; background:${strong ? '#f8fafc' : '#ffffff'};">
+                <td colspan="3" style="text-align:right;padding:5px 8px;">${label}</td>
+                <td style="text-align:right;padding:5px 8px;color:${strong ? '#b58f46' : '#334155'};">${money(value)}</td>
             </tr>`;
         tbody.innerHTML = normalizedItems.map((item, idx) => {
             const p = Number(item.p ?? item.price) || 0;
@@ -870,11 +874,11 @@ window.previewInvoiceDocument = async function(refCode) {
                 </tr>
             `;
         }).join('') +
-        summaryRow('Sub Total / المجموع الفرعي', subtotalAmount) +
-        summaryRow('Advance Amount / الدفعة المقدمة', advanceAmount) +
+        summaryRow('Sub Total / المجموع الفرعي', subtotalAmount, false, 'subtotal') +
+        summaryRow('Advance Payment / الدفعة المقدمة', advanceAmount) +
         summaryRow('Processing Charges / رسوم المعالجة', processingCharges) +
-        summaryRow('Discounts % / الخصم', discountAmount) +
-        summaryRow('Total Amount / المبلغ الإجمالي', finalAmountDue, true);
+        summaryRow(discountPercent > 0 ? `Discounts (${discountPercent}%) / الخصم` : 'Discounts / الخصم', discountAmount) +
+        summaryRow('Total Amount / المبلغ الإجمالي', finalAmountDue, true, 'grand-total');
     }
 
     const modal = document.getElementById('document-preview-modal');
