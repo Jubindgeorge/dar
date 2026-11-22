@@ -538,3 +538,21 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 
 /* Ensure collapsed sidebar subitems stay hidden despite the menu's display:flex rule. */
 .sidebar-menu li[hidden] { display: none !important; }
+
+
+/* Latest approved invoice print layout: compact A4 gold frame and wrapped terms. */
+#a4-wrapper-element { padding:6mm 7mm !important; border:2px double #b8860b !important; }
+#a4-wrapper-element #p-content-container { margin-bottom:22px !important; min-height:210px !important; }
+#a4-wrapper-element #p-content-container table { font-size:9px !important; line-height:1.25 !important; border-spacing:0 !important; }
+#a4-wrapper-element #p-content-container th,
+#a4-wrapper-element #p-content-container td { padding:5px 6px !important; line-height:1.25 !important; }
+#a4-wrapper-element .invoice-summary-row.subtotal td { border-top:1px solid #b8860b; border-bottom:1px solid #b8860b; background:#fffdf7; }
+#a4-wrapper-element .invoice-summary-row.subtotal td:first-child { border-left:1px solid #b8860b; border-radius:4px 0 0 4px; }
+#a4-wrapper-element .invoice-summary-row.subtotal td:last-child { border-right:1px solid #b8860b; border-radius:0 4px 4px 0; }
+#a4-wrapper-element .invoice-summary-row.grand-total td { border-top:1px solid #b8860b; border-bottom:1px solid #b8860b; }
+#a4-wrapper-element .section-terms { width:calc(50% + 2px); box-sizing:border-box; border:.5px solid #b8860b; border-radius:4px; padding:6px 9px; margin:2px 0; color:#334155; font-size:9px; line-height:1.3; }
+#a4-wrapper-element .section-terms .terms-title { font-weight:800; color:#1c365d; margin-bottom:3px; font-size:9px; }
+#a4-wrapper-element .section-terms ol { margin:0; padding-left:15px; }
+#a4-wrapper-element .section-terms li { padding:0; margin:1px 0; overflow-wrap:anywhere; }
+#a4-wrapper-element > div[style*="align-items: flex-end"] { margin-top:28px !important; }
+@media print { #a4-wrapper-element { width:210mm !important; min-height:297mm; } }
