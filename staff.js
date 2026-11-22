@@ -159,6 +159,7 @@
         const previous = (state.staff || []).find(item => item.id === id) || {};
         const record = {
             ...previous, id, staffCode, staffId: staffCode, fullName, companyId, companyName,
+            createdDate: previous.id ? (previous.createdDate || previous.createdAt || '') : (window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10)),
             nationality: clean(byId('sf-nationality').value),
             designation: clean(byId('sf-designation').value),
             lastWorkDone: clean(byId('sf-last-work').value),
