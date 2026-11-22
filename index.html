@@ -194,7 +194,12 @@
                         <div class="metric-card"><div><p>Outstanding — All Time</p><h3 id="dash-v2-outstanding">AED 0.00</h3></div></div>
                         <div class="metric-card"><div><p>Unassigned Works</p><h3 id="dash-v2-unassigned">0</h3></div></div>
                     </div>
-                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded monthly expenses. Invoice totals are not necessarily payments received.</p>
+                    <div class="v2-report-toolbar">
+                        <strong>Financial Reports</strong>
+                        <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
+                        <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export CSV</button>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded expenses. Invoice totals are not necessarily payments received. Report exports group by the selected period and do not modify records.</p>
                 </section>
 
                 <!-- TAB 2: CLIENTS -->
@@ -205,6 +210,12 @@
                             <p style="font-size: 0.85rem; color: var(--text-muted);">Manage client names, company names, and contact details.</p>
                         </div>
                         <button onclick="openClientModal(false)" class="btn btn-primary">+ Add New Company</button>
+                    </div>
+                    <div class="v2-filter-toolbar">
+                        <input id="client-search" type="search" placeholder="Search company or contact" oninput="renderClientsTable()" aria-label="Search clients">
+                        <label class="v2-filter-date">From <input id="client-date-from" type="date" onchange="renderClientsTable()"></label>
+                        <label class="v2-filter-date">To <input id="client-date-to" type="date" onchange="renderClientsTable()"></label>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('client-search').value='';document.getElementById('client-date-from').value='';document.getElementById('client-date-to').value='';renderClientsTable()">Clear</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -229,6 +240,12 @@
                             <h2 style="color: var(--primary); font-size: 1.4rem;">Company Works Directory</h2>
                             <p style="font-size: 0.85rem; color: var(--text-muted);">Browse company invoices categorized by Company Works & Staff Works branches.</p>
                         </div>
+                    </div>
+                    <div class="v2-filter-toolbar">
+                        <input id="works-search" type="search" placeholder="Search company" oninput="renderWorksTable()" aria-label="Search works">
+                        <label class="v2-filter-date">From <input id="works-date-from" type="date" onchange="renderWorksTable()"></label>
+                        <label class="v2-filter-date">To <input id="works-date-to" type="date" onchange="renderWorksTable()"></label>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('works-search').value='';document.getElementById('works-date-from').value='';document.getElementById('works-date-to').value='';renderWorksTable()">Clear</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -259,6 +276,10 @@
                         <button id="btn-branch-staff" onclick="switchWorksBranch('staff')" class="btn btn-secondary" style="flex: 1; padding: 12px;"><i class="fa-solid fa-users"></i> Staff Works (<span id="count-staff-works">0</span>)</button>
                     </div>
 
+                    <div class="v2-filter-toolbar">
+                        <label class="v2-filter-date">From <input id="works-detail-date-from" type="date" onchange="renderWorksDetailView()"></label>
+                        <label class="v2-filter-date">To <input id="works-detail-date-to" type="date" onchange="renderWorksDetailView()"></label>
+                    </div>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
@@ -430,6 +451,10 @@
                             </div>
                             <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Monthly Expense</button>
                         </div>
+                        <div class="v2-filter-toolbar">
+                            <label class="v2-filter-date">From <input id="expense-date-from" type="date" onchange="renderMonthlyExpensesTable()"></label>
+                            <label class="v2-filter-date">To <input id="expense-date-to" type="date" onchange="renderMonthlyExpensesTable()"></label>
+                        </div>
                         <div class="table-responsive" style="margin-top: 0;">
                             <table class="data-table">
                                 <thead>
@@ -445,6 +470,11 @@
                         </div>
                     </div>
 
+                    <div class="v2-filter-toolbar">
+                        <label class="v2-filter-date">Invoice date from <input id="ledger-date-from" type="date" onchange="renderFullLedgerTableBody()"></label>
+                        <label class="v2-filter-date">To <input id="ledger-date-to" type="date" onchange="renderFullLedgerTableBody()"></label>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('ledger-date-from').value='';document.getElementById('ledger-date-to').value='';renderFullLedgerTableBody()">Clear</button>
+                    </div>
                     <!-- Invoice Selector & Actions Bar -->
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
