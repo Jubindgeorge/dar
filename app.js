@@ -410,6 +410,7 @@ function renderDashboardStats() {
         set('dash-v2-received', currency(v2.received));
         set('dash-v2-outstanding', currency(v2.outstanding));
         set('dash-v2-unassigned', String(v2.unassigned));
+        set('dash-v2-payment-status', `Paid: ${v2.paid} · Partial: ${v2.partial} · Unpaid: ${v2.unpaid} · Overdue: ${v2.overdue}`);
     }
 }
 
@@ -994,11 +995,23 @@ function darDownloadJSON(name, data) {
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+window.getDarDocumentPaymentStatus = function(doc) {
+    const total=Math.max(0,Number(getDarDocumentAmount(doc))||0);
+    const advance=Math.max(0,Number(doc?.advanceAmount??doc?.advanceAmt??doc?.advance??0)||0);
+    const logs=Array.isArray(doc?.paymentLogs)?doc.paymentLogs:[];
+    const paid=Math.min(total,Math.max(0,advance+logs.reduce((sum,p)=>sum+(Number(p.amount)||0),0)));
+    const outstanding=Math.max(0,total-paid);
+    if(outstanding<=0)return 'paid';
+    if(paid>0)return 'partial';
+    const due=window.darDates?window.darDates.normalize(doc?.dueDate||doc?.paymentDueDate):String(doc?.dueDate||doc?.paymentDueDate||'').slice(0,10);
+    const today=window.darDates?window.darDates.todayISO():localISODate();
+    return due&&due<today?'overdue':'unpaid';
+};
 // V2: read-only financial overview; does not change ledger or invoice calculations.
 window.getDarV2FinancialOverview = function(documents, expenses) {
     const docs = Array.isArray(documents) ? documents : [];
     const costs = Array.isArray(expenses) ? expenses : [];
-    const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0 };
+    const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0, paid: 0, partial: 0, unpaid: 0, overdue: 0 };
     docs.forEach(doc => {
         const total = Math.max(0, Number(getDarDocumentAmount(doc)) || 0);
         const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
@@ -1007,6 +1020,8 @@ window.getDarV2FinancialOverview = function(documents, expenses) {
         summary.invoiced += total;
         summary.received += Math.min(total, paid);
         summary.outstanding += Math.max(0, total - paid);
+        const paymentStatus = window.getDarDocumentPaymentStatus(doc);
+        summary[paymentStatus]++;
         const branch = getAutomaticWorkBranch(doc);
         if (branch === 'staff') summary.staff++;
         else if (branch === 'unassigned') summary.unassigned++;
@@ -1026,19 +1041,19 @@ window.buildDarFinancialReportRows = function() {
         return period==='daily'?d:period==='yearly'?d.slice(0,4):d.slice(0,7);
     };
     const groups=new Map();
-    const get=key=>{if(!groups.has(key))groups.set(key,{period:key,invoiced:0,received:0,outstanding:0,expenses:0,invoices:0});return groups.get(key);};
+    const get=key=>{if(!groups.has(key))groups.set(key,{period:key,invoiced:0,received:0,outstanding:0,expenses:0,invoices:0,paid:0,partial:0,unpaid:0,overdue:0});return groups.get(key);};
     (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{
         const row=get(keyFor(d.transactionDate||d.createdDate||d.date));
         const total=Math.max(0,Number(getDarDocumentAmount(d))||0);
         const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(d.paymentLogs||[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0));
-        row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;
+        row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;row[window.getDarDocumentPaymentStatus(d)]++;
     });
     (state.monthlyExpenses||[]).forEach(e=>{
         const date=e.transactionDate||e.date||((e.month||'')+'-01');
         get(keyFor(date)).expenses+=Math.max(0,Number(e.amount)||0);
     });
-    const rows=[['Period','Invoices','Invoiced AED','Received AED','Outstanding AED','Expenses AED','Invoiced Less Expenses AED']];
-    [...groups.values()].sort((x,y)=>x.period.localeCompare(y.period)).forEach(r=>rows.push([r.period,r.invoices,r.invoiced.toFixed(2),r.received.toFixed(2),r.outstanding.toFixed(2),r.expenses.toFixed(2),(r.invoiced-r.expenses).toFixed(2)]));
+    const rows=[['Period','Invoices','Paid','Partial','Unpaid','Overdue','Invoiced AED','Received AED','Outstanding AED','Expenses AED','Invoiced Less Expenses AED']];
+    [...groups.values()].sort((x,y)=>x.period.localeCompare(y.period)).forEach(r=>rows.push([r.period,r.invoices,r.paid,r.partial,r.unpaid,r.overdue,r.invoiced.toFixed(2),r.received.toFixed(2),r.outstanding.toFixed(2),r.expenses.toFixed(2),(r.invoiced-r.expenses).toFixed(2)]));
     return rows;
 };
 window.exportDarFinancialReport = function() {
