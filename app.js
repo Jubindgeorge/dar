@@ -562,7 +562,7 @@ function renderWorksTable() {
 
     const keys = Object.keys(companyMap);
     if (keys.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
         return;
     }
 
