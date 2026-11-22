@@ -75,7 +75,7 @@ const assert = require('node:assert/strict');
     assert.match(percentText,/Total Amount \/ المبلغ الإجمالي\s+AED 4096\.30/,'advance is deducted from final amount');
     assert.ok(await page.locator('#a4-wrapper-element .section-terms li').count() === 3,'invoice shows all three approved terms');
     assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
-    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\s+AED 500\.00/);
+    assert.match(breakdownText,/Advance Payment \/ الدفعة المقدمة\s+AED 500\.00/);
     assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
     assert.match(breakdownText,/Discounts % \/ الخصم\s+AED 250\.00/);
     assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4357\.00/);
