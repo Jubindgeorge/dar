@@ -832,35 +832,19 @@ window.previewInvoiceDocument = async function(refCode) {
     if (tbody) {
         const items = doc.items || [];
         
-        const itemSubtotal = items.reduce((sum, item) => {
-            const p = Number(item.p ?? item.price) || 0;
-            const q = Number(item.q ?? item.quantity) || 1;
-            return sum + p * q;
-        }, 0);
-        const legacyTotal = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? doc.grandTotal) || 0;
-        const hasPaymentBreakdown = Number(doc.paymentBreakdownVersion) >= 1;
-        const storedSubtotal = Number(doc.subtotalAmount ?? doc.subTotal);
-        const subtotalAmount = hasPaymentBreakdown && Number.isFinite(storedSubtotal) && storedSubtotal >= 0
-            ? storedSubtotal
-            : (itemSubtotal || legacyTotal);
-        const processingCharges = hasPaymentBreakdown ? Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0) : 0;
-        const discountAmount = hasPaymentBreakdown ? Math.max(0, Number(doc.discountAmount ?? doc.discountAmt) || 0) : 0;
-        const advanceAmount = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance) || 0);
-        // New breakdown invoices store totalAmount before advance; legacy invoices retain their original total semantics.
-        const amountBeforeAdvance = hasPaymentBreakdown
-            ? (legacyTotal > 0 ? legacyTotal : Math.max(0, subtotalAmount + processingCharges - discountAmount))
-            : legacyTotal;
-        const finalAmountDue = hasPaymentBreakdown ? Math.max(0, amountBeforeAdvance - advanceAmount) : amountBeforeAdvance;
-        const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: subtotalAmount }] : []);
-        const money = value => 'AED ' + value.toFixed(2);
-        const summaryRow = (label, value, strong = false) => `
-            <tr style="font-weight:${strong ? '800' : '600'}; background:${strong ? '#f8fafc' : '#ffffff'};">
-                <td colspan="3" style="text-align:right;padding:8px 10px;">${label}</td>
-                <td style="text-align:right;padding:8px 10px;color:${strong ? '#b58f46' : '#334155'};">${money(value)}</td>
-            </tr>`;
+        let docTotal = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
+        if (docTotal === 0 && items.length > 0) {
+            docTotal = items.reduce((sum, item) => {
+                const p = parseFloat(item.p || item.price) || 0;
+                const q = parseFloat(item.q || item.quantity) || 1;
+                return sum + (p * q);
+            }, 0);
+        }
+
+        const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
         tbody.innerHTML = normalizedItems.map((item, idx) => {
-            const p = Number(item.p ?? item.price) || 0;
-            const q = Number(item.q ?? item.quantity) || 1;
+            const p = parseFloat(item.p ?? item.price) || 0;
+            const q = parseFloat(item.q ?? item.quantity) || 1;
             return `
                 <tr>
                     <td style="text-align: center;">${idx + 1}</td>
@@ -869,12 +853,12 @@ window.previewInvoiceDocument = async function(refCode) {
                     <td style="text-align: right;">${(p * q).toFixed(2)}</td>
                 </tr>
             `;
-        }).join('') +
-        summaryRow('Sub Total / المجموع الفرعي', subtotalAmount) +
-        summaryRow('Advance Amount / الدفعة المقدمة', advanceAmount) +
-        summaryRow('Processing Charges / رسوم المعالجة', processingCharges) +
-        summaryRow('Discounts % / الخصم', discountAmount) +
-        summaryRow('Total Amount / المبلغ الإجمالي', finalAmountDue, true);
+        }).join('') + `
+            <tr style="font-weight: bold; background: #f8fafc;">
+                <td colspan="3" style="text-align: right;">Total Amount / المبلغ الإجمالي</td>
+                <td style="text-align: right; color: #b58f46;">AED ${docTotal.toFixed(2)}</td>
+            </tr>
+        `;
     }
 
     const modal = document.getElementById('document-preview-modal');
