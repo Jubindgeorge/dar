@@ -78,7 +78,7 @@ const assert = require('node:assert/strict');
     assert.match(breakdownText,/Advance Payment \/ الدفعة المقدمة\s+AED 500\.00/);
     assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
     assert.match(breakdownText,/Discounts \/ الخصم\s+AED 250\.00/);
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4357\.00/);
+    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'advance remains separate from invoice total');
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
