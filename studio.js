@@ -255,7 +255,7 @@ function recalculateStudioTotals() {
     const totalInput = document.getElementById('st-total-amt');
     if (totalInput) totalInput.value = amountBeforeAdvance.toFixed(2);
     const finalInput = document.getElementById('st-final-amt');
-    if (finalInput) finalInput.value = Math.max(0, amountBeforeAdvance - advance).toFixed(2);
+    if (finalInput) finalInput.value = amountBeforeAdvance.toFixed(2);
 }
 
 function commitDocumentToMemory() {
