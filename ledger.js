@@ -100,7 +100,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
                 if (pay.isAdvance) {
                     tbody.innerHTML += `
                         <tr>
-                            <td>${pay.date}</td>
+                            <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
                             <td><span class="badge" style="background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Advance</span> ${pay.note}</td>
                             <td style="text-align: center;"><button onclick="promptEditAdvance()" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">Edit Advance</button></td>
@@ -130,7 +130,7 @@ window.renderFullLedgerTableBody = function() {
     const monthlyExpenses = state.monthlyExpenses || [];
 
     if (docs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No financial ledger records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted);">No financial ledger records found.</td></tr>`;
         return;
     }
 
@@ -153,6 +153,7 @@ window.renderFullLedgerTableBody = function() {
         tbody.innerHTML += `
             <tr>
                 <td><strong>${doc.refCode}</strong></td>
+                <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
                 <td>${clientLabel}</td>
                 <td>AED ${govtFee.toFixed(2)}</td>
                 <td>AED ${expenseShare.toFixed(2)}</td>
