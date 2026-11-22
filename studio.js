@@ -335,6 +335,7 @@ function commitDocumentToMemory() {
     const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
     const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
 
+    const auditUser = window.firebase?.auth?.().currentUser;
     const payload = {
         refCode,
         type,
@@ -345,7 +346,10 @@ function commitDocumentToMemory() {
         companyName: companyName || 'Direct Clients',
         contactPerson,
         companyClientId: state.selectedCompanyClientId || '',
-        createdDate,
+        createdDate: previousDocument?.createdDate || createdDate,
+        transactionDate: createdDate,
+        updatedAt: new Date().toISOString(),
+        updatedBy: auditUser?.email || auditUser?.uid || 'Unknown',
         visaExpiryDate,
         govtAmt,
         govtFee: govtAmt,
