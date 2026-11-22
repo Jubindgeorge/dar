@@ -33,7 +33,7 @@ window.darRenderWorkTracking = function () {
  const tbody=table.querySelector('tbody');
  docs().filter(d=>d.type!=='Quotation').forEach(d=>{
    const tr=document.createElement('tr'),id=String(d.refCode||''),step=d.proStage||'Not Started',status=d.proStatus||'Not Started';
-   for(const value of [String(d.createdDate||d.date||'').slice(0,10),packageName(d),id+' · '+(d.items||[]).map(i=>i.title||i.serviceName||'').filter(Boolean).join(', '),company(d)==='Private'?(d.clientName||'Private'):company(d),step,status]){
+   for(const value of [(window.darFormatTableDate ? window.darFormatTableDate(d.createdDate||d.date) : String(d.createdDate||d.date||'').slice(0,10)),packageName(d),id+' · '+(d.items||[]).map(i=>i.title||i.serviceName||'').filter(Boolean).join(', '),company(d)==='Private'?(d.clientName||'Private'):company(d),step,status]){
       const td=document.createElement('td');td.textContent=value;tr.append(td);
    }
    const td=document.createElement('td'),button=document.createElement('button');button.className='btn btn-secondary';button.textContent='Update Stage';button.addEventListener('click',()=>window.darEditWorkStage(id));td.append(button);tr.append(td);tbody.append(tr);
