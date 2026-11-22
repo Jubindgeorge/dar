@@ -429,7 +429,7 @@ function renderClientsTable() {
     if (!tbody) return;
 
     if (!state.clients || state.clients.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No corporate client accounts found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No corporate client accounts found.</td></tr>`;
         return;
     }
 
@@ -445,7 +445,8 @@ function renderClientsTable() {
         <tr>
             <td><button type="button" class="company-name-link" onclick="openCompanyStaff('${cl.id}')" title="Open staff data for this company">${darEscapeHTML(cl.companyName || '-')}</button></td>
             <td style="text-align: right; font-family: 'Amiri', serif; font-size: 1rem; color: var(--primary);">${cl.nameAr || '-'}</td>
-            <td>${cl.contactPerson || '-'}</td>
+            <td>${darEscapeHTML(cl.contactPerson || '-')}</td>
+            <td>${window.darFormatTableDate(cl.createdDate || cl.createdAt)}</td>
             <td style="text-align: center;">
                 <button onclick="openCompanyStaff('${cl.id}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-id-card"></i> Staff Data</button>
                 <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
