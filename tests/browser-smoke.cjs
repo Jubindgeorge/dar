@@ -72,7 +72,7 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-PERCENT-001'));
     const percentText = await page.locator('#p-table-body').innerText();
     assert.match(percentText,/Discounts \(10%\) \/ الخصم\s+AED 510\.70/,'new invoices calculate discounts as a percentage');
-    assert.match(percentText,/Total Amount \/ المبلغ الإجمالي\\s+AED 4596\\.30/,'advance is displayed separately and does not reduce invoice total');
+    assert.match(percentText,/Total Amount \/ المبلغ الإجمالي\s+AED 4596\.30/,'advance is displayed separately and does not reduce invoice total');
     assert.ok(await page.locator('#a4-wrapper-element .section-terms li').count() === 3,'invoice shows all three approved terms');
     assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
     assert.match(breakdownText,/Advance Payment \/ الدفعة المقدمة\s+AED 500\.00/);
