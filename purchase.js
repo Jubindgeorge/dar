@@ -27,7 +27,7 @@
         const total = records.reduce((sum,p)=>sum+(Number(p.amount)||0),0);
         if (byId('purchase-total-amount')) byId('purchase-total-amount').textContent = 'AED ' + total.toFixed(2);
         if (!records.length) { body.innerHTML = '<tr><td colspan="7" class="staff-empty">No purchase records found. Add a supplier and record the first purchase.</td></tr>'; return; }
-        body.innerHTML = records.map(p=>'<tr><td>'+html(supplierName(p.supplierId)||p.supplierName||'-')+'</td><td><strong>'+html(p.reference||'-')+'</strong></td><td>'+html(p.date||'-')+'</td><td>'+html(p.description||'-')+'</td><td>AED '+(Number(p.amount)||0).toFixed(2)+'</td><td>'+html(p.paymentStatus||'Unpaid')+'</td><td><button type="button" class="btn btn-secondary" onclick="openPurchaseModal(\''+html(p.id)+'\')">Edit</button></td></tr>').join('');
+        body.innerHTML = records.map(p=>'<tr><td>'+html(supplierName(p.supplierId)||p.supplierName||'-')+'</td><td><strong>'+html(p.reference||'-')+'</strong></td><td>'+html(window.darFormatTableDate ? window.darFormatTableDate(p.date) : (p.date||'-'))+'</td><td>'+html(p.description||'-')+'</td><td>AED '+(Number(p.amount)||0).toFixed(2)+'</td><td>'+html(p.paymentStatus||'Unpaid')+'</td><td><button type="button" class="btn btn-secondary" onclick="openPurchaseModal(\''+html(p.id)+'\')">Edit</button></td></tr>').join('');
         if (window.applyDarLanguage) window.applyDarLanguage();
     };
 
