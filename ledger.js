@@ -146,7 +146,7 @@ window.renderFullLedgerTableBody = function() {
         const docMonth = invoiceDate ? invoiceDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
         const matchingExpenses = monthlyExpenses.filter(e => e.month === docMonth);
         const totalMonthExp = matchingExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-        const totalInvoicesInMonth = docs.filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
+        const totalInvoicesInMonth = allDocs.filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
