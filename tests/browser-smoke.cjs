@@ -106,8 +106,8 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#doc-table-body').count(),1);
     await page.evaluate(() => renderDocumentsTable());
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
-    assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),8,'Ledger rows have 8 cells');
-    assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),8,'Ledger headings have 8 cells');
+    assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),9,'Invoice register rows have 9 cells including Invoice Date');
+    assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),9,'Invoice register headings have 9 cells including Invoice Date');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
