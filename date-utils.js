@@ -15,7 +15,7 @@
   const audit = previous => {
     const user = window.firebase?.auth?.().currentUser;
     const now = new Date().toISOString();
-    return { createdDate: previous?.createdDate || todayISO(), updatedAt: now, updatedBy: user?.email || user?.uid || 'Unknown' };
+    return { createdDate: previous?.id ? (previous.createdDate || normalize(previous.createdAt) || '') : todayISO(), updatedAt: now, updatedBy: user?.email || user?.uid || 'Unknown' };
   };
   window.darDates = { todayISO, normalize, format, audit };
   window.darFormatTableDate = format;
