@@ -127,7 +127,13 @@ window.renderFullLedgerTableBody = function() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const docs = state.documents || [];
+    const allDocs = state.documents || [];
+    const ledgerFrom = document.getElementById('ledger-date-from')?.value || '';
+    const ledgerTo = document.getElementById('ledger-date-to')?.value || '';
+    const docs = allDocs.filter(doc => {
+        const date = String(doc.transactionDate || doc.createdDate || doc.date || '').slice(0,10);
+        return (!ledgerFrom || (date && date >= ledgerFrom)) && (!ledgerTo || (date && date <= ledgerTo));
+    });
     const monthlyExpenses = state.monthlyExpenses || [];
 
     if (docs.length === 0) {
@@ -323,7 +329,12 @@ window.renderMonthlyExpensesTable = function() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const expenses = (state.monthlyExpenses || []).slice().sort((a,b) => String(b.date || b.month || '').localeCompare(String(a.date || a.month || '')));
+    const expenseFrom = document.getElementById('expense-date-from')?.value || '';
+    const expenseTo = document.getElementById('expense-date-to')?.value || '';
+    const expenses = (state.monthlyExpenses || []).filter(e => {
+        const date = String(e.transactionDate || e.date || ((e.month || '') + '-01')).slice(0,10);
+        return (!expenseFrom || (date && date >= expenseFrom)) && (!expenseTo || (date && date <= expenseTo));
+    }).slice().sort((a,b) => String(b.date || b.month || '').localeCompare(String(a.date || a.month || '')));
     if (expenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No monthly operating expenses added.</td></tr>`;
         return;
