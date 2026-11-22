@@ -566,15 +566,18 @@ function renderWorksTable() {
         return;
     }
 
-    tbody.innerHTML = keys.map(comp => `
+    tbody.innerHTML = keys.map(comp => {
+        const latestDate = companyMap[comp].map(doc => String(doc.transactionDate || doc.createdDate || doc.date || '')).filter(Boolean).sort().pop() || '';
+        return `
         <tr>
             <td><strong>${escapeHtml(companyLabels[comp])}</strong></td>
+            <td>${window.darFormatTableDate(latestDate)}</td>
             <td>${companyMap[comp].length} Invoices</td>
             <td style="text-align: center;">
                 <button onclick="openWorksDetailView('${escapeHtml(companyLabels[comp]).replace(/'/g, '&#39;')}')" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Open Folder</button>
             </td>
         </tr>
-    `).join('');
+    `; }).join('');
 }
 
 window.openWorksDetailView = function(companyName) {
