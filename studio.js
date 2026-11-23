@@ -381,6 +381,22 @@ function commitDocumentToMemory() {
         });
     });
 
+    const previousForStageEdit = (state.documents || []).find(d => d.refCode === refCode);
+    if (previousForStageEdit?.sourceQuotationRef && totalAmt <= 0) {
+        showCustomModal('Converted invoice total required', 'A progress or stage invoice linked to a quotation must keep a positive total.');
+        return;
+    }
+    if (previousForStageEdit?.billingMode === 'stage' && previousForStageEdit.sourceQuotationRef) {
+        const stageShape = list => JSON.stringify((Array.isArray(list) ? list : []).map(item => ({
+            title: item.packageName || item.serviceName || item.title || '',
+            description: item.description || ''
+        })));
+        if (stageShape(previousForStageEdit.items) !== stageShape(items)) {
+            showCustomModal('Stage invoice items protected', 'Keep the service names and descriptions of a stage invoice unchanged. You may still adjust its quantity or rate.');
+            return;
+        }
+    }
+
     const existingQuotation = (state.documents || []).find(d => d.refCode === refCode && d.type === 'Quotation');
     if (existingQuotation && Array.isArray(existingQuotation.invoicedStageIndexes) && existingQuotation.invoicedStageIndexes.length) {
         const signature = list => JSON.stringify((Array.isArray(list) ? list : []).map(item => ({
