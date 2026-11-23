@@ -66,7 +66,11 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
     assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
-    assert.doesNotMatch(breakdownText,/Sub Total|Advance Payment|Processing Charges|Discounts/,'October invoice hides newer breakdown rows');
+    assert.match(breakdownText,/Subtotal\\s+AED 5107\\.00/,'Invoice displays subtotal including processing charges');
+    assert.match(breakdownText,/Adv\\. Amount\\s+AED 500\\.00/,'Invoice displays advance amount');
+    assert.match(breakdownText,/Dis\\. %\\s+0\\.00%/,'Invoice displays discount percentage');
+    assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\\s+AED 4857\\.00/,'Invoice displays grand total after the summary rows');
+    assert.match(await page.locator('#p-table-body table').getAttribute('style'),/b8860b/,'Totals box uses matching gold borders');
     assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
     await page.evaluate(() => {
@@ -119,12 +123,52 @@ const assert = require('node:assert/strict');
     assert.equal(saveFlow.saved?.branchTag,'staff','Different client and company automatically classify as staff');
     assert.match(saveFlow.modal?.actions||'',/Preview \/ Print/);
     assert.match(saveFlow.modal?.actions||'',/Create Next/);
-    assert.match(saveFlow.modal?.actions||'',/Back to Ledger/);
+    assert.match(saveFlow.modal?.actions||'',/Back to Invoices/);
     assert.equal(await page.locator('#doc-table-body').count(),1);
     await page.evaluate(() => renderDocumentsTable());
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
     assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),9,'Invoice register rows have 9 cells including Invoice Date');
     assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),9,'Invoice register headings have 9 cells including Invoice Date');
+    await page.evaluate(() => {
+      state.documents.push(
+        {refCode:'QTN-TEST-001',type:'Quotation',clientName:'Sample Client',companyName:'Sample Company',branchTag:'company',totalAmount:300,subtotalAmount:300,items:[{serviceName:'Stage A',p:100,q:1},{serviceName:'Stage B',p:200,q:1}]},
+        {refCode:'CI-STAFF-001',type:'Invoice',clientName:'Staff Member',companyName:'Sample Company',contactPerson:'Contact Must Not Appear',branchTag:'staff',totalAmount:100,items:[{serviceName:'Staff service',p:100,q:1}]},
+        {refCode:'CI-DIRECT-001',type:'Invoice',clientName:'Direct Customer',companyName:'Direct Clients',contactPerson:'Do Not Show',branchTag:'company',totalAmount:80,items:[{serviceName:'Direct service',p:80,q:1}]}
+      );
+      renderDocumentsTable();
+      renderQuotationTable();
+    });
+    assert.match(await page.locator('#doc-table-body').innerText(),/CI-STAFF-001/,'Invoice page contains invoice records');
+    assert.doesNotMatch(await page.locator('#doc-table-body').innerText(),/QTN-TEST-001/,'Invoice page excludes quotations');
+    assert.match(await page.locator('#quotation-table-body').innerText(),/QTN-TEST-001/,'Quotation page contains quotations');
+    assert.doesNotMatch(await page.locator('#quotation-table-body').innerText(),/CI-STAFF-001/,'Quotation page excludes invoices');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-STAFF-001'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Staff Member','Staff invoice displays staff name');
+    assert.equal(await page.locator('#p-company-name').innerText(),'Sample Company','Staff invoice displays company name');
+    assert.equal(await page.locator('#p-company-line').isVisible(),true,'Staff invoice displays company line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Contact Must Not Appear/,'Staff invoice hides contact person');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-DIRECT-001'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Direct Customer','Direct invoice displays client name');
+    assert.equal(await page.locator('#p-company-line').isVisible(),false,'Direct invoice hides company line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Do Not Show/,'Direct invoice hides contact person');
+    await page.evaluate(() => {
+      openStudio('Invoice','CI-STAFF-001');
+    });
+    assert.equal(await page.locator('#tab-studio').evaluate(el=>el.classList.contains('dar-edit-popup')),true,'Editing an existing invoice opens the popup editor');
+    await page.locator('#st-notes').fill('Updated in place');
+    const editResult = await page.evaluate(() => {
+      const oldRef=db.ref; const oldModal=window.showCustomModal; const calls=[];
+      db.ref=path=>({update:(payload,callback)=>{calls.push({path,payload});callback(null);}});
+      window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
+      try { commitDocumentToMemory(); return calls; } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
+    });
+    assert.equal(editResult.find(x=>x.path)?.path,'documents/CI-STAFF-001','Editing updates the same invoice Firebase key');
+    assert.equal(state.documents.filter(d=>d.refCode==='CI-STAFF-001').length,1,'Editing does not create a second invoice');
+    assert.equal(await page.locator('#tab-studio').evaluate(el=>el.classList.contains('dar-edit-popup')),false,'Popup closes after successful edit');
+    await page.evaluate(() => openQuotationConversion('QTN-TEST-001'));
+    assert.equal(await page.locator('#quotation-conversion-modal').evaluate(el=>el.style.display),'flex','Quotation conversion dialog opens');
+    assert.equal(await page.locator('#qc-stage-items input[type=checkbox]').count(),2,'Stage billing lists quotation service items');
+    await page.evaluate(() => closeQuotationConversion());
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
