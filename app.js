@@ -1312,10 +1312,12 @@ window.openQuotationConversion = function(refCode) {
     document.getElementById('qc-amount').value = remaining.toFixed(2);
     document.getElementById('qc-percent').value = '100';
     const stageBox = document.getElementById('qc-stage-items');
+    const alreadyBilledStages = new Set(Array.isArray(quote.invoicedStageIndexes) ? quote.invoicedStageIndexes : []);
     stageBox.innerHTML = (Array.isArray(quote.items) ? quote.items : []).map((item,index) => {
         const title = getWorkItemDescription(item) || ('Stage ' + (index+1));
         const amount = (Number(item.p ?? item.price ?? 0) || 0) * (Number(item.q ?? item.quantity ?? 1) || 1);
-        return `<label class="qc-stage-row"><input type="checkbox" value="${index}" checked> <span>${darEscapeHTML(title)}</span><strong>AED ${amount.toFixed(2)}</strong></label>`;
+        const billed = alreadyBilledStages.has(index);
+        return `<label class="qc-stage-row"><input type="checkbox" value="${index}" ${billed ? 'disabled' : 'checked'}> <span>${darEscapeHTML(title)}${billed ? ' — already invoiced' : ''}</span><strong>AED ${amount.toFixed(2)}</strong></label>`;
     }).join('') || '<p class="dar-hint">This quotation has no itemised rows. Use amount or percentage billing.</p>';
     const updateMode = () => {
         const stage = document.getElementById('qc-mode').value === 'stage';
@@ -1339,10 +1341,11 @@ window.submitQuotationConversion = function() {
     const alreadyInvoiced = Math.max(0, Number(quote.invoicedAmount) || 0);
     const remaining = Math.max(0, quoteTotal - alreadyInvoiced);
     let items = [], amount = 0, description = '';
+    let selectedStageIndexes = [];
     if (mode === 'stage') {
-        const selected = [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked')].map(el => Number(el.value));
-        if (!selected.length) { showCustomModal('Select stages','Choose at least one completed item or switch to amount-based billing.'); return; }
-        items = selected.map(i => (quote.items || [])[i]).filter(Boolean).map(item => ({...item}));
+        selectedStageIndexes = [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked:not(:disabled)')].map(el => Number(el.value));
+        if (!selectedStageIndexes.length) { showCustomModal('Select stages','Choose at least one stage that has not already been invoiced.'); return; }
+        items = selectedStageIndexes.map(i => (quote.items || [])[i]).filter(Boolean).map(item => ({...item}));
         amount = items.reduce((sum,item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)),0);
         description = 'Stage invoice against ' + quoteRef;
     } else {
@@ -1367,6 +1370,8 @@ window.submitQuotationConversion = function() {
         const liveInvoiced = Math.max(0, Number(liveQuote.invoicedAmount) || 0);
         const liveRemaining = Math.max(0, liveTotal - liveInvoiced);
         if (amount > liveRemaining + 0.005) return;
+        const liveBilledStages = Array.isArray(liveQuote.invoicedStageIndexes) ? liveQuote.invoicedStageIndexes : [];
+        if (mode === 'stage' && selectedStageIndexes.some(index => liveBilledStages.includes(index))) return;
         const year = createdDate.slice(0,4);
         let seq = Object.values(docs).reduce((max,d) => {
             const ref = String(d?.refCode || '');
@@ -1377,7 +1382,7 @@ window.submitQuotationConversion = function() {
         while (docs[invoiceRef] && seq < 999999) { seq++; invoiceRef = 'DAS-' + year + '-' + String(seq).padStart(4,'0'); }
         const invoice = {
             ...liveQuote, refCode:invoiceRef, type:'Invoice', createdDate, transactionDate:createdDate,
-            sourceQuotationRef:quoteRef, billingMode:mode, stageItemIndexes:mode === 'stage' ? [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked')].map(el => Number(el.value)) : [],
+            sourceQuotationRef:quoteRef, billingMode:mode, stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],
             packageName:liveQuote.packageName || description, serviceName:liveQuote.serviceName || description,
             items, subtotalAmount:amount, subTotal:amount, processingCharges:0, processingCharge:0,
             discountAmount:0, discountAmt:0, discountPercent:0, legacyDiscountAmount:0,
@@ -1387,7 +1392,8 @@ window.submitQuotationConversion = function() {
         };
         docs[invoiceRef] = invoice;
         docs[quoteRef] = {...liveQuote, invoicedAmount:Math.round((liveInvoiced + amount)*100)/100,
-            conversionHistory:[...(Array.isArray(liveQuote.conversionHistory)?liveQuote.conversionHistory:[]),{invoiceRef,amount,mode,createdAt:new Date().toISOString()}],
+            invoicedStageIndexes:[...new Set([...liveBilledStages,...(mode === 'stage' ? selectedStageIndexes : [])])],
+            conversionHistory:[...(Array.isArray(liveQuote.conversionHistory)?liveQuote.conversionHistory:[]),{invoiceRef,amount,mode,stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],createdAt:new Date().toISOString()}],
             updatedAt:new Date().toISOString()};
         return docs;
     }, (error, committed, snapshot) => {
