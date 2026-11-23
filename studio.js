@@ -252,7 +252,7 @@ function recalculateStudioTotals() {
     });
 
     const processing = Math.max(0, Number(document.getElementById('st-processing-charges')?.value) || 0);
-    const discountPercent = Math.min(100, Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0));
+    const discountPercent = Number(document.getElementById('st-discount-amt')?.value) || 0;
     const legacyDiscount = Math.max(0, Number(document.getElementById('st-legacy-discount-amt')?.value) || 0);
     const advance = Math.max(0, Number(document.getElementById('st-advance-amt')?.value) || 0);
     const discountValue = (sumTotal + processing) * discountPercent / 100 + legacyDiscount;
@@ -275,13 +275,27 @@ function commitDocumentToMemory() {
     const contactPerson = document.getElementById('st-contact-person')?.value.trim() || '';
     const notes = document.getElementById('st-notes')?.value.trim() || '';
     const govtAmt = parseFloat(document.getElementById('st-govt-amt')?.value) || 0;
-    const subtotalAmt = [...document.querySelectorAll('#st-spreadsheet-body tr')].reduce((sum, row) => {
-        const qty = Number(row.querySelector('.st-item-qty')?.value) || 0;
-        const price = Number(row.querySelector('.st-item-price')?.value) || 0;
-        return sum + qty * price;
+    const rows = [...document.querySelectorAll('#st-spreadsheet-body tr')];
+    if (!rows.length) {
+        showCustomModal('Missing service', 'Add at least one service item before saving this document.');
+        return;
+    }
+    const invalidRow = rows.some(row => {
+        const qtyRaw = row.querySelector('.st-item-qty')?.value;
+        const priceRaw = row.querySelector('.st-item-price')?.value;
+        const qty = Number(qtyRaw);
+        const price = Number(priceRaw);
+        return qtyRaw === '' || priceRaw === '' || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price < 0;
+    });
+    if (invalidRow) {
+        showCustomModal('Invalid service item', 'Each service item must have a quantity greater than zero and a valid non-negative rate.');
+        return;
+    }
+    const subtotalAmt = rows.reduce((sum, row) => {
+        return sum + Number(row.querySelector('.st-item-qty').value) * Number(row.querySelector('.st-item-price').value);
     }, 0);
     const processingCharges = parseFloat(document.getElementById('st-processing-charges')?.value) || 0;
-    const discountPercent = Math.min(100, Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0));
+    const discountPercent = Number(document.getElementById('st-discount-amt')?.value) || 0;
     const legacyDiscountAmount = Math.max(0, Number(document.getElementById('st-legacy-discount-amt')?.value) || 0);
     const discountAmount = (subtotalAmt + processingCharges) * discountPercent / 100 + legacyDiscountAmount;
     const totalAmt = Math.max(0, subtotalAmt + processingCharges - discountAmount);
@@ -340,7 +354,6 @@ function commitDocumentToMemory() {
     }
 
     const items = [];
-    const rows = document.querySelectorAll('#st-spreadsheet-body tr');
     rows.forEach(row => {
         const rowTitle = row.querySelector('.st-item-title')?.value.trim() || 'Service Record';
         items.push({
