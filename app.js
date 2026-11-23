@@ -707,7 +707,7 @@ function renderDocumentsTable() {
     const max = maxRaw !== '' && Number.isFinite(Number(maxRaw)) ? Math.max(0, Number(maxRaw)) : null;
     const fromDate = document.getElementById('doc-date-from')?.value || '';
     const toDate = document.getElementById('doc-date-to')?.value || '';
-    const all = state.documents || [];
+    const all = (state.documents || []).filter(d => (d.type || 'Invoice') !== 'Quotation');
     const filtered = all.filter(d => {
         const recordDate = String(d.transactionDate || d.createdDate || d.date || '').slice(0, 10);
         const matchesDate = (!fromDate || (recordDate && recordDate >= fromDate)) &&
@@ -909,8 +909,9 @@ window.previewInvoiceDocument = async function(refCode) {
     const isStaffDocument = (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff';
     const isCompanyDocument = !isStaffDocument && companyValue && !/^direct clients?$/i.test(companyValue);
     const primaryRecipient = isStaffDocument ? (clientValue || 'N/A') : isCompanyDocument ? companyValue : (clientValue || 'N/A');
-    const secondaryLabel = isStaffDocument ? 'Company:' : 'Contact Person:';
-    const secondaryValue = isStaffDocument ? companyValue : (isCompanyDocument ? String(doc.contactPerson || '').trim() : '');
+    // Client-facing PDFs show only the company, staff + company, or direct client.
+    const secondaryLabel = 'Company:';
+    const secondaryValue = isStaffDocument ? companyValue : '';
     if (clientName) clientName.innerText = primaryRecipient;
     const companyLine = document.getElementById('p-company-line');
     const companyLabel = document.getElementById('p-company-label');
@@ -961,12 +962,21 @@ window.previewInvoiceDocument = async function(refCode) {
                     <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${rate.toFixed(2)}</td>
                 </tr>
             `;
-        }).join('') + `
-            <tr style="font-weight:700;background:#eeeeee;">
-                <td colspan="3" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Total Amount / المبلغ الإجمالي</td>
-                <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">AED ${docTotal.toFixed(2)}</td>
-            </tr>
-        `;
+        }).join('') + (() => {
+            const itemSubtotal = normalizedItems.reduce((sum, item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)), 0);
+            const subtotal = Number.isFinite(Number(doc.subtotalAmount ?? doc.subTotal)) ? Number(doc.subtotalAmount ?? doc.subTotal) : itemSubtotal;
+            const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
+            const discountPercent = Math.max(0, Number(doc.discountPercent) || 0);
+            const gold = '#b8860b';
+            const summaryRow = (label, value, strong = false) => `<tr style="background:#fff;font-weight:${strong ? '800' : '600'};"><td colspan="3" style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${label}</td><td style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${value}</td></tr>`;
+            return `
+                <tr><td colspan="4" style="padding:0;border:0;"><table style="width:48%;margin:12px 0 0 auto;border-collapse:collapse;font-size:11.5px;color:#222;border:1px solid ${gold};">
+                    ${summaryRow('Subtotal', 'AED ' + subtotal.toFixed(2))}
+                    ${summaryRow('Adv. Amount', 'AED ' + advance.toFixed(2))}
+                    ${summaryRow('Dis. %', discountPercent.toFixed(2) + '%')}
+                    <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="3" style="padding:8px;border:1.5px solid ${gold};text-align:right;">Grand Total / المبلغ الإجمالي</td><td style="padding:8px;border:1.5px solid ${gold};text-align:right;">AED ${docTotal.toFixed(2)}</td></tr>
+                </table></td></tr>`;
+        })();
     }
     const notesSection = document.getElementById('p-notes-section');
     const notesText = document.getElementById('p-notes');
@@ -1251,3 +1261,145 @@ window.toggleDarProtection = function() {
     panel.hidden = !panel.hidden;
     if (!panel.hidden) { window.showDarRecovery(); window.showDarActivity(); }
 };
+
+
+/* Quotations are managed on their own page; invoices remain in the financial ledger. */
+window.renderQuotationTable = function() {
+    const tbody = document.getElementById('quotation-table-body');
+    if (!tbody) return;
+    const query = (document.getElementById('quotation-search')?.value || '').trim().toLowerCase();
+    const from = document.getElementById('quotation-date-from')?.value || '';
+    const to = document.getElementById('quotation-date-to')?.value || '';
+    const docs = (state.documents || []).filter(d => d.type === 'Quotation').filter(d => {
+        const date = String(d.transactionDate || d.createdDate || '').slice(0,10);
+        return [d.refCode,d.clientName,d.companyName].some(v => String(v || '').toLowerCase().includes(query)) &&
+            (!from || (date && date >= from)) && (!to || (date && date <= to));
+    }).sort((a,b) => String(b.transactionDate || b.createdDate || '').localeCompare(String(a.transactionDate || a.createdDate || '')));
+    const total = docs.reduce((sum,d) => sum + getDarDocumentAmount(d),0);
+    const totalEl = document.getElementById('quotation-total-amount');
+    if (totalEl) totalEl.textContent = 'AED ' + total.toFixed(2);
+    if (!docs.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No quotations found.</td></tr>'; return; }
+    tbody.innerHTML = docs.map(d => {
+        const invoiced = Math.max(0, Number(d.invoicedAmount) || 0);
+        const balance = Math.max(0, getDarDocumentAmount(d) - invoiced);
+        return `<tr>
+            <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
+            <td>${darEscapeHTML(window.darFormatTableDate(d.transactionDate || d.createdDate))}</td>
+            <td>${darEscapeHTML(d.clientName || '-')}</td>
+            <td>${darEscapeHTML(d.companyName || '-')}</td>
+            <td>AED ${getDarDocumentAmount(d).toFixed(2)}</td>
+            <td><span title="Amount already invoiced">AED ${invoiced.toFixed(2)}</span><br><small>Remaining: AED ${balance.toFixed(2)}</small></td>
+            <td style="white-space:nowrap;text-align:center;">
+                <button type="button" class="btn btn-secondary" onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' title="Preview"><i class="fa-solid fa-eye"></i></button>
+                <button type="button" class="btn btn-secondary" onclick='openStudio("Quotation",${darSafeDocumentKey(d.refCode)})' title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="btn btn-primary" onclick='openQuotationConversion(${darSafeDocumentKey(d.refCode)})' title="Convert to invoice">Convert</button>
+            </td>
+        </tr>`;
+    }).join('');
+};
+
+window.openQuotationConversion = function(refCode) {
+    const quote = (state.documents || []).find(d => d.refCode === refCode && d.type === 'Quotation');
+    if (!quote) return;
+    const modal = document.getElementById('quotation-conversion-modal');
+    if (!modal) { showCustomModal('Conversion unavailable','Reload the page to open quotation conversion.'); return; }
+    const remaining = Math.max(0, getDarDocumentAmount(quote) - (Number(quote.invoicedAmount) || 0));
+    document.getElementById('qc-ref').textContent = quote.refCode;
+    document.getElementById('qc-remaining').textContent = 'AED ' + remaining.toFixed(2);
+    document.getElementById('qc-source-ref').value = quote.refCode;
+    document.getElementById('qc-mode').value = 'amount';
+    document.getElementById('qc-amount').value = remaining.toFixed(2);
+    document.getElementById('qc-percent').value = '100';
+    const stageBox = document.getElementById('qc-stage-items');
+    stageBox.innerHTML = (Array.isArray(quote.items) ? quote.items : []).map((item,index) => {
+        const title = getWorkItemDescription(item) || ('Stage ' + (index+1));
+        const amount = (Number(item.p ?? item.price ?? 0) || 0) * (Number(item.q ?? item.quantity ?? 1) || 1);
+        return `<label class="qc-stage-row"><input type="checkbox" value="${index}" checked> <span>${darEscapeHTML(title)}</span><strong>AED ${amount.toFixed(2)}</strong></label>`;
+    }).join('') || '<p class="dar-hint">This quotation has no itemised rows. Use amount or percentage billing.</p>';
+    const updateMode = () => {
+        const stage = document.getElementById('qc-mode').value === 'stage';
+        document.getElementById('qc-amount-fields').hidden = stage;
+        document.getElementById('qc-stage-fields').hidden = !stage;
+    };
+    document.getElementById('qc-mode').onchange = updateMode;
+    updateMode();
+    modal.style.display = 'flex';
+};
+window.closeQuotationConversion = function() {
+    const modal = document.getElementById('quotation-conversion-modal');
+    if (modal) modal.style.display = 'none';
+};
+window.submitQuotationConversion = function() {
+    const quoteRef = document.getElementById('qc-source-ref')?.value;
+    const quote = (state.documents || []).find(d => d.refCode === quoteRef && d.type === 'Quotation');
+    if (!quote || !db) { showCustomModal('Unable to convert','The quotation or database connection is unavailable.'); return; }
+    const mode = document.getElementById('qc-mode').value;
+    const quoteTotal = getDarDocumentAmount(quote);
+    const alreadyInvoiced = Math.max(0, Number(quote.invoicedAmount) || 0);
+    const remaining = Math.max(0, quoteTotal - alreadyInvoiced);
+    let items = [], amount = 0, description = '';
+    if (mode === 'stage') {
+        const selected = [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked')].map(el => Number(el.value));
+        if (!selected.length) { showCustomModal('Select stages','Choose at least one completed item or switch to amount-based billing.'); return; }
+        items = selected.map(i => (quote.items || [])[i]).filter(Boolean).map(item => ({...item}));
+        amount = items.reduce((sum,item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)),0);
+        description = 'Stage invoice against ' + quoteRef;
+    } else {
+        const percent = Number(document.getElementById('qc-percent').value);
+        const rawAmount = Number(document.getElementById('qc-amount').value);
+        if (Number.isFinite(percent) && percent > 0 && percent <= 100 && document.getElementById('qc-use-percent').checked) amount = quoteTotal * percent / 100;
+        else amount = rawAmount;
+        if (!Number.isFinite(amount) || amount <= 0) { showCustomModal('Invalid invoice amount','Enter a positive invoice amount or a percentage from 0 to 100.'); return; }
+        description = 'Progress invoice against ' + quoteRef;
+        items = [{packageName:description,serviceName:description,title:description,q:1,p:amount}];
+    }
+    amount = Math.round(amount * 100) / 100;
+    if (amount <= 0 || amount > remaining + 0.005) { showCustomModal('Amount exceeds remaining','This invoice must be positive and cannot exceed the quotation balance of AED ' + remaining.toFixed(2) + '.'); return; }
+    const createdDate = localISODate();
+    const currentUser = window.firebase?.auth?.().currentUser;
+    const root = db.ref('documents');
+    root.transaction(current => {
+        const docs = current && typeof current === 'object' ? current : {};
+        const liveQuote = docs[quoteRef];
+        if (!liveQuote || liveQuote.type !== 'Quotation') return;
+        const liveTotal = Number(liveQuote.totalAmount ?? liveQuote.totalAmt ?? liveQuote.total ?? liveQuote.amount) || 0;
+        const liveInvoiced = Math.max(0, Number(liveQuote.invoicedAmount) || 0);
+        const liveRemaining = Math.max(0, liveTotal - liveInvoiced);
+        if (amount > liveRemaining + 0.005) return;
+        const year = createdDate.slice(0,4);
+        let seq = Object.values(docs).reduce((max,d) => {
+            const ref = String(d?.refCode || '');
+            const m = ref.match(new RegExp('^DAS-' + year + '-(\\d+)$'));
+            return m ? Math.max(max, Number(m[1])) : max;
+        },0) + 1;
+        let invoiceRef = 'DAS-' + year + '-' + String(seq).padStart(4,'0');
+        while (docs[invoiceRef] && seq < 999999) { seq++; invoiceRef = 'DAS-' + year + '-' + String(seq).padStart(4,'0'); }
+        const invoice = {
+            ...liveQuote, refCode:invoiceRef, type:'Invoice', createdDate, transactionDate:createdDate,
+            sourceQuotationRef:quoteRef, billingMode:mode, stageItemIndexes:mode === 'stage' ? [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked')].map(el => Number(el.value)) : [],
+            packageName:liveQuote.packageName || description, serviceName:liveQuote.serviceName || description,
+            items, subtotalAmount:amount, subTotal:amount, processingCharges:0, processingCharge:0,
+            discountAmount:0, discountAmt:0, discountPercent:0, legacyDiscountAmount:0,
+            advanceAmt:0, advanceAmount:0, totalAmount:amount, totalAmt:amount, total:amount, amount,
+            paymentLogs:[], invoicedAmount:0, conversionCreatedAt:new Date().toISOString(),
+            conversionCreatedBy:currentUser?.email || currentUser?.uid || 'Unknown'
+        };
+        docs[invoiceRef] = invoice;
+        docs[quoteRef] = {...liveQuote, invoicedAmount:Math.round((liveInvoiced + amount)*100)/100,
+            conversionHistory:[...(Array.isArray(liveQuote.conversionHistory)?liveQuote.conversionHistory:[]),{invoiceRef,amount,mode,createdAt:new Date().toISOString()}],
+            updatedAt:new Date().toISOString()};
+        return docs;
+    }, (error, committed, snapshot) => {
+        if (error || !committed) { showCustomModal('Conversion not completed', error ? 'Database error. No invoice was created.' : 'The quotation balance changed or is insufficient. Refresh and try again.'); return; }
+        const docs = snapshot.val() || {};
+        state.documents = Object.values(docs).filter(d => d && d.refCode);
+        closeQuotationConversion();
+        renderQuotationTable();
+        renderDocumentsTable();
+        showCustomModal('Invoice created','The stage/progress invoice was saved and linked to quotation ' + quoteRef + '.');
+    }, false);
+};
+document.addEventListener('DOMContentLoaded', () => {
+    const quoteSearch = document.getElementById('quotation-search');
+    if (quoteSearch) quoteSearch.addEventListener('input', renderQuotationTable);
+});
