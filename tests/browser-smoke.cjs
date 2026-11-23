@@ -165,10 +165,47 @@ const assert = require('node:assert/strict');
     assert.equal(editResult.find(x=>x.path)?.path,'documents/CI-STAFF-001','Editing updates the same invoice Firebase key');
     assert.equal(await page.evaluate(() => state.documents.filter(d=>d.refCode==='CI-STAFF-001').length),1,'Editing does not create a second invoice');
     assert.equal(await page.locator('#tab-studio').evaluate(el=>el.classList.contains('dar-edit-popup')),false,'Popup closes after successful edit');
-    await page.evaluate(() => openQuotationConversion('QTN-TEST-001'));
-    assert.equal(await page.locator('#quotation-conversion-modal').evaluate(el=>el.style.display),'flex','Quotation conversion dialog opens');
-    assert.equal(await page.locator('#qc-stage-items input[type=checkbox]').count(),2,'Stage billing lists quotation service items');
-    await page.evaluate(() => closeQuotationConversion());
+    const conversionResult = await page.evaluate(() => {
+      const oldRef=db.ref; const oldModal=window.showCustomModal;
+      db.ref=path=>({transaction:(updater,callback)=>{const current=Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc]));const next=updater(current);callback(null,!!next,{val:()=>next});}});
+      window.showCustomModal=()=>{};
+      try {
+        openQuotationConversion('QTN-TEST-001');
+        const quoteModal=document.getElementById('quotation-conversion-modal');
+        document.getElementById('qc-use-percent').checked=true;
+        document.getElementById('qc-percent').value='25';
+        document.getElementById('qc-mode').value='amount';
+        submitQuotationConversion();
+        const firstQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
+        const amountInvoice=state.documents.find(d=>d.sourceQuotationRef==='QTN-TEST-001');
+        openQuotationConversion('QTN-TEST-001');
+        document.getElementById('qc-mode').value='stage';
+        document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        const stageA=document.querySelector('#qc-stage-items input[value="0"]');
+        const stageB=document.querySelector('#qc-stage-items input[value="1"]');
+        stageA.checked=true; stageB.checked=false;
+        submitQuotationConversion();
+        const finalQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
+        const stageInvoice=state.documents.find(d=>d.billingMode==='stage' && d.sourceQuotationRef==='QTN-TEST-001');
+        openQuotationConversion('QTN-TEST-001');
+        document.getElementById('qc-mode').value='stage';
+        document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        return {
+          amount:amountInvoice?.totalAmount, afterAmount:firstQuote?.invoicedAmount,
+          stage:stageInvoice?.totalAmount, afterStage:finalQuote?.invoicedAmount,
+          stageADisabled:document.querySelector('#qc-stage-items input[value="0"]').disabled,
+          stageBDisabled:document.querySelector('#qc-stage-items input[value="1"]').disabled,
+          modalVisible:quoteModal.style.display
+        };
+      } finally {db.ref=oldRef;window.showCustomModal=oldModal;closeQuotationConversion();}
+    });
+    assert.equal(conversionResult.amount,75,'Percentage billing calculates the correct partial invoice');
+    assert.equal(conversionResult.afterAmount,75,'Quotation tracks the amount already invoiced');
+    assert.equal(conversionResult.stage,100,'Stage billing invoices the selected completed item');
+    assert.equal(conversionResult.afterStage,175,'Quotation balance updates after a stage invoice');
+    assert.equal(conversionResult.stageADisabled,true,'A stage cannot be invoiced twice');
+    assert.equal(conversionResult.stageBDisabled,false,'Unbilled stages remain available');
+    assert.equal(conversionResult.modalVisible,'flex','Quotation conversion dialog opens');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
