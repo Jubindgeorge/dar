@@ -160,11 +160,11 @@ window.renderFullLedgerTableBody = function() {
         const totalPaid = advance + logsTotal;
         const balance = Math.max(0, totalAmt - totalPaid);
         const profit = totalAmt - govtFee - expenseShare;
-        const clientLabel = doc.clientName || doc.companyName || '-';
+        const clientLabel = escapeHtml(doc.clientName || doc.companyName || '-');
 
         tbody.innerHTML += `
             <tr>
-                <td><strong>${doc.refCode}</strong></td>
+                <td><strong>${escapeHtml(doc.refCode || '')}</strong></td>
                 <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.transactionDate || doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
                 <td>${clientLabel}</td>
                 <td>AED ${govtFee.toFixed(2)}</td>
