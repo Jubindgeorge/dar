@@ -971,7 +971,11 @@ window.previewInvoiceDocument = async function(refCode) {
             const storedSubtotal = Number(doc.subtotalAmount ?? doc.subTotal);
             const subtotal = (Number.isFinite(storedSubtotal) ? storedSubtotal : itemSubtotal) + Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0);
             const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
-            const discountPercent = Math.max(0, Number(doc.discountPercent) || 0);
+            const storedDiscountAmount = Math.max(0, Number(doc.discountAmount ?? doc.discountAmt ?? 0) || 0);
+            const enteredDiscountPercent = Number(doc.discountPercent);
+            const discountPercent = Number.isFinite(enteredDiscountPercent) && enteredDiscountPercent > 0
+                ? enteredDiscountPercent
+                : subtotal > 0 ? (storedDiscountAmount / subtotal) * 100 : 0;
             const gold = '#b8860b';
             const summaryRow = (label, value, strong = false) => `<tr style="background:#fff;font-weight:${strong ? '800' : '600'};"><td colspan="3" style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${label}</td><td style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${value}</td></tr>`;
             return `
