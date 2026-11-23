@@ -37,6 +37,10 @@ assert.match(html, /ledger-date-from/, 'ledger date filters');
 assert.match(html, /id="p-terms-section"/, 'invoice printout retains the optional terms section');
 assert.match(html, /width:50%;max-width:50%/, 'terms section is limited to the left half of the page');
 assert.match(html, /p-notes-section[^>]*border:0/, 'notes section has no surrounding border');
+assert.match(html, /width:100%;border-collapse:collapse;border-spacing:0;font-size:10px/, 'invoice item table uses the totals summary font size');
+assert.match(styles, /#a4-wrapper-element::before\s*\{[\s\S]*?inset:\s*1px;[\s\S]*?border:\s*1px solid #b8860b;/, 'gold page frame is fixed 1px and inset 1px from every paper edge');
+assert.match(styles, /#a4-wrapper-element #p-content-container table,\s*#a4-wrapper-element #p-content-container table th,\s*#a4-wrapper-element #p-content-container table td\s*\{\s*font-size:\s*10px !important;/, 'all invoice table text uses the same 10px size');
+
 assert.match(html, /st-legacy-discount-amt/, 'legacy discount compatibility');
 assert.match(app, /exportDarFinancialReport/, 'period report export');
 assert.match(app, /duplicateInvoiceDraft/, 'duplicate invoice draft');
