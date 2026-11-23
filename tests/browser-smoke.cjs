@@ -68,7 +68,7 @@ const assert = require('node:assert/strict');
     assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
     assert.match(breakdownText,/Subtotal\\s+AED 5107\\.00/,'Invoice displays subtotal including processing charges');
     assert.match(breakdownText,/Adv\\. Amount\\s+AED 500\\.00/,'Invoice displays advance amount');
-    assert.match(breakdownText,/Dis\\. %\\s+0\\.00%/,'Invoice displays discount percentage');
+    assert.match(breakdownText,/Dis\\. %\\s+4\\.90%/,'Invoice displays discount percentage');
     assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\\s+AED 4857\\.00/,'Invoice displays grand total after the summary rows');
     assert.match(await page.locator('#p-table-body table').getAttribute('style'),/b8860b/,'Totals box uses matching gold borders');
     assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
