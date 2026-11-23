@@ -874,20 +874,17 @@ window.previewInvoiceDocument = async function(refCode) {
             const rate = parseFloat(item.p ?? item.price) || 0;
             const qty = parseFloat(item.q ?? item.quantity) || 1;
             const service = getWorkItemDescription(item) || 'Service Record';
-            const description = String(item.description || item.d || '').trim();
             return `
                 <tr style="background:#fff;">
                     <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${idx + 1}</td>
                     <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
-                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(description)}</td>
                     <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${qty}</td>
                     <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${rate.toFixed(2)}</td>
-                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${(rate * qty).toFixed(2)}</td>
                 </tr>
             `;
         }).join('') + `
             <tr style="font-weight:700;background:#eeeeee;">
-                <td colspan="5" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Grand Total</td>
+                <td colspan="3" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Total Amount</td>
                 <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">${docTotal.toFixed(2)}</td>
             </tr>
         `;
