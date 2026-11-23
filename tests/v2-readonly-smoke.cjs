@@ -59,8 +59,8 @@ assert.match(app, /window\.renderQuotationTable\s*=\s*function/, 'quotation regi
 assert.match(app, /root\.transaction\(/, 'quotation conversion updates balances atomically');
 assert.match(app, /invoicedStageIndexes/, 'stage invoices cannot duplicate already invoiced items');
 assert.match(app, /sourceQuotationRef/, 'progress invoices link back to the source quotation');
-assert.match(staff, /dar-edit-popup/, 'existing document editing opens as a popup');
-assert.match(staff, /Billed stages are locked/, 'stage-linked quotation rows are protected');
+assert.match(studio, /dar-edit-popup/, 'existing document editing opens as a popup');
+assert.match(studio, /Billed stages are locked/, 'stage-linked quotation rows are protected');
 assert.match(styles, /@media print/, 'invoice and quotation previews have an A4 print layout');
 assert.match(app, /Adv\. Amount/, 'PDF summary displays advance amount');
 assert.match(app, /Dis\. %/, 'PDF summary displays discount percentage');
