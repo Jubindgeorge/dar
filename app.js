@@ -830,13 +830,23 @@ window.previewInvoiceDocument = async function(refCode) {
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     
-    const compName = doc.clientName || doc.companyName || 'N/A';
-    if (clientName) clientName.innerText = compName;
-    if (companyNameEl) companyNameEl.innerText = doc.companyName || doc.clientName || '-';
-    if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
+    const companyValue = String(doc.companyName || '').trim();
+    const clientValue = String(doc.clientName || '').trim();
+    const isStaffDocument = (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff';
+    const isCompanyDocument = !isStaffDocument && companyValue && !/^direct clients?$/i.test(companyValue);
+    const primaryRecipient = isStaffDocument ? (clientValue || 'N/A') : isCompanyDocument ? companyValue : (clientValue || 'N/A');
+    const secondaryLabel = isStaffDocument ? 'Company:' : 'Contact Person:';
+    const secondaryValue = isStaffDocument ? companyValue : (isCompanyDocument ? String(doc.contactPerson || '').trim() : '');
+    if (clientName) clientName.innerText = primaryRecipient;
+    const companyLine = document.getElementById('p-company-line');
+    const companyLabel = document.getElementById('p-company-label');
+    if (companyNameEl) companyNameEl.innerText = secondaryValue;
+    if (companyLabel) companyLabel.innerText = secondaryLabel;
+    if (companyLine) companyLine.style.display = secondaryValue ? '' : 'none';
+    if (createdDate) createdDate.innerText = `Date: ${doc.transactionDate || doc.createdDate || '-'}`;
 
     let arName = '';
-    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
+    const matchedClient = (state.clients || []).find(c => c.companyName === primaryRecipient || c.companyName === doc.companyName || c.companyName === doc.clientName);
     if (matchedClient) {
         arName = matchedClient.nameAr || '';
     }
@@ -850,36 +860,43 @@ window.previewInvoiceDocument = async function(refCode) {
 
     const tbody = document.getElementById('p-table-body');
     if (tbody) {
-        const items = doc.items || [];
-        
+        const items = Array.isArray(doc.items) ? doc.items : [];
         let docTotal = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
         if (docTotal === 0 && items.length > 0) {
             docTotal = items.reduce((sum, item) => {
-                const p = parseFloat(item.p || item.price) || 0;
-                const q = parseFloat(item.q || item.quantity) || 1;
+                const p = parseFloat(item.p ?? item.price) || 0;
+                const q = parseFloat(item.q ?? item.quantity) || 1;
                 return sum + (p * q);
             }, 0);
         }
-
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
         tbody.innerHTML = normalizedItems.map((item, idx) => {
-            const p = parseFloat(item.p ?? item.price) || 0;
-            const q = parseFloat(item.q ?? item.quantity) || 1;
+            const rate = parseFloat(item.p ?? item.price) || 0;
+            const qty = parseFloat(item.q ?? item.quantity) || 1;
+            const service = getWorkItemDescription(item) || 'Service Record';
+            const description = String(item.description || item.d || '').trim();
             return `
-                <tr>
-                    <td style="text-align: center;">${idx + 1}</td>
-                    <td style="white-space: pre-wrap; overflow-wrap: anywhere;">${escapeHtml(getWorkItemDescription(item) || 'Service Record')}</td>
-                    <td style="text-align: center;">${q}</td>
-                    <td style="text-align: right;">${(p * q).toFixed(2)}</td>
+                <tr style="background:#fff;">
+                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${idx + 1}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(description)}</td>
+                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${qty}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${rate.toFixed(2)}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${(rate * qty).toFixed(2)}</td>
                 </tr>
             `;
         }).join('') + `
-            <tr style="font-weight: bold; background: #f8fafc;">
-                <td colspan="3" style="text-align: right;">Total Amount / المبلغ الإجمالي</td>
-                <td style="text-align: right; color: #b58f46;">AED ${docTotal.toFixed(2)}</td>
+            <tr style="font-weight:700;background:#eeeeee;">
+                <td colspan="5" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Grand Total</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">${docTotal.toFixed(2)}</td>
             </tr>
         `;
     }
+    const notesSection = document.getElementById('p-notes-section');
+    const notesText = document.getElementById('p-notes');
+    const documentNotes = String(doc.notes || '').trim();
+    if (notesText) notesText.textContent = documentNotes;
+    if (notesSection) notesSection.style.display = documentNotes ? 'block' : 'none';
 
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
