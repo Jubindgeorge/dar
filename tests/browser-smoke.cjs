@@ -151,6 +151,14 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#p-client-name').innerText(),'Direct Customer','Direct invoice displays client name');
     assert.equal(await page.locator('#p-company-line').isVisible(),false,'Direct invoice hides company line');
     assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Do Not Show/,'Direct invoice hides contact person');
+    assert.equal(await page.evaluate(() => getAutomaticWorkBranch(state.documents.find(d=>d.refCode==='CI-DIRECT-001'))),'unassigned','Direct clients are not classified as company staff');
+    await page.evaluate(async () => {
+      state.documents.push({refCode:'CI-COMPANY-001',type:'Invoice',clientName:'Sample Company',companyName:'Sample Company',contactPerson:'Hidden Company Contact',branchTag:'company',totalAmount:50,items:[{serviceName:'Company work',p:50,q:1}]});
+      await window.previewInvoiceDocument('CI-COMPANY-001');
+    });
+    assert.equal(await page.locator('#p-client-name').innerText(),'Sample Company','Company invoice displays company name only');
+    assert.equal(await page.locator('#p-company-line').isVisible(),false,'Company invoice does not show contact person line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Hidden Company Contact/,'Company invoice hides contact person');
     await page.evaluate(() => {
       openStudio('Invoice','CI-STAFF-001');
     });
@@ -206,6 +214,23 @@ const assert = require('node:assert/strict');
     assert.equal(conversionResult.stageADisabled,true,'A stage cannot be invoiced twice');
     assert.equal(conversionResult.stageBDisabled,false,'Unbilled stages remain available');
     assert.equal(conversionResult.modalVisible,'flex','Quotation conversion dialog opens');
+    const linkedEditResult = await page.evaluate(() => {
+      const oldRef=db.ref; const oldModal=window.showCustomModal;
+      db.ref=path=>({transaction:(updater,callback)=>{const current=Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc]));const next=updater(current);callback(null,!!next,{val:()=>next});}});
+      window.showCustomModal=()=>{};
+      try {
+        const stageInvoice=state.documents.find(d=>d.billingMode==='stage' && d.sourceQuotationRef==='QTN-TEST-001');
+        openStudio('Invoice',stageInvoice.refCode);
+        document.querySelector('#st-spreadsheet-body .st-item-price').value='90';
+        commitDocumentToMemory();
+        return {
+          quoteInvoiced:state.documents.find(d=>d.refCode==='QTN-TEST-001').invoicedAmount,
+          invoiceTotal:state.documents.find(d=>d.refCode===stageInvoice.refCode).totalAmount
+        };
+      } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
+    });
+    assert.equal(linkedEditResult.invoiceTotal,90,'Editing a converted invoice updates its existing record');
+    assert.equal(linkedEditResult.quoteInvoiced,165,'Editing a converted invoice adjusts the source quotation balance');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
