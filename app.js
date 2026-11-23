@@ -814,6 +814,80 @@ function executeBatchDelete() {
     });
 }
 
+window.duplicateInvoiceDraft = function(refCode) {
+    const source = (state.documents || []).find(doc => doc.refCode === refCode);
+    if (!source || typeof openStudio !== 'function') return;
+    openStudio(source.type || 'Invoice');
+    state.activeEditingId = null;
+    state.selectedCompanyClientId = source.companyClientId || '';
+    const setValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.value = value == null ? '' : String(value);
+    };
+    setValue('st-ref-code', '');
+    setValue('st-created-date', localISODate());
+    setValue('st-client-name', source.clientName || '');
+    setValue('st-company-name', source.companyName || '');
+    setValue('st-contact-person', source.contactPerson || '');
+    setValue('st-notes', source.notes || '');
+    setValue('st-expiry-date', source.visaExpiryDate || '');
+    setValue('st-govt-amt', source.govtAmt ?? source.govtFee ?? 0);
+    setValue('st-processing-charges', source.processingCharges ?? source.processingCharge ?? 0);
+    setValue('st-discount-amt', source.discountPercent ?? 0);
+    setValue('st-legacy-discount-amt', source.discountPercent == null ? (source.discountAmount ?? source.discountAmt ?? 0) : (source.legacyDiscountAmount || 0));
+    setValue('st-advance-amt', 0);
+    setValue('st-branch-tag', source.branchTag === 'staff' ? 'staff' : 'company');
+    setValue('st-client-selector', source.companyName || source.clientName || '');
+    setValue('st-service-injector', '');
+    const tbody = document.getElementById('st-spreadsheet-body');
+    if (tbody) {
+        const items = Array.isArray(source.items) && source.items.length ? source.items : [{
+            packageName: source.packageName || source.serviceName || source.title || 'Service Record',
+            q: 1,
+            p: Number(source.totalAmount ?? source.totalAmt ?? source.total ?? source.amount) || 0
+        }];
+        tbody.innerHTML = items.map((item, index) => `
+            <tr>
+                <td style="text-align:center;">${index + 1}</td>
+                <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Work title"></td>
+                <td><input type="text" class="st-item-description" value="${escapeHtml(item.description || '')}" placeholder="Description"></td>
+                <td style="text-align:center;"><input type="number" class="st-item-qty" min="0" step="any" value="${Number(item.q ?? item.quantity ?? 1)}" oninput="recalculateStudioTotals()"></td>
+                <td style="text-align:right;"><input type="number" class="st-item-price" min="0" step="0.01" value="${Number(item.p ?? item.price ?? 0)}" oninput="recalculateStudioTotals()"></td>
+                <td style="text-align:center;"><button type="button" onclick="this.closest('tr').remove();recalculateStudioTotals();" class="btn btn-danger">×</button></td>
+            </tr>`).join('');
+    }
+    if (typeof populateCompanyClients === 'function') populateCompanyClients();
+    if (typeof recalculateStudioTotals === 'function') recalculateStudioTotals();
+    const title = document.getElementById('studio-mode-title');
+    if (title) title.innerText = 'Create New Draft from ' + (source.refCode || 'Document');
+};
+
+window.viewDocumentHistory = function(refCode) {
+    const doc = (state.documents || []).find(item => item.refCode === refCode);
+    if (!doc) return;
+    const lines = [
+        'Reference: ' + (doc.refCode || '-'),
+        'Created: ' + (doc.createdDate || doc.createdAt || 'Not recorded'),
+        'Last updated: ' + (doc.updatedAt || 'Not recorded'),
+        'Updated by: ' + (doc.updatedBy || 'Not recorded'),
+        'Initial advance: AED ' + (Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0).toFixed(2)
+    ];
+    const payments = Array.isArray(doc.paymentLogs) ? doc.paymentLogs.slice() : [];
+    payments.sort((a, b) => String(a.date || a.transactionDate || a.createdAt || '').localeCompare(String(b.date || b.transactionDate || b.createdAt || '')));
+    if (payments.length) {
+        lines.push('', 'Additional payments:');
+        payments.forEach((payment, index) => {
+            lines.push((index + 1) + '. ' + (payment.date || payment.transactionDate || payment.createdAt || 'Date not recorded') +
+                ' — AED ' + (Number(payment.amount) || 0).toFixed(2) +
+                (payment.note ? ' — ' + payment.note : '') +
+                (payment.createdBy ? ' — ' + payment.createdBy : ''));
+        });
+    } else {
+        lines.push('', 'No additional payment entries recorded.');
+    }
+    showCustomModal('Document History', lines.join('\n'));
+};
+
 window.previewInvoiceDocument = async function(refCode) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
