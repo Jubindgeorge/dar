@@ -72,7 +72,7 @@ const assert = require('node:assert/strict');
     assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'Invoice displays grand total after the summary rows');
     assert.match(await page.locator('#p-table-body table').getAttribute('style'),/b8860b/,'Totals box uses matching gold borders');
     assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
-    assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container > table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
     await page.evaluate(() => {
       state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
     });
