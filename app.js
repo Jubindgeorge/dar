@@ -1321,7 +1321,7 @@ window.openQuotationConversion = function(refCode) {
         const title = getWorkItemDescription(item) || ('Stage ' + (index+1));
         const amount = (Number(item.p ?? item.price ?? 0) || 0) * (Number(item.q ?? item.quantity ?? 1) || 1);
         const billed = alreadyBilledStages.has(index);
-        return `<label class="qc-stage-row"><input type="checkbox" value="${index}" ${billed ? 'disabled' : 'checked'}> <span>${darEscapeHTML(title)}${billed ? ' — already invoiced' : ''}</span><strong>AED ${amount.toFixed(2)}</strong></label>`;
+        return `<label class="qc-stage-row"><input type="checkbox" value="${index}" ${billed ? 'disabled' : ''}> <span>${darEscapeHTML(title)}${billed ? ' — already invoiced' : ''}</span><strong>AED ${amount.toFixed(2)}</strong></label>`;
     }).join('') || '<p class="dar-hint">This quotation has no itemised rows. Use amount or percentage billing.</p>';
     const updateMode = () => {
         const stage = document.getElementById('qc-mode').value === 'stage';
@@ -1364,9 +1364,11 @@ window.submitQuotationConversion = function() {
     } else {
         const percent = Number(document.getElementById('qc-percent').value);
         const rawAmount = Number(document.getElementById('qc-amount').value);
-        if (Number.isFinite(percent) && percent > 0 && percent <= 100 && document.getElementById('qc-use-percent').checked) amount = quoteTotal * percent / 100;
-        else amount = rawAmount;
-        if (!Number.isFinite(amount) || amount <= 0) { showCustomModal('Invalid invoice amount','Enter a positive invoice amount or a percentage from 0 to 100.'); return; }
+        if (document.getElementById('qc-use-percent').checked) {
+            if (!Number.isFinite(percent) || percent <= 0 || percent > 100) { showCustomModal('Invalid percentage','Enter a percentage greater than 0 and no more than 100.'); return; }
+            amount = quoteTotal * percent / 100;
+        } else amount = rawAmount;
+        if (!Number.isFinite(amount) || amount <= 0) { showCustomModal('Invalid invoice amount','Enter a positive invoice amount or select a valid percentage from 0 to 100.'); return; }
         description = 'Progress invoice against ' + quoteRef;
         items = [{packageName:description,serviceName:description,title:description,q:1,p:amount}];
         invoiceSubtotal = amount;
