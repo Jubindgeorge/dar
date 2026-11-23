@@ -979,7 +979,7 @@ window.previewInvoiceDocument = async function(refCode) {
             const gold = '#b8860b';
             const summaryRow = (label, value, strong = false) => `<tr style="background:#fff;font-weight:${strong ? '800' : '600'};"><td colspan="3" style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${label}</td><td style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${value}</td></tr>`;
             return `
-                <tr><td colspan="4" style="padding:0;border:0;"><table style="width:48%;margin:12px 0 0 auto;border-collapse:collapse;font-size:11.5px;color:#222;border:1px solid ${gold};">
+                <tr class="dar-summary-host-row"><td colspan="4" style="padding:0;border:0 !important;background:transparent;"><table class="dar-totals-summary" style="width:43%;margin:6px 0 0 auto;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};">
                     ${summaryRow('Subtotal', 'AED ' + subtotal.toFixed(2))}
                     ${summaryRow('Adv. Amount', 'AED ' + advance.toFixed(2))}
                     ${summaryRow('Dis. %', discountPercent.toFixed(2) + '%')}
@@ -992,11 +992,26 @@ window.previewInvoiceDocument = async function(refCode) {
     const documentNotes = String(doc.notes || '').trim();
     if (notesText) notesText.textContent = documentNotes;
     if (notesSection) notesSection.style.display = documentNotes ? 'block' : 'none';
+    window.applyDarDocumentPrintFit?.();
 
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
 };
 
+/* Fit short documents to one A4 page for both browser print and PDF export. */
+window.applyDarDocumentPrintFit = function() {
+  const page = document.getElementById('a4-wrapper-element');
+  if (!page) return 1;
+  const rows = page.querySelectorAll('#p-table-body > tr:not(.dar-summary-host-row)').length;
+  const single = rows <= 16;
+  page.classList.toggle('dar-single-page-fit', single);
+  if (!single) { page.style.zoom='1'; page.style.width='800px'; page.style.maxWidth='800px'; page.style.setProperty('--dar-print-zoom','1'); return 1; }
+  page.style.zoom='1'; page.style.width='800px'; page.style.maxWidth='800px';
+  const height = Math.max(page.scrollHeight, page.getBoundingClientRect().height);
+  const zoom = Math.min(1, 1080 / Math.max(1,height));
+  page.style.zoom=String(zoom); page.style.width=(800/zoom)+'px'; page.style.maxWidth=(800/zoom)+'px';
+  page.style.setProperty('--dar-print-zoom',String(zoom)); return zoom;
+};
 // Export the existing invoice design as one correctly fitted A4 page.
 // Capture the original desktop-width invoice, not the scaled mobile preview.
 window.saveAsPDF = async function() {
@@ -1017,8 +1032,10 @@ window.saveAsPDF = async function() {
                 const copy = clonedDocument.getElementById(element.id);
                 if (copy) {
                     copy.style.transform = 'none';
-                    copy.style.width = '800px';
-                    copy.style.maxWidth = '800px';
+                    const zoom = window.applyDarDocumentPrintFit?.() || 1;
+                    copy.style.zoom = String(zoom);
+                    copy.style.width = (800 / zoom) + 'px';
+                    copy.style.maxWidth = (800 / zoom) + 'px';
                     copy.style.margin = '0';
                 }
             }
