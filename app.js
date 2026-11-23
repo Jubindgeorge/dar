@@ -935,14 +935,19 @@ window.previewInvoiceDocument = async function(refCode) {
     const tbody = document.getElementById('p-table-body');
     if (tbody) {
         const items = Array.isArray(doc.items) ? doc.items : [];
-        let docTotal = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
-        if (docTotal === 0 && items.length > 0) {
+        const storedTotalValue = [doc.totalAmount, doc.totalAmt, doc.total, doc.amount, doc.grandTotal]
+            .find(value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)));
+        let docTotal = storedTotalValue === undefined
+            ? NaN
+            : Number(storedTotalValue);
+        if (!Number.isFinite(docTotal)) {
             docTotal = items.reduce((sum, item) => {
-                const p = parseFloat(item.p ?? item.price) || 0;
-                const q = parseFloat(item.q ?? item.quantity) || 1;
-                return sum + (p * q);
+                const p = Number(item.p ?? item.price ?? 0);
+                const q = Number(item.q ?? item.quantity ?? 1);
+                return sum + (Number.isFinite(p) && Number.isFinite(q) ? p * q : 0);
             }, 0);
         }
+        docTotal = Math.max(0, docTotal);
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
         tbody.innerHTML = normalizedItems.map((item, idx) => {
             const rate = parseFloat(item.p ?? item.price) || 0;
@@ -958,8 +963,8 @@ window.previewInvoiceDocument = async function(refCode) {
             `;
         }).join('') + `
             <tr style="font-weight:700;background:#eeeeee;">
-                <td colspan="3" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Total Amount</td>
-                <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">${docTotal.toFixed(2)}</td>
+                <td colspan="3" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Total Amount / المبلغ الإجمالي</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">AED ${docTotal.toFixed(2)}</td>
             </tr>
         `;
     }
