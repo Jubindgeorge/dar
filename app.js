@@ -1378,6 +1378,11 @@ window.submitQuotationConversion = function() {
         invoiceSubtotal = amount;
     }
     amount = Math.round(amount * 100) / 100;
+    if (![amount, invoiceSubtotal, invoiceProcessing, invoiceDiscount].every(Number.isFinite) ||
+        [amount, invoiceSubtotal, invoiceProcessing, invoiceDiscount].some(value => value < 0)) {
+        showCustomModal('Invalid quotation values','The quotation contains an invalid service or amount. Review the quotation before converting it.');
+        return;
+    }
     if (amount <= 0 || amount > remaining + 0.005) { showCustomModal('Amount exceeds remaining','This invoice must be positive and cannot exceed the quotation balance of AED ' + remaining.toFixed(2) + '.'); return; }
     const createdDate = localISODate();
     const currentUser = window.firebase?.auth?.().currentUser;
