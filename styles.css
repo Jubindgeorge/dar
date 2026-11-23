@@ -582,15 +582,19 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 }
 
 @media print {
-    @page { size:A4 portrait; margin:5mm; }
+    @page { size:A4 portrait; margin:0; }
     html, body { width:100% !important; height:auto !important; margin:0 !important; padding:0 !important; background:#fff !important; overflow:visible !important; }
     body * { visibility:hidden !important; }
     #document-preview-modal, #document-preview-modal * { visibility:visible !important; }
     #document-preview-modal { position:static !important; display:block !important; inset:auto !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; background:#fff !important; overflow:visible !important; }
     #document-preview-modal .preview-modal-toolbar { display:none !important; }
     #document-preview-modal .preview-modal-body-canvas { position:static !important; display:block !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; overflow:visible !important; background:#fff !important; }
-    #a4-wrapper-element { width:190mm !important; max-width:190mm !important; min-width:0 !important; margin:0 auto !important; padding:6mm 7mm !important; border:3px double #b8860b !important; box-shadow:none !important; transform:none !important; page-break-inside:avoid; }
-    #a4-wrapper-element table { page-break-inside:avoid; }
+    /* Fixed paper-edge frame: repeated by the print engine on every A4 sheet. */
+    #document-preview-modal::after { content:"" !important; display:block !important; position:fixed !important; inset:1mm !important; border:1px solid #b8860b !important; box-sizing:border-box !important; pointer-events:none !important; z-index:2147483000 !important; }
+    #a4-wrapper-element { width:190mm !important; max-width:190mm !important; min-width:0 !important; margin:5mm auto !important; padding:6mm 7mm !important; height:auto !important; min-height:0 !important; border:0 !important; box-shadow:none !important; transform:none !important; page-break-inside:auto !important; }
+    #a4-wrapper-element::before { display:none !important; }
+    #a4-wrapper-element table { page-break-inside:auto !important; }
+    #a4-wrapper-element tr { page-break-inside:avoid !important; }
     #a4-wrapper-element img { max-width:100% !important; }
 }
 
@@ -619,6 +623,9 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 #a4-wrapper-element {
   border: 0 !important;
   position: relative !important;
+  height: 1122px;
+  min-height: 1122px;
+  box-sizing: border-box !important;
 }
 #a4-wrapper-element::before {
   content: "";
