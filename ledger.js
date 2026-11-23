@@ -127,7 +127,17 @@ window.renderFullLedgerTableBody = function() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const docs = state.documents || [];
+    const allDocs = state.documents || [];
+    const ledgerFrom = document.getElementById('ledger-date-from')?.value || '';
+    const ledgerTo = document.getElementById('ledger-date-to')?.value || '';
+    const ledgerSearch = (document.getElementById('ledger-search')?.value || '').trim().toLowerCase();
+    const financialDocs = allDocs.filter(doc => (doc.type || 'Invoice') !== 'Quotation');
+    const docs = financialDocs.filter(doc => {
+        const date = String(doc.transactionDate || doc.createdDate || doc.date || '').slice(0,10);
+        const matchesDate = (!ledgerFrom || (date && date >= ledgerFrom)) && (!ledgerTo || (date && date <= ledgerTo));
+        const matchesSearch = [doc.refCode, doc.clientName, doc.companyName, doc.packageName, doc.serviceName, doc.title].some(value => String(value || '').toLowerCase().includes(ledgerSearch));
+        return matchesDate && matchesSearch;
+    });
     const monthlyExpenses = state.monthlyExpenses || [];
 
     if (docs.length === 0) {
@@ -140,7 +150,7 @@ window.renderFullLedgerTableBody = function() {
         const docMonth = invoiceDate ? invoiceDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
         const matchingExpenses = monthlyExpenses.filter(e => e.month === docMonth);
         const totalMonthExp = matchingExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-        const totalInvoicesInMonth = docs.filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
+        const totalInvoicesInMonth = financialDocs.filter(d => (d.transactionDate || d.createdDate || d.date || '').startsWith(docMonth)).length || 1;
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
@@ -150,11 +160,11 @@ window.renderFullLedgerTableBody = function() {
         const totalPaid = advance + logsTotal;
         const balance = Math.max(0, totalAmt - totalPaid);
         const profit = totalAmt - govtFee - expenseShare;
-        const clientLabel = doc.clientName || doc.companyName || '-';
+        const clientLabel = escapeHtml(doc.clientName || doc.companyName || '-');
 
         tbody.innerHTML += `
             <tr>
-                <td><strong>${doc.refCode}</strong></td>
+                <td><strong>${escapeHtml(doc.refCode || '')}</strong></td>
                 <td>${window.darFormatTableDate ? window.darFormatTableDate(doc.transactionDate || doc.createdDate || doc.date) : (doc.createdDate || doc.date || '-')}</td>
                 <td>${clientLabel}</td>
                 <td>AED ${govtFee.toFixed(2)}</td>
@@ -323,19 +333,28 @@ window.renderMonthlyExpensesTable = function() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const expenses = (state.monthlyExpenses || []).slice().sort((a,b) => String(b.date || b.month || '').localeCompare(String(a.date || a.month || '')));
+    const expenseFrom = document.getElementById('expense-date-from')?.value || '';
+    const expenseTo = document.getElementById('expense-date-to')?.value || '';
+    const expenseSearch = (document.getElementById('expense-search')?.value || '').trim().toLowerCase();
+    const expenses = (state.monthlyExpenses || []).filter(e => {
+        const date = String(e.transactionDate || e.date || ((e.month || '') + '-01')).slice(0,10);
+        const matchesDate = (!expenseFrom || (date && date >= expenseFrom)) && (!expenseTo || (date && date <= expenseTo));
+        const matchesSearch = [e.title, e.month, e.date, e.amount].some(value => String(value ?? '').toLowerCase().includes(expenseSearch));
+        return matchesDate && matchesSearch;
+    }).slice().sort((a,b) => String(b.date || b.month || '').localeCompare(String(a.date || a.month || '')));
     if (expenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No monthly operating expenses added.</td></tr>`;
         return;
     }
 
-    expenses.forEach((exp, index) => {
+    expenses.forEach(exp => {
+        const originalIndex = (state.monthlyExpenses || []).indexOf(exp);
         tbody.innerHTML += `
             <tr>
                 <td>${exp.date && window.darFormatTableDate ? window.darFormatTableDate(exp.date) : escapeHtml(exp.month)}</td>
                 <td>${escapeHtml(exp.title)}</td>
                 <td style="color: var(--accent-green);">AED ${Number(exp.amount).toFixed(2)}</td>
-                <td style="text-align: center;"><button onclick="deleteMonthlyExpense(${index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
+                <td style="text-align: center;"><button onclick="deleteMonthlyExpense(${originalIndex})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
             </tr>
         `;
     });
