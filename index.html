@@ -98,7 +98,8 @@
                 <li class="sidebar-subitem" data-group="operations" onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
                 <li class="sidebar-subitem" data-group="operations" onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="sales" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('sales')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('sales')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>SALES</span></li>
-                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Invoices & Quotations</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('quotations')" data-target="quotations"><i class="fa-solid fa-file-signature"></i><span>Quotations</span></li>
                 <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
                 <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="purchase" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('purchase')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('purchase')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>PURCHASE</span></li>
@@ -383,8 +384,8 @@
                 <section id="tab-documents" class="view-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                         <div>
-                            <h2 style="color: var(--primary); font-size: 1.4rem;">Financial Ledger & Records</h2>
-                            <p style="font-size: 0.85rem; color: var(--text-muted);">Track client invoices, statements, and expiry schedules.</p>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Invoices</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Manage issued invoices, payment records, and invoice statements.</p>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button id="btn-batch-delete" disabled onclick="deleteSelectedDocuments()" class="btn btn-danger">Delete Selected</button>
@@ -427,6 +428,30 @@
                                     </tr>
                                 </thead>
                                 <tbody id="doc-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- Separate quotations workspace -->
+                <section id="tab-quotations" class="view-panel">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:18px;">
+                        <div><h2 style="color:var(--primary);font-size:1.4rem;">Quotations</h2><p style="font-size:.85rem;color:var(--text-muted);">Prepare, edit, print and convert quotations into one or more progress invoices.</p></div>
+                        <button type="button" class="btn btn-primary" onclick="openStudio('Quotation')">+ Create Quotation</button>
+                    </div>
+                    <div class="studio-editor" style="margin-bottom:16px;">
+                        <div class="v2-filter-toolbar">
+                            <input id="quotation-search" type="search" placeholder="Search quotation, client or company" aria-label="Search quotations">
+                            <label class="v2-filter-date">From <input id="quotation-date-from" type="date" onchange="renderQuotationTable()"></label>
+                            <label class="v2-filter-date">To <input id="quotation-date-to" type="date" onchange="renderQuotationTable()"></label>
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('quotation-search').value='';document.getElementById('quotation-date-from').value='';document.getElementById('quotation-date-to').value='';renderQuotationTable()">Clear</button>
+                            <strong style="margin-left:auto;">Total: <span id="quotation-total-amount">AED 0.00</span></strong>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Quotation Ref</th><th>Date</th><th>Client</th><th>Company</th><th>Quotation Total</th><th>Invoiced / Remaining</th><th style="text-align:center;">Actions</th></tr></thead>
+                                <tbody id="quotation-table-body"><tr><td colspan="7">Loading quotations…</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -829,6 +854,25 @@
         </div>
     </div>
 
+
+    <!-- Quotation-to-invoice progress billing modal -->
+    <div id="quotation-conversion-modal" class="dar-conversion-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="qc-title">
+        <div class="dar-conversion-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><h3 id="qc-title">Convert Quotation to Invoice</h3><button type="button" class="btn btn-secondary" onclick="closeQuotationConversion()">Close</button></div>
+            <p class="dar-hint">Quotation: <strong id="qc-ref"></strong> · Remaining to invoice: <strong id="qc-remaining"></strong></p>
+            <input type="hidden" id="qc-source-ref">
+            <label for="qc-mode">Billing method</label>
+            <select id="qc-mode"><option value="amount">Amount / percentage based</option><option value="stage">Completed service stages</option></select>
+            <div id="qc-amount-fields" class="qc-field-group">
+                <label for="qc-amount">Invoice amount (AED)</label><input id="qc-amount" type="number" min="0.01" step="0.01">
+                <label style="display:flex;align-items:center;gap:8px;margin-top:8px;"><input id="qc-use-percent" type="checkbox"> Calculate by quotation percentage</label>
+                <input id="qc-percent" type="number" min="0.01" max="100" step="0.01" value="100" aria-label="Quotation percentage">
+            </div>
+            <div id="qc-stage-fields" class="qc-field-group" hidden><label>Completed items to invoice</label><div id="qc-stage-items"></div><small class="dar-hint">Selected item values are added to this invoice. The system checks the remaining quotation balance before saving.</small></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;"><button type="button" class="btn btn-secondary" onclick="closeQuotationConversion()">Cancel</button><button type="button" class="btn btn-primary" onclick="submitQuotationConversion()">Create Invoice</button></div>
+        </div>
+    </div>
+
     <!-- Document Print / PDF Preview Modal -->
     <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
         <div class="preview-modal-toolbar">
@@ -899,13 +943,13 @@
                     </div>
 
                     <!-- Styled Data Table -->
-                    <table style="width:100%;border-collapse:collapse;border-spacing:0;font-size:12px;position:relative;z-index:1;color:#222;">
+                    <table style="width:100%;border-collapse:collapse;border-spacing:0;font-size:12px;position:relative;z-index:1;color:#222;border:1px solid #b8860b;">
                         <thead>
                             <tr style="background:#eeeeee;color:#111;">
-                                <th style="padding:7px 6px;border-bottom:1px solid #d2d2d2;width:7%;text-align:center;font-weight:600;">#</th>
-                                <th style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:left;font-weight:600;">Service</th>
-                                <th style="padding:7px 6px;border-bottom:1px solid #d2d2d2;width:12%;text-align:center;font-weight:600;">Qty</th>
-                                <th style="padding:7px 8px;border-bottom:1px solid #d2d2d2;width:23%;text-align:right;font-weight:600;">Rate (AED)</th>
+                                <th style="padding:7px 6px;border-bottom:1px solid #b8860b;width:7%;text-align:center;font-weight:600;">#</th>
+                                <th style="padding:7px 8px;border-bottom:1px solid #b8860b;text-align:left;font-weight:600;">Service</th>
+                                <th style="padding:7px 6px;border-bottom:1px solid #b8860b;width:12%;text-align:center;font-weight:600;">Qty</th>
+                                <th style="padding:7px 8px;border-bottom:1px solid #b8860b;width:23%;text-align:right;font-weight:600;">Rate (AED)</th>
                             </tr>
                         </thead>
                         <tbody id="p-table-body">
