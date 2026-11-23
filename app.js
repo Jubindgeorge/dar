@@ -1408,7 +1408,8 @@ window.submitQuotationConversion = function() {
             processingCharges:invoiceProcessing, processingCharge:invoiceProcessing,
             discountAmount:invoiceDiscount, discountAmt:invoiceDiscount, discountPercent:invoiceDiscountPercent, legacyDiscountAmount:0,
             advanceAmt:0, advanceAmount:0, totalAmount:amount, totalAmt:amount, total:amount, amount,
-            paymentLogs:[], invoicedAmount:0, conversionCreatedAt:new Date().toISOString(),
+            paymentLogs:[], invoicedAmount:0, invoicedStageIndexes:[], conversionHistory:[],
+            conversionCreatedAt:new Date().toISOString(),
             conversionCreatedBy:currentUser?.email || currentUser?.uid || 'Unknown'
         };
         docs[invoiceRef] = invoice;
