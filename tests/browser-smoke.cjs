@@ -163,7 +163,7 @@ const assert = require('node:assert/strict');
       try { commitDocumentToMemory(); return calls; } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
     });
     assert.equal(editResult.find(x=>x.path)?.path,'documents/CI-STAFF-001','Editing updates the same invoice Firebase key');
-    assert.equal(state.documents.filter(d=>d.refCode==='CI-STAFF-001').length,1,'Editing does not create a second invoice');
+    assert.equal(await page.evaluate(() => state.documents.filter(d=>d.refCode==='CI-STAFF-001').length),1,'Editing does not create a second invoice');
     assert.equal(await page.locator('#tab-studio').evaluate(el=>el.classList.contains('dar-edit-popup')),false,'Popup closes after successful edit');
     await page.evaluate(() => openQuotationConversion('QTN-TEST-001'));
     assert.equal(await page.locator('#quotation-conversion-modal').evaluate(el=>el.style.display),'flex','Quotation conversion dialog opens');
