@@ -51,6 +51,8 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-TEST-001'));
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
+    assert.deepEqual(await page.locator('#p-table-body tr:first-child td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container thead th').count(),4,'Invoice print header has exactly four columns');
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
     assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
     await page.evaluate(() => {
@@ -63,11 +65,26 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    assert.match(breakdownText,/Sub Total \/ المجموع الفرعي\s+AED 4907\.00/);
-    assert.match(breakdownText,/Advance Amount \/ الدفعة المقدمة\s+AED 500\.00/);
-    assert.match(breakdownText,/Processing Charges \/ رسوم المعالجة\s+AED 200\.00/);
-    assert.match(breakdownText,/Discounts % \/ الخصم\s+AED 250\.00/);
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4357\.00/);
+    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
+    assert.doesNotMatch(breakdownText,/Sub Total|Advance Payment|Processing Charges|Discounts/,'October invoice hides newer breakdown rows');
+    assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    await page.evaluate(() => {
+      state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
+    });
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-ZERO-001'));
+    assert.match(await page.locator('#p-table-body').innerText(),/AED 0\.00/,'A deliberately zero-total invoice must not be recalculated from its line items');
+    await page.evaluate(() => {
+      state.documents.push({refCode:'CI-DUP-001',type:'Invoice',clientName:'Test Staff',companyName:'Test Company',contactPerson:'Not copied for staff',notes:'Duplicate note',advanceAmount:75,paymentLogs:[{date:'2026-11-20',amount:25,note:'Balance'}],items:[{serviceName:'Visa renewal',description:'Renewal service',p:100,q:2}],totalAmount:200});
+      window.duplicateInvoiceDraft('CI-DUP-001');
+    });
+    assert.equal(await page.locator('#st-ref-code').inputValue(),'','Duplicated document receives a new reference');
+    assert.equal(await page.locator('#st-advance-amt').inputValue(),'0','Duplicated document does not copy previous payments');
+    assert.equal(await page.locator('#st-client-name').inputValue(),'Test Staff','Duplicate retains client');
+    assert.equal(await page.locator('#st-spreadsheet-body tr').count(),1,'Duplicate retains line items');
+    await page.evaluate(() => window.viewDocumentHistory('CI-DUP-001'));
+    assert.match(await page.locator('#modal-message').innerText(),/AED 25\.00/,'History view includes recorded payments');
+
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;

@@ -46,6 +46,8 @@ function openStudio(type, editRefCode = null) {
 
             const contactInput = document.getElementById('st-contact-person');
             if (contactInput) contactInput.value = doc.contactPerson || '';
+            const notesInput = document.getElementById('st-notes');
+            if (notesInput) notesInput.value = doc.notes || '';
 
             const govtInput = document.getElementById('st-govt-amt');
             if (govtInput) govtInput.value = doc.govtAmt ?? doc.govtFee ?? 0;
@@ -56,7 +58,9 @@ function openStudio(type, editRefCode = null) {
             const processingInput = document.getElementById('st-processing-charges');
             if (processingInput) processingInput.value = doc.processingCharges ?? doc.processingCharge ?? 0;
             const discountInput = document.getElementById('st-discount-amt');
-            if (discountInput) discountInput.value = doc.discountAmount ?? doc.discountAmt ?? 0;
+            if (discountInput) discountInput.value = doc.discountPercent ?? 0;
+            const legacyDiscountInput = document.getElementById('st-legacy-discount-amt');
+            if (legacyDiscountInput) legacyDiscountInput.value = doc.discountPercent == null ? (doc.discountAmount ?? doc.discountAmt ?? 0) : (doc.legacyDiscountAmount || 0);
             const advanceInput = document.getElementById('st-advance-amt');
             if (advanceInput) advanceInput.value = doc.advanceAmt ?? doc.advanceAmount ?? doc.advance ?? 0;
 
@@ -71,7 +75,8 @@ function openStudio(type, editRefCode = null) {
                 tbody.innerHTML = editItems.map((item, idx) => `
                     <tr>
                         <td style="text-align: center;">${idx + 1}</td>
-                        <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Package name"></td>
+                        <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Work title"></td>
+                        <td><input type="text" class="st-item-description" value="${escapeHtml(item.description || '')}" placeholder="Description"></td>
                         <td style="text-align: center;"><input type="number" class="st-item-qty" value="${item.q || item.quantity || 1}" oninput="recalculateStudioTotals()"></td>
                         <td style="text-align: right;"><input type="number" class="st-item-price" value="${item.p || item.price || 0}" oninput="recalculateStudioTotals()"></td>
                         <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
@@ -92,6 +97,8 @@ function openStudio(type, editRefCode = null) {
         if (compNameInput) compNameInput.value = '';
         const contactInput = document.getElementById('st-contact-person');
         if (contactInput) contactInput.value = '';
+        const notesInput = document.getElementById('st-notes');
+        if (notesInput) notesInput.value = '';
         const govtInput = document.getElementById('st-govt-amt');
         if (govtInput) govtInput.value = 0;
         const totalInput = document.getElementById('st-total-amt');
@@ -100,6 +107,8 @@ function openStudio(type, editRefCode = null) {
         if (processingInput) processingInput.value = 0;
         const discountInput = document.getElementById('st-discount-amt');
         if (discountInput) discountInput.value = 0;
+        const legacyDiscountInput = document.getElementById('st-legacy-discount-amt');
+        if (legacyDiscountInput) legacyDiscountInput.value = 0;
         const advanceInput = document.getElementById('st-advance-amt');
         if (advanceInput) advanceInput.value = 0;
 
@@ -204,7 +213,8 @@ function injectServicePresetToItems() {
     tbody.innerHTML = (srv.items || []).map((item, idx) => `
         <tr>
             <td style="text-align: center;">${idx + 1}</td>
-            <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Package name"></td>
+            <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Work title"></td>
+            <td><input type="text" class="st-item-description" value="${escapeHtml(item.description || '')}" placeholder="Description"></td>
             <td style="text-align: center;"><input type="number" class="st-item-qty" value="${item.q || 1}" oninput="recalculateStudioTotals()"></td>
             <td style="text-align: right;"><input type="number" class="st-item-price" value="${item.p || 0}" oninput="recalculateStudioTotals()"></td>
             <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
@@ -221,7 +231,8 @@ function addStudioRow() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td style="text-align: center;">${rowCount}</td>
-        <td><input type="text" class="st-item-title" placeholder="Service / Package name"></td>
+        <td><input type="text" class="st-item-title" placeholder="Service / Work title"></td>
+        <td><input type="text" class="st-item-description" placeholder="Description"></td>
         <td style="text-align: center;"><input type="number" class="st-item-qty" value="1" oninput="recalculateStudioTotals()"></td>
         <td style="text-align: right;"><input type="number" class="st-item-price" value="0" oninput="recalculateStudioTotals()"></td>
         <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
@@ -241,13 +252,17 @@ function recalculateStudioTotals() {
     });
 
     const processing = Math.max(0, Number(document.getElementById('st-processing-charges')?.value) || 0);
-    const discount = Math.max(0, Number(document.getElementById('st-discount-amt')?.value) || 0);
+    const discountPercent = Number(document.getElementById('st-discount-amt')?.value) || 0;
+    const legacyDiscount = Math.max(0, Number(document.getElementById('st-legacy-discount-amt')?.value) || 0);
     const advance = Math.max(0, Number(document.getElementById('st-advance-amt')?.value) || 0);
-    const amountBeforeAdvance = Math.max(0, sumTotal + processing - discount);
+    const discountValue = (sumTotal + processing) * discountPercent / 100 + legacyDiscount;
+    const amountBeforeAdvance = Math.max(0, sumTotal + processing - discountValue);
+    const discountPreview = document.getElementById('st-discount-preview');
+    if (discountPreview) discountPreview.textContent = `Discount amount: AED ${discountValue.toFixed(2)}`;
     const totalInput = document.getElementById('st-total-amt');
     if (totalInput) totalInput.value = amountBeforeAdvance.toFixed(2);
     const finalInput = document.getElementById('st-final-amt');
-    if (finalInput) finalInput.value = Math.max(0, amountBeforeAdvance - advance).toFixed(2);
+    if (finalInput) finalInput.value = amountBeforeAdvance.toFixed(2);
 }
 
 function commitDocumentToMemory() {
@@ -258,14 +273,31 @@ function commitDocumentToMemory() {
     const clientName = document.getElementById('st-client-name')?.value.trim() || '';
     const companyName = document.getElementById('st-company-name')?.value.trim() || '';
     const contactPerson = document.getElementById('st-contact-person')?.value.trim() || '';
+    const notes = document.getElementById('st-notes')?.value.trim() || '';
     const govtAmt = parseFloat(document.getElementById('st-govt-amt')?.value) || 0;
-    const subtotalAmt = [...document.querySelectorAll('#st-spreadsheet-body tr')].reduce((sum, row) => {
-        const qty = Number(row.querySelector('.st-item-qty')?.value) || 0;
-        const price = Number(row.querySelector('.st-item-price')?.value) || 0;
-        return sum + qty * price;
+    const rows = [...document.querySelectorAll('#st-spreadsheet-body tr')];
+    if (!rows.length) {
+        showCustomModal('Missing service', 'Add at least one service item before saving this document.');
+        return;
+    }
+    const invalidRow = rows.some(row => {
+        const qtyRaw = row.querySelector('.st-item-qty')?.value;
+        const priceRaw = row.querySelector('.st-item-price')?.value;
+        const qty = Number(qtyRaw);
+        const price = Number(priceRaw);
+        return qtyRaw === '' || priceRaw === '' || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price < 0;
+    });
+    if (invalidRow) {
+        showCustomModal('Invalid service item', 'Each service item must have a quantity greater than zero and a valid non-negative rate.');
+        return;
+    }
+    const subtotalAmt = rows.reduce((sum, row) => {
+        return sum + Number(row.querySelector('.st-item-qty').value) * Number(row.querySelector('.st-item-price').value);
     }, 0);
     const processingCharges = parseFloat(document.getElementById('st-processing-charges')?.value) || 0;
-    const discountAmount = parseFloat(document.getElementById('st-discount-amt')?.value) || 0;
+    const discountPercent = Number(document.getElementById('st-discount-amt')?.value) || 0;
+    const legacyDiscountAmount = Math.max(0, Number(document.getElementById('st-legacy-discount-amt')?.value) || 0);
+    const discountAmount = (subtotalAmt + processingCharges) * discountPercent / 100 + legacyDiscountAmount;
     const totalAmt = Math.max(0, subtotalAmt + processingCharges - discountAmount);
     const advanceAmt = parseFloat(document.getElementById('st-advance-amt')?.value) || 0;
 
@@ -274,13 +306,21 @@ function commitDocumentToMemory() {
         return;
     }
     if (!refCode) {
-        const yearMonth = createdDate.slice(0, 7).replace('-', '');
-        let attempts = 0;
-        do {
-            refCode = `${type === 'Quotation' ? 'QTN' : 'INV'}-${yearMonth}-${Math.floor(1000 + Math.random() * 9000)}`;
-            attempts++;
-        } while ((state.documents || []).some(d => d.refCode === refCode) && attempts < 30);
-        if ((state.documents || []).some(d => d.refCode === refCode)) {
+        const year = createdDate.slice(0, 4) || String(new Date().getFullYear());
+        const prefix = type === 'Quotation' ? 'QTN' : 'DAS';
+        const sequencePrefix = prefix + '-' + year + '-';
+        let sequence = (state.documents || []).reduce((max, doc) => {
+            const ref = String(doc.refCode || '');
+            if (!ref.startsWith(sequencePrefix)) return max;
+            const suffix = Number(ref.slice(sequencePrefix.length));
+            return Number.isInteger(suffix) ? Math.max(max, suffix) : max;
+        }, 0) + 1;
+        refCode = sequencePrefix + String(sequence).padStart(4, '0');
+        while ((state.documents || []).some(doc => doc.refCode === refCode) && sequence < 9999) {
+            sequence++;
+            refCode = sequencePrefix + String(sequence).padStart(4, '0');
+        }
+        if ((state.documents || []).some(doc => doc.refCode === refCode)) {
             showCustomModal('Reference generation failed', 'Please enter a unique document reference and try again.');
             return;
         }
@@ -298,7 +338,7 @@ function commitDocumentToMemory() {
         showCustomModal('Reference locked', 'To preserve the original record ID, the reference cannot be changed while editing.');
         return;
     }
-    if (![govtAmt, subtotalAmt, processingCharges, discountAmount, totalAmt, advanceAmt].every(Number.isFinite) || [govtAmt, subtotalAmt, processingCharges, discountAmount, totalAmt, advanceAmt].some(value => value < 0) || discountAmount > subtotalAmt + processingCharges) {
+    if (![govtAmt, subtotalAmt, processingCharges, discountPercent, legacyDiscountAmount, discountAmount, totalAmt, advanceAmt].every(Number.isFinite) || [govtAmt, subtotalAmt, processingCharges, discountPercent, legacyDiscountAmount, discountAmount, totalAmt, advanceAmt].some(value => value < 0) || discountPercent > 100 || discountAmount > subtotalAmt + processingCharges) {
         showCustomModal('Invalid amounts', 'Amounts must be valid and non-negative. Discounts cannot exceed the subtotal plus processing charges.');
         return;
     }
@@ -314,13 +354,13 @@ function commitDocumentToMemory() {
     }
 
     const items = [];
-    const rows = document.querySelectorAll('#st-spreadsheet-body tr');
     rows.forEach(row => {
         const rowTitle = row.querySelector('.st-item-title')?.value.trim() || 'Service Record';
         items.push({
             packageName: rowTitle,
             serviceName: rowTitle,
             title: rowTitle,
+            description: row.querySelector('.st-item-description')?.value.trim() || '',
             q: parseFloat(row.querySelector('.st-item-qty')?.value) || 1,
             p: parseFloat(row.querySelector('.st-item-price')?.value) || 0
         });
@@ -345,6 +385,7 @@ function commitDocumentToMemory() {
         clientName: clientName || companyName || 'Direct Client',
         companyName: companyName || 'Direct Clients',
         contactPerson,
+        notes,
         companyClientId: state.selectedCompanyClientId || '',
         createdDate: previousDocument ? (previousDocument.createdDate || previousDocument.createdAt || '') : createdDate,
         transactionDate: createdDate,
@@ -360,6 +401,8 @@ function commitDocumentToMemory() {
         processingCharge: processingCharges,
         discountAmount,
         discountAmt: discountAmount,
+        discountPercent,
+        legacyDiscountAmount,
         advanceAmt,
         advanceAmount: advanceAmt,
         totalAmount: totalAmt,

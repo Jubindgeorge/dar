@@ -28,3 +28,27 @@ assert.match(staff, /staff-date-from/, 'staff register supports date filtering')
 assert.match(purchases, /purchase-date-from/, 'purchase register supports date filtering');
 assert.match(ledger, /transactionDate: date/, 'payment records store transaction date');
 console.log('V2 date and audit source checks passed');
+
+assert.match(html, /client-date-from/, 'client date filters');
+assert.match(html, /works-date-from/, 'works date filters');
+assert.match(html, /expense-date-from/, 'expense date filters');
+assert.match(html, /ledger-date-from/, 'ledger date filters');
+assert.match(html, /section-terms/, 'invoice terms box');
+assert.match(html, /st-legacy-discount-amt/, 'legacy discount compatibility');
+assert.match(app, /exportDarFinancialReport/, 'period report export');
+assert.match(app, /duplicateInvoiceDraft/, 'duplicate invoice draft');
+assert.match(app, /viewDocumentHistory/, 'document audit history');
+
+assert.match(app, /exportDarFinancialReportPDF/, 'financial report PDF export');
+assert.match(app, /buildDarFinancialReportRows/, 'shared daily/monthly/yearly report data');
+assert.match(html, /xlsx\.full\.min\.js/, 'XLSX export library loaded');
+
+assert.match(app, /getDarDocumentPaymentStatus/, 'read-only payment status rules');
+assert.match(app, /paymentDueDate/, 'overdue requires an explicit due date');
+assert.match(html, /dash-v2-payment-status/, 'dashboard displays derived payment status counts');
+
+assert.match(html, /expense-search/, 'expense register supports text search');
+assert.match(html, /ledger-search/, 'financial ledger supports text search');
+assert.match(app, /window\.duplicateInvoiceDraft\s*=\s*function/, 'duplicate draft action is implemented');
+assert.match(app, /window\.viewDocumentHistory\s*=\s*function/, 'document history action is implemented');
+assert.match(app, /No additional payment entries recorded/, 'history view handles documents without payments');

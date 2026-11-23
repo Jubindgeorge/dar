@@ -410,6 +410,7 @@ function renderDashboardStats() {
         set('dash-v2-received', currency(v2.received));
         set('dash-v2-outstanding', currency(v2.outstanding));
         set('dash-v2-unassigned', String(v2.unassigned));
+        set('dash-v2-payment-status', `Paid: ${v2.paid} · Partial: ${v2.partial} · Unpaid: ${v2.unpaid} · Overdue: ${v2.overdue}`);
     }
 }
 
@@ -433,14 +434,20 @@ function renderClientsTable() {
         return;
     }
 
+    const clientFrom = document.getElementById('client-date-from')?.value || '';
+    const clientTo = document.getElementById('client-date-to')?.value || '';
+    const clientSearch = (document.getElementById('client-search')?.value || '').trim().toLowerCase();
     const uniqueClients = [];
     const seenCompanies = new Set();
     state.clients.forEach(cl => {
         const key = (cl.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
         if (!key || seenCompanies.has(key)) return;
-        seenCompanies.add(key);
-        uniqueClients.push(cl);
+        const registered = String(cl.createdDate || cl.createdAt || '').slice(0,10);
+        const matchesDate = (!clientFrom || (registered && registered >= clientFrom)) && (!clientTo || (registered && registered <= clientTo));
+        const matchesSearch = [cl.companyName,cl.nameAr,cl.contactPerson].some(v=>String(v||'').toLowerCase().includes(clientSearch));
+        if (matchesDate && matchesSearch) { seenCompanies.add(key); uniqueClients.push(cl); }
     });
+    if (!uniqueClients.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No clients match the selected filters.</td></tr>`; return; }
     tbody.innerHTML = uniqueClients.map(cl => `
         <tr>
             <td><button type="button" class="company-name-link" onclick="openCompanyStaff('${cl.id}')" title="Open staff data for this company">${darEscapeHTML(cl.companyName || '-')}</button></td>
@@ -553,14 +560,20 @@ function renderWorksTable() {
 
     const companyMap = {};
     const companyLabels = {};
+    const workFrom = document.getElementById('works-date-from')?.value || '';
+    const workTo = document.getElementById('works-date-to')?.value || '';
+    const workSearch = (document.getElementById('works-search')?.value || '').trim().toLowerCase();
     (state.documents || []).forEach(doc => {
+        const date = String(doc.transactionDate || doc.createdDate || doc.date || '').slice(0,10);
+        if (workFrom && (!date || date < workFrom)) return;
+        if (workTo && (!date || date > workTo)) return;
         const label = (doc.companyName || 'Without Company').trim();
         const key = normalizeCompanyFolderKey(label);
         if (!companyMap[key]) { companyMap[key] = []; companyLabels[key] = label; }
         companyMap[key].push(doc);
     });
 
-    const keys = Object.keys(companyMap);
+    const keys = Object.keys(companyMap).filter(key => companyLabels[key].toLowerCase().includes(workSearch));
     if (keys.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No company works folders found.</td></tr>`;
         return;
@@ -604,7 +617,12 @@ function renderWorksDetailView() {
     if (countCompany) countCompany.innerText = companyWorks.length;
     if (countStaff) countStaff.innerText = staffWorks.length;
 
-    const activeDocs = state.activeWorksBranch === 'staff' ? staffWorks : companyWorks;
+    const detailFrom = document.getElementById('works-detail-date-from')?.value || '';
+    const detailTo = document.getElementById('works-detail-date-to')?.value || '';
+    const activeDocs = (state.activeWorksBranch === 'staff' ? staffWorks : companyWorks).filter(d => {
+        const date = String(d.transactionDate || d.createdDate || d.date || '').slice(0,10);
+        return (!detailFrom || (date && date >= detailFrom)) && (!detailTo || (date && date <= detailTo));
+    });
     const tbody = document.getElementById('works-detail-records-body');
     if (!tbody) return;
 
@@ -748,6 +766,8 @@ function renderDocumentsTable() {
             <td style="text-align: center;">
                 <button onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i></button>
                 <button onclick='openStudio("Invoice", ${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick='duplicateInvoiceDraft(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" title="Duplicate as a new draft" style="padding:4px 8px;font-size:.75rem;"><i class="fa-solid fa-copy"></i></button>
+                <button onclick='viewDocumentHistory(${darSafeDocumentKey(d.refCode)})' class="btn btn-secondary" title="Record history" style="padding:4px 8px;font-size:.75rem;"><i class="fa-solid fa-clock-rotate-left"></i></button>
                 <button onclick='deleteSingleDocument(${darSafeDocumentKey(d.refCode)})' class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
@@ -794,6 +814,80 @@ function executeBatchDelete() {
     });
 }
 
+window.duplicateInvoiceDraft = function(refCode) {
+    const source = (state.documents || []).find(doc => doc.refCode === refCode);
+    if (!source || typeof openStudio !== 'function') return;
+    openStudio(source.type || 'Invoice');
+    state.activeEditingId = null;
+    state.selectedCompanyClientId = source.companyClientId || '';
+    const setValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.value = value == null ? '' : String(value);
+    };
+    setValue('st-ref-code', '');
+    setValue('st-created-date', localISODate());
+    setValue('st-client-name', source.clientName || '');
+    setValue('st-company-name', source.companyName || '');
+    setValue('st-contact-person', source.contactPerson || '');
+    setValue('st-notes', source.notes || '');
+    setValue('st-expiry-date', source.visaExpiryDate || '');
+    setValue('st-govt-amt', source.govtAmt ?? source.govtFee ?? 0);
+    setValue('st-processing-charges', source.processingCharges ?? source.processingCharge ?? 0);
+    setValue('st-discount-amt', source.discountPercent ?? 0);
+    setValue('st-legacy-discount-amt', source.discountPercent == null ? (source.discountAmount ?? source.discountAmt ?? 0) : (source.legacyDiscountAmount || 0));
+    setValue('st-advance-amt', 0);
+    setValue('st-branch-tag', source.branchTag === 'staff' ? 'staff' : 'company');
+    setValue('st-client-selector', source.companyName || source.clientName || '');
+    setValue('st-service-injector', '');
+    const tbody = document.getElementById('st-spreadsheet-body');
+    if (tbody) {
+        const items = Array.isArray(source.items) && source.items.length ? source.items : [{
+            packageName: source.packageName || source.serviceName || source.title || 'Service Record',
+            q: 1,
+            p: Number(source.totalAmount ?? source.totalAmt ?? source.total ?? source.amount) || 0
+        }];
+        tbody.innerHTML = items.map((item, index) => `
+            <tr>
+                <td style="text-align:center;">${index + 1}</td>
+                <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Work title"></td>
+                <td><input type="text" class="st-item-description" value="${escapeHtml(item.description || '')}" placeholder="Description"></td>
+                <td style="text-align:center;"><input type="number" class="st-item-qty" min="0" step="any" value="${Number(item.q ?? item.quantity ?? 1)}" oninput="recalculateStudioTotals()"></td>
+                <td style="text-align:right;"><input type="number" class="st-item-price" min="0" step="0.01" value="${Number(item.p ?? item.price ?? 0)}" oninput="recalculateStudioTotals()"></td>
+                <td style="text-align:center;"><button type="button" onclick="this.closest('tr').remove();recalculateStudioTotals();" class="btn btn-danger">×</button></td>
+            </tr>`).join('');
+    }
+    if (typeof populateCompanyClients === 'function') populateCompanyClients();
+    if (typeof recalculateStudioTotals === 'function') recalculateStudioTotals();
+    const title = document.getElementById('studio-mode-title');
+    if (title) title.innerText = 'Create New Draft from ' + (source.refCode || 'Document');
+};
+
+window.viewDocumentHistory = function(refCode) {
+    const doc = (state.documents || []).find(item => item.refCode === refCode);
+    if (!doc) return;
+    const lines = [
+        'Reference: ' + (doc.refCode || '-'),
+        'Created: ' + (doc.createdDate || doc.createdAt || 'Not recorded'),
+        'Last updated: ' + (doc.updatedAt || 'Not recorded'),
+        'Updated by: ' + (doc.updatedBy || 'Not recorded'),
+        'Initial advance: AED ' + (Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0).toFixed(2)
+    ];
+    const payments = Array.isArray(doc.paymentLogs) ? doc.paymentLogs.slice() : [];
+    payments.sort((a, b) => String(a.date || a.transactionDate || a.createdAt || '').localeCompare(String(b.date || b.transactionDate || b.createdAt || '')));
+    if (payments.length) {
+        lines.push('', 'Additional payments:');
+        payments.forEach((payment, index) => {
+            lines.push((index + 1) + '. ' + (payment.date || payment.transactionDate || payment.createdAt || 'Date not recorded') +
+                ' — AED ' + (Number(payment.amount) || 0).toFixed(2) +
+                (payment.note ? ' — ' + payment.note : '') +
+                (payment.createdBy ? ' — ' + payment.createdBy : ''));
+        });
+    } else {
+        lines.push('', 'No additional payment entries recorded.');
+    }
+    showCustomModal('Document History', lines.join('\n'));
+};
+
 window.previewInvoiceDocument = async function(refCode) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
@@ -810,18 +904,28 @@ window.previewInvoiceDocument = async function(refCode) {
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     
-    const compName = doc.clientName || doc.companyName || 'N/A';
-    if (clientName) clientName.innerText = compName;
-    if (companyNameEl) companyNameEl.innerText = doc.companyName || doc.clientName || '-';
-    if (createdDate) createdDate.innerText = `Date: ${doc.createdDate || '-'}`;
+    const companyValue = String(doc.companyName || '').trim();
+    const clientValue = String(doc.clientName || '').trim();
+    const isStaffDocument = (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff';
+    const isCompanyDocument = !isStaffDocument && companyValue && !/^direct clients?$/i.test(companyValue);
+    const primaryRecipient = isStaffDocument ? (clientValue || 'N/A') : isCompanyDocument ? companyValue : (clientValue || 'N/A');
+    const secondaryLabel = isStaffDocument ? 'Company:' : 'Contact Person:';
+    const secondaryValue = isStaffDocument ? companyValue : (isCompanyDocument ? String(doc.contactPerson || '').trim() : '');
+    if (clientName) clientName.innerText = primaryRecipient;
+    const companyLine = document.getElementById('p-company-line');
+    const companyLabel = document.getElementById('p-company-label');
+    if (companyNameEl) companyNameEl.innerText = secondaryValue;
+    if (companyLabel) companyLabel.innerText = secondaryLabel;
+    if (companyLine) companyLine.style.display = secondaryValue ? '' : 'none';
+    if (createdDate) createdDate.innerText = `Date: ${doc.transactionDate || doc.createdDate || '-'}`;
 
     let arName = '';
-    const matchedClient = (state.clients || []).find(c => c.companyName === doc.companyName || c.companyName === doc.clientName);
+    const matchedClient = (state.clients || []).find(c => c.companyName === primaryRecipient || c.companyName === doc.companyName || c.companyName === doc.clientName);
     if (matchedClient) {
         arName = matchedClient.nameAr || '';
     }
-    if (!arName && compName && typeof autoTranslateToArabic === 'function') {
-        arName = await autoTranslateToArabic(compName);
+    if (!arName && primaryRecipient && typeof autoTranslateToArabic === 'function') {
+        arName = await autoTranslateToArabic(primaryRecipient);
     }
 
     if (clientNameAr) {
@@ -830,36 +934,45 @@ window.previewInvoiceDocument = async function(refCode) {
 
     const tbody = document.getElementById('p-table-body');
     if (tbody) {
-        const items = doc.items || [];
-        
-        let docTotal = parseFloat(doc.totalAmount) || parseFloat(doc.totalAmt) || parseFloat(doc.total) || parseFloat(doc.amount) || parseFloat(doc.grandTotal) || 0;
-        if (docTotal === 0 && items.length > 0) {
+        const items = Array.isArray(doc.items) ? doc.items : [];
+        const storedTotalValue = [doc.totalAmount, doc.totalAmt, doc.total, doc.amount, doc.grandTotal]
+            .find(value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)));
+        let docTotal = storedTotalValue === undefined
+            ? NaN
+            : Number(storedTotalValue);
+        if (!Number.isFinite(docTotal)) {
             docTotal = items.reduce((sum, item) => {
-                const p = parseFloat(item.p || item.price) || 0;
-                const q = parseFloat(item.q || item.quantity) || 1;
-                return sum + (p * q);
+                const p = Number(item.p ?? item.price ?? 0);
+                const q = Number(item.q ?? item.quantity ?? 1);
+                return sum + (Number.isFinite(p) && Number.isFinite(q) ? p * q : 0);
             }, 0);
         }
-
+        docTotal = Math.max(0, docTotal);
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
         tbody.innerHTML = normalizedItems.map((item, idx) => {
-            const p = parseFloat(item.p ?? item.price) || 0;
-            const q = parseFloat(item.q ?? item.quantity) || 1;
+            const rate = parseFloat(item.p ?? item.price) || 0;
+            const qty = parseFloat(item.q ?? item.quantity) || 1;
+            const service = getWorkItemDescription(item) || 'Service Record';
             return `
-                <tr>
-                    <td style="text-align: center;">${idx + 1}</td>
-                    <td style="white-space: pre-wrap; overflow-wrap: anywhere;">${escapeHtml(getWorkItemDescription(item) || 'Service Record')}</td>
-                    <td style="text-align: center;">${q}</td>
-                    <td style="text-align: right;">${(p * q).toFixed(2)}</td>
+                <tr style="background:#fff;">
+                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${idx + 1}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
+                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${qty}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${rate.toFixed(2)}</td>
                 </tr>
             `;
         }).join('') + `
-            <tr style="font-weight: bold; background: #f8fafc;">
-                <td colspan="3" style="text-align: right;">Total Amount / المبلغ الإجمالي</td>
-                <td style="text-align: right; color: #b58f46;">AED ${docTotal.toFixed(2)}</td>
+            <tr style="font-weight:700;background:#eeeeee;">
+                <td colspan="3" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Total Amount / المبلغ الإجمالي</td>
+                <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">AED ${docTotal.toFixed(2)}</td>
             </tr>
         `;
     }
+    const notesSection = document.getElementById('p-notes-section');
+    const notesText = document.getElementById('p-notes');
+    const documentNotes = String(doc.notes || '').trim();
+    if (notesText) notesText.textContent = documentNotes;
+    if (notesSection) notesSection.style.display = documentNotes ? 'block' : 'none';
 
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
@@ -931,11 +1044,23 @@ function darDownloadJSON(name, data) {
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+window.getDarDocumentPaymentStatus = function(doc) {
+    const total=Math.max(0,Number(getDarDocumentAmount(doc))||0);
+    const advance=Math.max(0,Number(doc?.advanceAmount??doc?.advanceAmt??doc?.advance??0)||0);
+    const logs=Array.isArray(doc?.paymentLogs)?doc.paymentLogs:[];
+    const paid=Math.min(total,Math.max(0,advance+logs.reduce((sum,p)=>sum+(Number(p.amount)||0),0)));
+    const outstanding=Math.max(0,total-paid);
+    if(outstanding<=0)return 'paid';
+    if(paid>0)return 'partial';
+    const due=window.darDates?window.darDates.normalize(doc?.dueDate||doc?.paymentDueDate):String(doc?.dueDate||doc?.paymentDueDate||'').slice(0,10);
+    const today=window.darDates?window.darDates.todayISO():localISODate();
+    return due&&due<today?'overdue':'unpaid';
+};
 // V2: read-only financial overview; does not change ledger or invoice calculations.
 window.getDarV2FinancialOverview = function(documents, expenses) {
-    const docs = Array.isArray(documents) ? documents : [];
+    const docs = (Array.isArray(documents) ? documents : []).filter(doc => (doc.type || 'Invoice') !== 'Quotation');
     const costs = Array.isArray(expenses) ? expenses : [];
-    const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0 };
+    const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0, paid: 0, partial: 0, unpaid: 0, overdue: 0 };
     docs.forEach(doc => {
         const total = Math.max(0, Number(getDarDocumentAmount(doc)) || 0);
         const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
@@ -944,6 +1069,8 @@ window.getDarV2FinancialOverview = function(documents, expenses) {
         summary.invoiced += total;
         summary.received += Math.min(total, paid);
         summary.outstanding += Math.max(0, total - paid);
+        const paymentStatus = window.getDarDocumentPaymentStatus(doc);
+        summary[paymentStatus]++;
         const branch = getAutomaticWorkBranch(doc);
         if (branch === 'staff') summary.staff++;
         else if (branch === 'unassigned') summary.unassigned++;
@@ -951,6 +1078,61 @@ window.getDarV2FinancialOverview = function(documents, expenses) {
     });
     summary.expenses = costs.reduce((sum, e) => sum + Math.max(0, Number(e.amount) || 0), 0);
     return summary;
+};
+
+
+
+window.buildDarFinancialReportRows = function() {
+    const period=document.getElementById('dar-report-period')?.value||'monthly';
+    const keyFor=date=>{
+        const d=String(date||'').slice(0,10);
+        if(!(d.length===10&&d[4]==='-'&&d[7]==='-'))return 'Undated';
+        return period==='daily'?d:period==='yearly'?d.slice(0,4):d.slice(0,7);
+    };
+    const groups=new Map();
+    const get=key=>{if(!groups.has(key))groups.set(key,{period:key,invoiced:0,received:0,outstanding:0,expenses:0,invoices:0,paid:0,partial:0,unpaid:0,overdue:0});return groups.get(key);};
+    (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{
+        const row=get(keyFor(d.transactionDate||d.createdDate||d.date));
+        const total=Math.max(0,Number(getDarDocumentAmount(d))||0);
+        const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(Array.isArray(d.paymentLogs)?d.paymentLogs:[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0));
+        row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;row[window.getDarDocumentPaymentStatus(d)]++;
+    });
+    (state.monthlyExpenses||[]).forEach(e=>{
+        const date=e.transactionDate||e.date||((e.month||'')+'-01');
+        get(keyFor(date)).expenses+=Math.max(0,Number(e.amount)||0);
+    });
+    const rows=[['Period','Invoices','Paid','Partial','Unpaid','Overdue','Invoiced AED','Received AED','Outstanding AED','Expenses AED','Invoiced Less Expenses AED']];
+    [...groups.values()].sort((x,y)=>x.period.localeCompare(y.period)).forEach(r=>rows.push([r.period,r.invoices,r.paid,r.partial,r.unpaid,r.overdue,r.invoiced.toFixed(2),r.received.toFixed(2),r.outstanding.toFixed(2),r.expenses.toFixed(2),(r.invoiced-r.expenses).toFixed(2)]));
+    return rows;
+};
+window.exportDarFinancialReport = function() {
+    const rows=window.buildDarFinancialReportRows();
+    const period=document.getElementById('dar-report-period')?.value||'monthly';
+    const name='dar-financial-report-'+period+'-'+localISODate();
+    if(window.XLSX?.utils){
+        const sheet=window.XLSX.utils.aoa_to_sheet(rows);
+        const book=window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(book,sheet,'Financial Report');
+        window.XLSX.writeFile(book,name+'.xlsx');
+        return;
+    }
+    const csv=rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join(String.fromCharCode(13,10));
+    const blob=new Blob([String.fromCharCode(0xfeff)+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=name+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+};
+window.exportDarFinancialReportPDF = async function() {
+    const rows=window.buildDarFinancialReportRows();
+    const period=document.getElementById('dar-report-period')?.value||'monthly';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;left:-10000px;top:0;width:277mm;padding:12mm;background:#fff;color:#1f2937;font:10px Arial,sans-serif;';
+    const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    wrap.innerHTML='<h2 style="color:#1c365d">DAR AL SHAMS · Financial Report</h2><p>Period grouping: '+esc(period)+' · Generated: '+new Date().toLocaleDateString()+'</p><table style="width:100%;border-collapse:collapse"><thead><tr>'+rows[0].map(v=>'<th style="border:1px solid #b8860b;padding:7px;background:#f8f5ed;text-align:left">'+esc(v)+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(1).map(row=>'<tr>'+row.map(v=>'<td style="border:1px solid #d1d5db;padding:6px">'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    document.body.appendChild(wrap);
+    try{
+        if(typeof html2pdf==='undefined')throw new Error('PDF library unavailable');
+        await html2pdf().set({margin:8,filename:'dar-financial-report-'+period+'-'+new Date().toISOString().slice(0,10)+'.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(wrap).save();
+    }catch(error){console.error('Financial PDF export failed:',error);alert('PDF report export failed. Please reload and try again.');}
+    finally{wrap.remove();}
 };
 
 window.exportDarBackup = async function() {

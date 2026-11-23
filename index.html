@@ -27,6 +27,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 
@@ -191,10 +192,15 @@
                     </div>
                     <div class="dashboard-grid" style="margin-top:16px;" aria-label="V2 payment overview">
                         <div class="metric-card"><div><p>Payments Received — All Time</p><h3 id="dash-v2-received">AED 0.00</h3></div></div>
-                        <div class="metric-card"><div><p>Outstanding — All Time</p><h3 id="dash-v2-outstanding">AED 0.00</h3></div></div>
+                        <div class="metric-card"><div><p>Outstanding — All Time</p><h3 id="dash-v2-outstanding">AED 0.00</h3><small id="dash-v2-payment-status" style="color:var(--text-muted);">Paid: 0 · Partial: 0 · Unpaid: 0 · Overdue: 0</small></div></div>
                         <div class="metric-card"><div><p>Unassigned Works</p><h3 id="dash-v2-unassigned">0</h3></div></div>
                     </div>
-                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded monthly expenses. Invoice totals are not necessarily payments received.</p>
+                    <div class="v2-report-toolbar">
+                        <strong>Financial Reports</strong>
+                        <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
+                        <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export Excel</button><button type="button" class="btn btn-secondary" onclick="exportDarFinancialReportPDF()">Export PDF</button>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded expenses. Invoice totals are not necessarily payments received. Report exports group by the selected period and do not modify records.</p>
                 </section>
 
                 <!-- TAB 2: CLIENTS -->
@@ -205,6 +211,12 @@
                             <p style="font-size: 0.85rem; color: var(--text-muted);">Manage client names, company names, and contact details.</p>
                         </div>
                         <button onclick="openClientModal(false)" class="btn btn-primary">+ Add New Company</button>
+                    </div>
+                    <div class="v2-filter-toolbar">
+                        <input id="client-search" type="search" placeholder="Search company or contact" oninput="renderClientsTable()" aria-label="Search clients">
+                        <label class="v2-filter-date">From <input id="client-date-from" type="date" onchange="renderClientsTable()"></label>
+                        <label class="v2-filter-date">To <input id="client-date-to" type="date" onchange="renderClientsTable()"></label>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('client-search').value='';document.getElementById('client-date-from').value='';document.getElementById('client-date-to').value='';renderClientsTable()">Clear</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -229,6 +241,12 @@
                             <h2 style="color: var(--primary); font-size: 1.4rem;">Company Works Directory</h2>
                             <p style="font-size: 0.85rem; color: var(--text-muted);">Browse company invoices categorized by Company Works & Staff Works branches.</p>
                         </div>
+                    </div>
+                    <div class="v2-filter-toolbar">
+                        <input id="works-search" type="search" placeholder="Search company" oninput="renderWorksTable()" aria-label="Search works">
+                        <label class="v2-filter-date">From <input id="works-date-from" type="date" onchange="renderWorksTable()"></label>
+                        <label class="v2-filter-date">To <input id="works-date-to" type="date" onchange="renderWorksTable()"></label>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('works-search').value='';document.getElementById('works-date-from').value='';document.getElementById('works-date-to').value='';renderWorksTable()">Clear</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -259,6 +277,10 @@
                         <button id="btn-branch-staff" onclick="switchWorksBranch('staff')" class="btn btn-secondary" style="flex: 1; padding: 12px;"><i class="fa-solid fa-users"></i> Staff Works (<span id="count-staff-works">0</span>)</button>
                     </div>
 
+                    <div class="v2-filter-toolbar">
+                        <label class="v2-filter-date">From <input id="works-detail-date-from" type="date" onchange="renderWorksDetailView()"></label>
+                        <label class="v2-filter-date">To <input id="works-detail-date-to" type="date" onchange="renderWorksDetailView()"></label>
+                    </div>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
@@ -430,6 +452,12 @@
                             </div>
                             <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Monthly Expense</button>
                         </div>
+                        <div class="v2-filter-toolbar">
+                            <input id="expense-search" type="search" placeholder="Search expense title, date or amount" aria-label="Search expenses" oninput="renderMonthlyExpensesTable()">
+                            <label class="v2-filter-date">From <input id="expense-date-from" type="date" onchange="renderMonthlyExpensesTable()"></label>
+                            <label class="v2-filter-date">To <input id="expense-date-to" type="date" onchange="renderMonthlyExpensesTable()"></label>
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('expense-search').value='';document.getElementById('expense-date-from').value='';document.getElementById('expense-date-to').value='';renderMonthlyExpensesTable()">Clear</button>
+                        </div>
                         <div class="table-responsive" style="margin-top: 0;">
                             <table class="data-table">
                                 <thead>
@@ -445,6 +473,12 @@
                         </div>
                     </div>
 
+                    <div class="v2-filter-toolbar">
+                        <input id="ledger-search" type="search" placeholder="Search invoice, client or service" aria-label="Search financial ledger" oninput="renderFullLedgerTableBody()">
+                        <label class="v2-filter-date">Invoice date from <input id="ledger-date-from" type="date" onchange="renderFullLedgerTableBody()"></label>
+                        <label class="v2-filter-date">To <input id="ledger-date-to" type="date" onchange="renderFullLedgerTableBody()"></label>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('ledger-search').value='';document.getElementById('ledger-date-from').value='';document.getElementById('ledger-date-to').value='';renderFullLedgerTableBody()">Clear</button>
+                    </div>
                     <!-- Invoice Selector & Actions Bar -->
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
@@ -598,12 +632,16 @@
                     <div class="studio-editor" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
                         <div><label>Govt. Fees (AED)</label><input type="number" id="st-govt-amt" value="0" oninput="recalculateStudioTotals()" style="font-weight: bold; color: var(--primary);"></div>
                         <div><label>Processing Charges (AED)</label><input type="number" id="st-processing-charges" value="0" min="0" step="0.01" oninput="recalculateStudioTotals()" style="font-weight: bold; color: var(--primary);"></div>
-                        <div><label>Discounts % (AED)</label><input type="number" id="st-discount-amt" value="0" min="0" step="0.01" oninput="recalculateStudioTotals()" style="font-weight: bold; color: var(--primary);"></div>
-                        <div><label>Amount Before Advance (AED)</label><input type="number" id="st-total-amt" value="0" readonly style="font-weight: bold; color: var(--accent-green);"></div>
+                        <div><label>Discounts (%)</label><input type="number" id="st-discount-amt" value="0" min="0" max="100" step="0.01" oninput="recalculateStudioTotals()" style="font-weight: bold; color: var(--primary);"><small id="st-discount-preview" style="display:block;margin-top:5px;color:var(--text-muted);">Discount amount: AED 0.00</small><input type="hidden" id="st-legacy-discount-amt" value="0"></div>
+                        <div><label>Invoice Total (AED)</label><input type="number" id="st-total-amt" value="0" readonly style="font-weight: bold; color: var(--accent-green);"></div>
                         <div><label>Advance Payment Received (AED)</label><input type="number" id="st-advance-amt" value="0" min="0" step="0.01" oninput="recalculateStudioTotals()" style="font-weight: bold; color: var(--accent-blue);"></div>
-                        <div><label>Final Amount Due (AED)</label><input type="number" id="st-final-amt" value="0" readonly style="font-weight: bold; color: var(--accent-green);"></div>
+                        <div style="display:none;"><input type="number" id="st-final-amt" value="0" readonly aria-hidden="true"></div>
                     </div>
 
+                    <div class="studio-editor" style="margin-bottom:16px;">
+                        <label for="st-notes" style="color:var(--primary);font-weight:700;">Notes (optional)</label>
+                        <textarea id="st-notes" rows="3" placeholder="Enter any notes to appear on the invoice / quotation PDF..." style="width:100%;box-sizing:border-box;"></textarea>
+                    </div>
                     <div class="studio-editor">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h4 style="color: var(--primary); font-size: 1rem;">Specific Work Breakdown Items</h4>
@@ -613,11 +651,12 @@
                             <table class="studio-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px; text-align: center;">#</th>
-                                        <th>Package Name / Work Title</th>
-                                        <th style="width: 90px; text-align: center;">Qty</th>
-                                        <th style="width: 140px; text-align: right;">Unit Price (AED)</th>
-                                        <th style="width: 70px; text-align: center;">Action</th>
+                                        <th style="width: 42px; text-align: center;">#</th>
+                                        <th>Service / Work Title</th>
+                                        <th>Description</th>
+                                        <th style="width: 70px; text-align: center;">Qty</th>
+                                        <th style="width: 125px; text-align: right;">Fees / Rate (AED)</th>
+                                        <th style="width: 65px; text-align: center;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="st-spreadsheet-body"></tbody>
@@ -806,7 +845,7 @@
 
         <div class="preview-modal-body-canvas" style="padding: 24px; overflow-y: auto;">
             <!-- A4 Page Container -->
-            <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 45px 40px; max-width: 800px; margin: auto; box-sizing: border-box; border: 3px double #b8860b; position: relative;">
+            <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 6mm 7mm; width: 800px; max-width: 800px; margin: auto; box-sizing: border-box; border: 3px double #b8860b; position: relative;">
                 
                 <!-- Header Section -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #b8860b; padding-bottom: 16px; margin-bottom: 24px;">
@@ -843,7 +882,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; font-size: 12.5px; line-height: 1.7; color: #0f172a;">
                     <div>
                         <div><strong style="color: #475569;">M/s:</strong> <span id="p-client-name" style="font-weight: 700; color: #0f172a;">-</span></div>
-                   <div><strong style="color: #475569;">Company:</strong> <span id="p-company-name" style="font-weight: 700; color: #0f172a;">-</span></div>
+                   <div id="p-company-line"><strong id="p-company-label" style="color: #475569;">Company:</strong> <span id="p-company-name" style="font-weight: 700; color: #0f172a;">-</span></div>
                         <div id="p-client-name-ar" style="font-family: 'Amiri', serif; font-size: 14.5px; font-weight: bold; color: #1c365d; margin-top: 3px;"></div>
                     </div>
                     <div style="text-align: right;">
@@ -860,23 +899,23 @@
                     </div>
 
                     <!-- Styled Data Table -->
-                    <table style="width: 100%; border-collapse: separate; border-spacing: 8px; font-size: 12px; position: relative; z-index: 1; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+                    <table style="width:100%;border-collapse:collapse;border-spacing:0;font-size:11.5px;position:relative;z-index:1;color:#222;">
                         <thead>
-                            <tr style="background: transparent; color: #000000;">
-                                <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 8%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">S.No</th>
-                                <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; text-align: left; font-weight: 700; letter-spacing: 0.5px;">
-                                    Description / <span style="font-family: 'Amiri', serif; font-weight: normal;">التفاصيل</span>
-                                </th>
-                                <th style="padding: 10px 12px; border-bottom: 1px solid #966d08; width: 10%; text-align: center; font-weight: 700; letter-spacing: 0.5px;">Qty</th>
-                                <th style="padding: 10px 14px; border-bottom: 1px solid #966d08; width: 22%; text-align: right; font-weight: 700; letter-spacing: 0.5px;">
-                                    Amount (Dhs)<br><span style="font-family: 'Amiri', serif; font-size: 11px; font-weight: normal;">المبلغ</span>
-                                </th>
+                            <tr style="background:#eeeeee;color:#111;">
+                                <th style="padding:7px 6px;border-bottom:1px solid #d2d2d2;width:7%;text-align:center;font-weight:600;">#</th>
+                                <th style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:left;font-weight:600;">Service</th>
+                                <th style="padding:7px 6px;border-bottom:1px solid #d2d2d2;width:12%;text-align:center;font-weight:600;">Qty</th>
+                                <th style="padding:7px 8px;border-bottom:1px solid #d2d2d2;width:23%;text-align:right;font-weight:600;">Rate (AED)</th>
                             </tr>
                         </thead>
                         <tbody id="p-table-body">
                             <!-- Populated dynamically via ui.js -->
                         </tbody>
                     </table>
+                    <div id="p-notes-section" style="display:none;margin-top:14px;padding:9px 11px;background:#f1f1f1;border-top:1px solid #d6d6d6;border-bottom:1px solid #d6d6d6;font-size:11px;line-height:1.5;color:#222;position:relative;z-index:1;">
+                        <strong style="display:block;margin-bottom:3px;">Notes</strong>
+                        <div id="p-notes" style="white-space:pre-wrap;overflow-wrap:anywhere;"></div>
+                    </div>
                 </div>
 
                     <!-- Signature Line Footer -->
