@@ -998,10 +998,11 @@ window.previewInvoiceDocument = async function(refCode) {
     const termsContent = Array.isArray(termsValue) ? termsValue.join('\n') : String(termsValue || '').trim();
     if (termsText) termsText.textContent = termsContent;
     if (termsSection) termsSection.style.display = termsContent ? 'block' : 'none';
-    window.applyDarDocumentPrintFit?.();
-
+    // Show the preview before measuring it; a display:none ancestor reports zero height.
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
+    window.applyDarDocumentPrintFit?.();
+    requestAnimationFrame(() => window.applyDarDocumentPrintFit?.());
 };
 
 /* Fit short documents to one A4 page for both browser print and PDF export. */
