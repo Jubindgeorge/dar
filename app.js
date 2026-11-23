@@ -1341,12 +1341,21 @@ window.submitQuotationConversion = function() {
     const alreadyInvoiced = Math.max(0, Number(quote.invoicedAmount) || 0);
     const remaining = Math.max(0, quoteTotal - alreadyInvoiced);
     let items = [], amount = 0, description = '';
+    let invoiceSubtotal = 0, invoiceProcessing = 0, invoiceDiscount = 0, invoiceDiscountPercent = 0;
     let selectedStageIndexes = [];
     if (mode === 'stage') {
         selectedStageIndexes = [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked:not(:disabled)')].map(el => Number(el.value));
         if (!selectedStageIndexes.length) { showCustomModal('Select stages','Choose at least one stage that has not already been invoiced.'); return; }
         items = selectedStageIndexes.map(i => (quote.items || [])[i]).filter(Boolean).map(item => ({...item}));
-        amount = items.reduce((sum,item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)),0);
+        invoiceSubtotal = items.reduce((sum,item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)),0);
+        const allItemSubtotal = (Array.isArray(quote.items) ? quote.items : []).reduce((sum,item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)),0);
+        const quotedSubtotal = Number(quote.subtotalAmount ?? quote.subTotal);
+        const baseSubtotal = Number.isFinite(quotedSubtotal) && quotedSubtotal > 0 ? quotedSubtotal : allItemSubtotal;
+        const allocation = baseSubtotal > 0 ? invoiceSubtotal / baseSubtotal : 0;
+        invoiceProcessing = Math.max(0, Number(quote.processingCharges ?? quote.processingCharge) || 0) * allocation;
+        invoiceDiscount = Math.max(0, Number(quote.discountAmount ?? quote.discountAmt) || 0) * allocation;
+        invoiceDiscountPercent = Math.max(0, Number(quote.discountPercent) || 0);
+        amount = invoiceSubtotal + invoiceProcessing - invoiceDiscount;
         description = 'Stage invoice against ' + quoteRef;
     } else {
         const percent = Number(document.getElementById('qc-percent').value);
@@ -1356,6 +1365,7 @@ window.submitQuotationConversion = function() {
         if (!Number.isFinite(amount) || amount <= 0) { showCustomModal('Invalid invoice amount','Enter a positive invoice amount or a percentage from 0 to 100.'); return; }
         description = 'Progress invoice against ' + quoteRef;
         items = [{packageName:description,serviceName:description,title:description,q:1,p:amount}];
+        invoiceSubtotal = amount;
     }
     amount = Math.round(amount * 100) / 100;
     if (amount <= 0 || amount > remaining + 0.005) { showCustomModal('Amount exceeds remaining','This invoice must be positive and cannot exceed the quotation balance of AED ' + remaining.toFixed(2) + '.'); return; }
@@ -1384,8 +1394,9 @@ window.submitQuotationConversion = function() {
             ...liveQuote, refCode:invoiceRef, type:'Invoice', createdDate, transactionDate:createdDate,
             sourceQuotationRef:quoteRef, billingMode:mode, stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],
             packageName:liveQuote.packageName || description, serviceName:liveQuote.serviceName || description,
-            items, subtotalAmount:amount, subTotal:amount, processingCharges:0, processingCharge:0,
-            discountAmount:0, discountAmt:0, discountPercent:0, legacyDiscountAmount:0,
+            items, subtotalAmount:invoiceSubtotal, subTotal:invoiceSubtotal,
+            processingCharges:invoiceProcessing, processingCharge:invoiceProcessing,
+            discountAmount:invoiceDiscount, discountAmt:invoiceDiscount, discountPercent:invoiceDiscountPercent, legacyDiscountAmount:0,
             advanceAmt:0, advanceAmount:0, totalAmount:amount, totalAmt:amount, total:amount, amount,
             paymentLogs:[], invoicedAmount:0, conversionCreatedAt:new Date().toISOString(),
             conversionCreatedBy:currentUser?.email || currentUser?.uid || 'Unknown'
