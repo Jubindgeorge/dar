@@ -39,6 +39,10 @@ assert.match(html, /width:50%;max-width:50%/, 'terms section is limited to the l
 assert.match(html, /p-notes-section[^>]*border:0/, 'notes section has no surrounding border');
 assert.match(html, /width:100%;border-collapse:collapse;border-spacing:0;font-size:10px/, 'invoice item table uses the totals summary font size');
 assert.match(styles, /#a4-wrapper-element::before\s*\{[\s\S]*?inset:\s*1px;[\s\S]*?border:\s*1px solid #b8860b;/, 'gold page frame is fixed 1px and inset 1px from every paper edge');
+assert.match(styles, /@page\s*\{\s*size:A4 portrait;\s*margin:0;\s*\}/, 'print page uses the physical A4 sheet as its coordinate space');
+assert.match(styles, /#document-preview-modal::after\s*\{[\s\S]*?position:fixed !important;[\s\S]*?inset:1mm !important;[\s\S]*?border:1px solid #b8860b !important;/, 'print border is fixed to all four physical paper edges on every page');
+assert.match(app, /const drawFixedGoldFrame = \(\) => \{[\s\S]*?pdf\.rect\(1, 1, 208, 295\);[\s\S]*?drawFixedGoldFrame\(\);[\s\S]*?drawFixedGoldFrame\(\);/, 'Save PDF draws the same fixed gold frame on every page');
+
 assert.match(styles, /#a4-wrapper-element #p-content-container table,\s*#a4-wrapper-element #p-content-container table th,\s*#a4-wrapper-element #p-content-container table td\s*\{\s*font-size:\s*10px !important;/, 'all invoice table text uses the same 10px size');
 
 assert.match(html, /st-legacy-discount-amt/, 'legacy discount compatibility');
