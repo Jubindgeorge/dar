@@ -850,8 +850,8 @@ window.previewInvoiceDocument = async function(refCode) {
     if (matchedClient) {
         arName = matchedClient.nameAr || '';
     }
-    if (!arName && compName && typeof autoTranslateToArabic === 'function') {
-        arName = await autoTranslateToArabic(compName);
+    if (!arName && primaryRecipient && typeof autoTranslateToArabic === 'function') {
+        arName = await autoTranslateToArabic(primaryRecipient);
     }
 
     if (clientNameAr) {
