@@ -614,3 +614,37 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
   #a4-wrapper-element:not(.dar-single-page-fit) #p-content-container { page-break-inside:auto !important; }
   #a4-wrapper-element .section-terms { width:50% !important; max-width:50% !important; margin-left:0 !important; }
 }
+
+/* Fixed gold page frame and consistent invoice table typography. */
+#a4-wrapper-element {
+  border: 0 !important;
+  position: relative !important;
+}
+#a4-wrapper-element::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1px solid #b8860b;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 20;
+}
+#a4-wrapper-element #p-content-container table,
+#a4-wrapper-element #p-content-container table th,
+#a4-wrapper-element #p-content-container table td {
+  font-size: 10px !important;
+}
+@media print {
+  #a4-wrapper-element::before {
+    display: block !important;
+    border: 1px solid #b8860b !important;
+    inset: 1px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #a4-wrapper-element #p-content-container table,
+  #a4-wrapper-element #p-content-container table th,
+  #a4-wrapper-element #p-content-container table td {
+    font-size: 10px !important;
+  }
+}
