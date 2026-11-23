@@ -99,6 +99,22 @@ const assert = require('node:assert/strict');
       return {captured,saved};
     });
     assert.deepEqual(pdfResult,{captured:true,saved:true},'PDF export calls capture and save pipeline');
+    await page.emulateMedia({media:'print'});
+    const printLayout = await page.evaluate(() => ({
+      modalDisplay:getComputedStyle(document.getElementById('document-preview-modal')).display,
+      toolbarDisplay:getComputedStyle(document.querySelector('#document-preview-modal .preview-modal-toolbar')).display,
+      pageWidth:parseFloat(getComputedStyle(document.getElementById('a4-wrapper-element')).width)
+    }));
+    assert.equal(printLayout.modalDisplay,'block','Print layout exposes only the document preview');
+    assert.equal(printLayout.toolbarDisplay,'none','Print layout hides preview toolbar controls');
+    assert.ok(printLayout.pageWidth>0,'A4 document retains a printable width');
+    await page.emulateMedia({media:'screen'});
+    const printAction = await page.evaluate(() => {
+      const original=window.print; let called=false; window.print=()=>{called=true;};
+      try { document.querySelector('#document-preview-modal .preview-modal-toolbar button:nth-of-type(2)').click(); return called; }
+      finally {window.print=original;}
+    });
+    assert.equal(printAction,true,'Print button invokes the browser print action');
     const saveFlow = await page.evaluate(async () => {
       const oldRef=db.ref, oldModal=window.showCustomModal;
       const calls=[];
