@@ -7,6 +7,7 @@ const styles = fs.readFileSync('styles.css', 'utf8');
 const dates = fs.readFileSync('date-utils.js', 'utf8');
 const ledger = fs.readFileSync('ledger.js', 'utf8');
 const staff = fs.readFileSync('staff.js', 'utf8');
+const studio = fs.readFileSync('studio.js', 'utf8');
 const purchases = fs.readFileSync('purchase.js', 'utf8');
 for (const id of ['doc-date-from','doc-date-to','dash-v2-received','dash-v2-outstanding','dash-v2-unassigned']) {
   assert.match(html, new RegExp('id="' + id + '"'), 'missing UI element: ' + id);
