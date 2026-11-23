@@ -1059,11 +1059,17 @@ window.saveAsPDF = async function() {
         if (!canvas.width || !canvas.height) throw new Error('Empty invoice canvas');
         const pdf = new window.jspdf.jsPDF({orientation: 'portrait', unit: 'mm', format: 'a4'});
         const margin = 5, pageW = 210 - margin * 2, pageH = 297 - margin * 2;
+        const drawFixedGoldFrame = () => {
+            pdf.setDrawColor(184, 134, 11);
+            pdf.setLineWidth(0.25);
+            pdf.rect(1, 1, 208, 295);
+        };
         const rowCount = element.querySelectorAll('#p-table-body > tr:not(.dar-summary-host-row)').length;
         if (rowCount <= 16) {
             const scale = Math.min(pageW / canvas.width, pageH / canvas.height);
             const width = canvas.width * scale, height = canvas.height * scale;
             pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', margin + (pageW-width)/2, margin, width, height);
+            drawFixedGoldFrame();
         } else {
             const pixelsPerPage = Math.max(1, Math.floor(canvas.width * pageH / pageW));
             for (let offset = 0; offset < canvas.height; offset += pixelsPerPage) {
@@ -1075,6 +1081,7 @@ window.saveAsPDF = async function() {
                 if (offset > 0) pdf.addPage();
                 const imageHeight = sliceHeight * pageW / canvas.width;
                 pdf.addImage(slice.toDataURL('image/jpeg', 0.96), 'JPEG', margin, margin, pageW, imageHeight);
+                drawFixedGoldFrame();
             }
         }
         pdf.save(filename);
