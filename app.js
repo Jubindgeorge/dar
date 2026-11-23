@@ -906,7 +906,7 @@ window.previewInvoiceDocument = async function(refCode) {
     
     const companyValue = String(doc.companyName || '').trim();
     const clientValue = String(doc.clientName || '').trim();
-    const isStaffDocument = (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff';
+    const isStaffDocument = doc.branchTag ? doc.branchTag === 'staff' : (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff');
     const isCompanyDocument = !isStaffDocument && !!companyValue && !/^direct clients?$/i.test(companyValue);
     // Company: company only. Staff: staff + company. Direct client: client only.
     const primaryRecipient = isStaffDocument
