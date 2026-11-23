@@ -69,6 +69,22 @@ const assert = require('node:assert/strict');
     assert.doesNotMatch(breakdownText,/Sub Total|Advance Payment|Processing Charges|Discounts/,'October invoice hides newer breakdown rows');
     assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    await page.evaluate(() => {
+      state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
+    });
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-ZERO-001'));
+    assert.match(await page.locator('#p-table-body').innerText(),/AED 0\\.00/,'A deliberately zero-total invoice must not be recalculated from its line items');
+    await page.evaluate(() => {
+      state.documents.push({refCode:'CI-DUP-001',type:'Invoice',clientName:'Test Staff',companyName:'Test Company',contactPerson:'Not copied for staff',notes:'Duplicate note',advanceAmount:75,paymentLogs:[{date:'2026-11-20',amount:25,note:'Balance'}],items:[{serviceName:'Visa renewal',description:'Renewal service',p:100,q:2}],totalAmount:200});
+      window.duplicateInvoiceDraft('CI-DUP-001');
+    });
+    assert.equal(await page.locator('#st-ref-code').inputValue(),'','Duplicated document receives a new reference');
+    assert.equal(await page.locator('#st-advance-amt').inputValue(),'0','Duplicated document does not copy previous payments');
+    assert.equal(await page.locator('#st-client-name').inputValue(),'Test Staff','Duplicate retains client');
+    assert.equal(await page.locator('#st-spreadsheet-body tr').count(),1,'Duplicate retains line items');
+    await page.evaluate(() => window.viewDocumentHistory('CI-DUP-001'));
+    assert.match(await page.locator('#modal-message').innerText(),/AED 25\\.00/,'History view includes recorded payments');
+
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
