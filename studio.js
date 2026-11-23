@@ -381,6 +381,20 @@ function commitDocumentToMemory() {
         });
     });
 
+    const existingQuotation = (state.documents || []).find(d => d.refCode === refCode && d.type === 'Quotation');
+    if (existingQuotation && Array.isArray(existingQuotation.invoicedStageIndexes) && existingQuotation.invoicedStageIndexes.length) {
+        const signature = list => JSON.stringify((Array.isArray(list) ? list : []).map(item => ({
+            title: item.packageName || item.serviceName || item.title || '',
+            description: item.description || '',
+            quantity: Number(item.q ?? item.quantity ?? 1),
+            rate: Number(item.p ?? item.price ?? 0)
+        })));
+        if (signature(existingQuotation.items) !== signature(items)) {
+            showCustomModal('Billed stages are locked', 'This quotation already has stage invoices. Keep its service rows unchanged so previous stage invoices remain correctly linked.');
+            return;
+        }
+    }
+
     const selectedCatalogId = document.getElementById('st-service-injector')?.value;
     const selectedCatalog = (state.services || []).find(service => service.id === selectedCatalogId);
     const previousTitle = (state.documents || []).find(d => d.refCode === refCode);
