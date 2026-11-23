@@ -992,6 +992,12 @@ window.previewInvoiceDocument = async function(refCode) {
     const documentNotes = String(doc.notes || '').trim();
     if (notesText) notesText.textContent = documentNotes;
     if (notesSection) notesSection.style.display = documentNotes ? 'block' : 'none';
+    const termsSection = document.getElementById('p-terms-section');
+    const termsText = document.getElementById('p-terms-text');
+    const termsValue = doc.termsAndConditions ?? doc.termsConditions ?? doc.terms ?? '';
+    const termsContent = Array.isArray(termsValue) ? termsValue.join('\n') : String(termsValue || '').trim();
+    if (termsText) termsText.textContent = termsContent;
+    if (termsSection) termsSection.style.display = termsContent ? 'block' : 'none';
     window.applyDarDocumentPrintFit?.();
 
     const modal = document.getElementById('document-preview-modal');
