@@ -453,8 +453,10 @@
                             <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Monthly Expense</button>
                         </div>
                         <div class="v2-filter-toolbar">
+                            <input id="expense-search" type="search" placeholder="Search expense title, date or amount" aria-label="Search expenses" oninput="renderMonthlyExpensesTable()">
                             <label class="v2-filter-date">From <input id="expense-date-from" type="date" onchange="renderMonthlyExpensesTable()"></label>
                             <label class="v2-filter-date">To <input id="expense-date-to" type="date" onchange="renderMonthlyExpensesTable()"></label>
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('expense-search').value='';document.getElementById('expense-date-from').value='';document.getElementById('expense-date-to').value='';renderMonthlyExpensesTable()">Clear</button>
                         </div>
                         <div class="table-responsive" style="margin-top: 0;">
                             <table class="data-table">
@@ -472,9 +474,10 @@
                     </div>
 
                     <div class="v2-filter-toolbar">
+                        <input id="ledger-search" type="search" placeholder="Search invoice, client or service" aria-label="Search financial ledger" oninput="renderFullLedgerTableBody()">
                         <label class="v2-filter-date">Invoice date from <input id="ledger-date-from" type="date" onchange="renderFullLedgerTableBody()"></label>
                         <label class="v2-filter-date">To <input id="ledger-date-to" type="date" onchange="renderFullLedgerTableBody()"></label>
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('ledger-date-from').value='';document.getElementById('ledger-date-to').value='';renderFullLedgerTableBody()">Clear</button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('ledger-search').value='';document.getElementById('ledger-date-from').value='';document.getElementById('ledger-date-to').value='';renderFullLedgerTableBody()">Clear</button>
                     </div>
                     <!-- Invoice Selector & Actions Bar -->
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
