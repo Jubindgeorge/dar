@@ -12,10 +12,10 @@ function openStudio(type, editRefCode = null) {
     if (titleEl) titleEl.innerText = editRefCode ? `Edit ${type} - ${editRefCode}` : `Create New ${type}`;
 
     const docTypeEl = document.getElementById('st-doc-type');
-    if (docTypeEl) docTypeEl.value = type;
+    if (docTypeEl) { docTypeEl.value = type; docTypeEl.disabled = !!editRefCode; }
 
     const editRefEl = document.getElementById('st-ref-code');
-    if (editRefEl) editRefEl.value = editRefCode || '';
+    if (editRefEl) { editRefEl.value = editRefCode || ''; editRefEl.readOnly = !!editRefCode; }
 
     const dateEl = document.getElementById('st-created-date');
     if (dateEl) dateEl.value = studioLocalISODate();
@@ -439,7 +439,7 @@ function commitDocumentToMemory() {
         total: totalAmt,
         amount: totalAmt,
         items,
-        branchTag: companyName && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
+        branchTag: companyName && !/^direct clients?$/i.test(companyName) && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
     };
 
     // Update the existing record in place. For converted invoices, atomically adjust
