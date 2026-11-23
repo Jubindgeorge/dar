@@ -95,7 +95,7 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-DIRECT'));
     assert.equal(await page.locator('#p-client-name').innerText(),'Direct Customer','Direct quotation shows client name only');
     assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Direct quotation hides company line');
-    assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/border-collapse: collapse/,'Document table uses collapsed borders');
+    assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/border-collapse:\s*collapse/,'Document table uses collapsed borders');
     assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/b8860b/,'Document table uses gold borders');
     assert.ok(await page.locator('style').evaluateAll(nodes=>nodes.some(node=>node.textContent.includes('@media print') && node.textContent.includes('#a4-wrapper-element'))),'Print CSS isolates the A4 document');
     await page.evaluate(() => {
