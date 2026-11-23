@@ -596,3 +596,19 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 
 /* Validation and confirmation dialogs must sit above the popup editor. */
 .custom-modal-backdrop { z-index:2700; }
+
+/* Compact A4 output for short invoices and quotations. */
+#a4-wrapper-element .dar-summary-host-row, #a4-wrapper-element .dar-summary-host-row > td { border:0 !important; outline:0 !important; }
+#a4-wrapper-element .dar-totals-summary { width:43% !important; font-size:10px !important; margin-top:6px !important; }
+#a4-wrapper-element .dar-totals-summary td { padding:4px 6px !important; line-height:1.15 !important; }
+#a4-wrapper-element #p-notes-section { border:0 !important; background:transparent !important; padding:4px 0 !important; margin-top:6px !important; }
+#a4-wrapper-element .section-terms { width:50% !important; max-width:50% !important; margin-left:0 !important; margin-right:auto !important; box-sizing:border-box !important; }
+#a4-wrapper-element.dar-single-page-fit { zoom:var(--dar-print-zoom,1); }
+@media print {
+  #a4-wrapper-element.dar-single-page-fit { width:calc(190mm / var(--dar-print-zoom,1)) !important; max-width:none !important; }
+  #a4-wrapper-element:not(.dar-single-page-fit) { width:190mm !important; max-width:190mm !important; }
+  #a4-wrapper-element table { page-break-inside:auto !important; }
+  #a4-wrapper-element tr { page-break-inside:avoid !important; page-break-after:auto !important; }
+  #a4-wrapper-element .dar-summary-host-row { page-break-inside:avoid !important; }
+  #a4-wrapper-element .section-terms { width:50% !important; max-width:50% !important; margin-left:0 !important; }
+}
