@@ -907,11 +907,18 @@ window.previewInvoiceDocument = async function(refCode) {
     const companyValue = String(doc.companyName || '').trim();
     const clientValue = String(doc.clientName || '').trim();
     const isStaffDocument = (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff';
-    const isCompanyDocument = !isStaffDocument && companyValue && !/^direct clients?$/i.test(companyValue);
-    const primaryRecipient = isStaffDocument ? (clientValue || 'N/A') : isCompanyDocument ? companyValue : (clientValue || 'N/A');
-    const secondaryLabel = isStaffDocument ? 'Company:' : 'Contact Person:';
-    const secondaryValue = isStaffDocument ? companyValue : (isCompanyDocument ? String(doc.contactPerson || '').trim() : '');
+    const isCompanyDocument = !isStaffDocument && !!companyValue && !/^direct clients?$/i.test(companyValue);
+    // Company: company only. Staff: staff + company. Direct client: client only.
+    const primaryRecipient = isStaffDocument
+        ? (clientValue || 'N/A')
+        : isCompanyDocument ? companyValue : (clientValue || 'N/A');
+    const secondaryValue = isStaffDocument ? companyValue : '';
+    const secondaryLabel = 'Company:';
+    const recipientLabel = document.getElementById('p-recipient-label');
+    const recipientLine = document.getElementById('p-recipient-line');
     if (clientName) clientName.innerText = primaryRecipient;
+    if (recipientLabel) recipientLabel.innerText = 'M/s:';
+    if (recipientLine) recipientLine.style.display = primaryRecipient ? '' : 'none';
     const companyLine = document.getElementById('p-company-line');
     const companyLabel = document.getElementById('p-company-label');
     if (companyNameEl) companyNameEl.innerText = secondaryValue;
@@ -949,22 +956,46 @@ window.previewInvoiceDocument = async function(refCode) {
         }
         docTotal = Math.max(0, docTotal);
         const normalizedItems = items.length ? items : (getDocumentWorkDescription(doc) ? [{ serviceName: getDocumentWorkDescription(doc), q: 1, p: docTotal }] : []);
+        const calculatedSubtotal = normalizedItems.reduce((sum, item) => {
+            const rate = Number(item.p ?? item.price ?? 0);
+            const qty = Number(item.q ?? item.quantity ?? 1);
+            return sum + (Number.isFinite(rate) && Number.isFinite(qty) ? rate * qty : 0);
+        }, 0);
+        const storedSubtotal = [doc.subtotalAmount, doc.subTotal, doc.subtotal]
+            .find(value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)));
+        const subtotal = Math.max(0, storedSubtotal === undefined ? calculatedSubtotal : Number(storedSubtotal));
+        const advanceAmount = Math.max(0, Number(doc.advanceAmt ?? doc.advanceAmount ?? doc.advance ?? 0) || 0);
+        const discountPercent = Math.max(0, Number(doc.discountPercent ?? 0) || 0);
+        const gold = '#b8860b';
+        const cellStyle = `padding:7px 8px;border:1px solid ${gold};`;
         tbody.innerHTML = normalizedItems.map((item, idx) => {
-            const rate = parseFloat(item.p ?? item.price) || 0;
-            const qty = parseFloat(item.q ?? item.quantity) || 1;
+            const rate = Number(item.p ?? item.price ?? 0) || 0;
+            const qty = Number(item.q ?? item.quantity ?? 1) || 1;
             const service = getWorkItemDescription(item) || 'Service Record';
             return `
                 <tr style="background:#fff;">
-                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${idx + 1}</td>
-                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
-                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${qty}</td>
-                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${rate.toFixed(2)}</td>
+                    <td style="${cellStyle}text-align:center;">${idx + 1}</td>
+                    <td style="${cellStyle}white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
+                    <td style="${cellStyle}text-align:center;">${qty}</td>
+                    <td style="${cellStyle}text-align:right;">${rate.toFixed(2)}</td>
                 </tr>
             `;
         }).join('') + `
-            <tr style="font-weight:700;background:#eeeeee;">
-                <td colspan="3" style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">Total Amount / المبلغ الإجمالي</td>
-                <td style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:right;">AED ${docTotal.toFixed(2)}</td>
+            <tr style="font-weight:600;background:#fbf8f0;">
+                <td colspan="3" style="${cellStyle}text-align:right;">Subtotal</td>
+                <td style="${cellStyle}text-align:right;">AED ${subtotal.toFixed(2)}</td>
+            </tr>
+            <tr style="font-weight:600;background:#fff;">
+                <td colspan="3" style="${cellStyle}text-align:right;">Adv. Amount</td>
+                <td style="${cellStyle}text-align:right;">AED ${advanceAmount.toFixed(2)}</td>
+            </tr>
+            <tr style="font-weight:600;background:#fbf8f0;">
+                <td colspan="3" style="${cellStyle}text-align:right;">Dis. %</td>
+                <td style="${cellStyle}text-align:right;">${discountPercent.toFixed(2)}%</td>
+            </tr>
+            <tr style="font-weight:800;background:#f3ead4;color:#1c365d;">
+                <td colspan="3" style="${cellStyle}text-align:right;">Grand Total / المبلغ الإجمالي</td>
+                <td style="${cellStyle}text-align:right;">AED ${docTotal.toFixed(2)}</td>
             </tr>
         `;
     }
