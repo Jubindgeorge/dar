@@ -71,8 +71,20 @@ const assert = require('node:assert/strict');
     assert.match(breakdownText,/Dis\. %\s+4\.90%/,'Invoice displays discount percentage');
     assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'Invoice displays grand total after the summary rows');
     assert.match(await page.locator('#p-table-body table').getAttribute('style'),/b8860b/,'Totals box uses matching gold borders');
-    assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
+    assert.equal(await page.locator('#a4-wrapper-element .section-terms').isVisible(),false,'October invoice hides its empty terms section');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container > table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    const fitThreshold = await page.evaluate(() => {
+      const page=document.getElementById('a4-wrapper-element');
+      const body=document.getElementById('p-table-body');
+      const makeRows=count=>{body.innerHTML='';for(let i=0;i<count;i++){const tr=document.createElement('tr');tr.innerHTML='<td>1</td><td>Test service '+i+'</td><td>1</td><td>100.00</td>';body.appendChild(tr);}};
+      makeRows(16); const sixteen=window.applyDarDocumentPrintFit(page); const sixteenClass=page.classList.contains('dar-single-page-fit');
+      makeRows(17); const seventeen=window.applyDarDocumentPrintFit(page); const seventeenClass=page.classList.contains('dar-single-page-fit');
+      return {sixteen,seventeen,sixteenClass,seventeenClass};
+    });
+    assert.ok(fitThreshold.sixteen>0 && fitThreshold.sixteen<=1,'Sixteen rows receive a valid single-page fit scale');
+    assert.equal(fitThreshold.sixteenClass,true,'Sixteen rows are marked for single-page output');
+    assert.equal(fitThreshold.seventeen,1,'Seventeen rows retain normal scale for pagination');
+    assert.equal(fitThreshold.seventeenClass,false,'Seventeen rows use multi-page output');
     await page.evaluate(() => {
       state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
     });
