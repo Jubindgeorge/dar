@@ -51,31 +51,56 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-TEST-001'));
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
-    assert.deepEqual(await page.locator('#p-table-body tr:first-child td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
-    assert.equal(await page.locator('#a4-wrapper-element #p-content-container thead th').count(),4,'Invoice print header has exactly four columns');
-    assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
-    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
+    assert.deepEqual(await page.locator('#p-table-body tr:first-child td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice table has #, Service, Qty and Rate');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container thead th').count(),4,'Document table has four columns');
+    assert.match(await page.locator('#p-table-body').innerText(),/Grand Total \/ المبلغ الإجمالي\\s+AED 200\\.00/,'Legacy invoice grand total remains unchanged');
+    assert.match(await page.locator('#p-table-body').innerText(),/Subtotal\\s+AED 200\\.00/,'Subtotal row appears');
+    assert.match(await page.locator('#p-table-body').innerText(),/Adv\\. Amount\\s+AED 0\\.00/,'Advance row appears');
+    assert.match(await page.locator('#p-table-body').innerText(),/Dis\\. %\\s+0\\.00%/,'Discount percentage row appears');
+    assert.equal(await page.locator('#p-client-name').innerText(),'Sample Company','Company recipient shows company only');
+    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Company recipient has no contact row');
     await page.evaluate(() => {
       state.documents.push({
         refCode:'CI-BREAKDOWN-001',type:'Invoice',clientName:'Breakdown Client',companyName:'Breakdown Co',branchTag:'company',
         createdDate:'2026-11-21',items:[{serviceName:'Services',p:4907,q:1}],
-        paymentBreakdownVersion:1,subtotalAmount:4907,processingCharges:200,discountAmount:250,
+        subtotalAmount:4907,processingCharges:200,discountAmount:250,discountPercent:5,
         advanceAmount:500,advanceAmt:500,totalAmount:4857
       });
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
-    assert.doesNotMatch(breakdownText,/Sub Total|Advance Payment|Processing Charges|Discounts/,'October invoice hides newer breakdown rows');
-    assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
-    assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    assert.match(breakdownText,/Subtotal\\s+AED 4907\\.00/,'Stored subtotal is displayed');
+    assert.match(breakdownText,/Adv\\. Amount\\s+AED 500\\.00/,'Stored advance is displayed');
+    assert.match(breakdownText,/Dis\\. %\\s+5\\.00%/,'Stored discount percentage is displayed');
+    assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\\s+AED 4857\\.00/,'Stored grand total is displayed');
+    assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'Document has no removed terms box');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','Document table font size is 12px');
     await page.evaluate(() => {
       state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',branchTag:'company',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
+      state.documents.push(
+        {refCode:'CI-QTN-COMPANY',type:'Quotation',clientName:'Contact Name',companyName:'Quotation Company LLC',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Company service',p:100,q:1}],subtotalAmount:100,discountPercent:10,advanceAmt:0,totalAmount:90},
+        {refCode:'CI-QTN-STAFF',type:'Quotation',clientName:'Staff Member',companyName:'Staff Employer LLC',contactPerson:'Do Not Display',branchTag:'staff',items:[{serviceName:'Staff service',p:200,q:1}],subtotalAmount:200,discountPercent:5,advanceAmt:50,totalAmount:190},
+        {refCode:'CI-QTN-DIRECT',type:'Quotation',clientName:'Direct Customer',companyName:'Direct Clients',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Direct service',p:75,q:1}],subtotalAmount:75,discountPercent:0,advanceAmt:0,totalAmount:75}
+      );
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-ZERO-001'));
-    assert.match(await page.locator('#p-table-body').innerText(),/AED 0\.00/,'A deliberately zero-total invoice must not be recalculated from its line items');
+    assert.match(await page.locator('#p-table-body').innerText(),/Grand Total \/ المبلغ الإجمالي\\s+AED 0\\.00/,'A deliberately zero-total document stays zero');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-COMPANY'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Quotation Company LLC','Company quotation shows company name only');
+    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Company quotation hides contact person');
+    assert.match(await page.locator('#p-table-body').innerText(),/Subtotal\\s+AED 100\\.00[\\s\\S]*Adv\\. Amount\\s+AED 0\\.00[\\s\\S]*Dis\\. %\\s+10\\.00%[\\s\\S]*Grand Total \/ المبلغ الإجمالي\\s+AED 90\\.00/,'Quotation totals follow the requested order');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-STAFF'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Staff Member','Staff quotation shows staff name');
+    assert.equal(await page.locator('#p-company-name').innerText(),'Staff Employer LLC','Staff quotation shows company name');
+    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'block','Staff quotation shows company line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Do Not Display/,'Staff quotation omits contact person');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-DIRECT'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Direct Customer','Direct quotation shows client name only');
+    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Direct quotation hides company line');
+    assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/border-collapse: collapse/,'Document table uses collapsed borders');
+    assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/b8860b/,'Document table uses gold borders');
+    assert.ok(await page.locator('style').evaluateAll(nodes=>nodes.some(node=>node.textContent.includes('@media print') && node.textContent.includes('#a4-wrapper-element'))),'Print CSS isolates the A4 document');
     await page.evaluate(() => {
-          await page.evaluate(() => {
       state.documents.push(
         {refCode:'CI-QTN-COMPANY',type:'Quotation',clientName:'Contact Name',companyName:'Quotation Company LLC',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Company service',p:100,q:1}],subtotalAmount:100,discountPercent:10,advanceAmt:0,totalAmount:90},
         {refCode:'CI-QTN-STAFF',type:'Quotation',clientName:'Staff Member',companyName:'Staff Employer LLC',contactPerson:'Do Not Display',branchTag:'staff',items:[{serviceName:'Staff service',p:200,q:1}],subtotalAmount:200,discountPercent:5,advanceAmt:50,totalAmount:190},
