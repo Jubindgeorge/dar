@@ -46,3 +46,9 @@ assert.match(html, /xlsx\.full\.min\.js/, 'XLSX export library loaded');
 assert.match(app, /getDarDocumentPaymentStatus/, 'read-only payment status rules');
 assert.match(app, /paymentDueDate/, 'overdue requires an explicit due date');
 assert.match(html, /dash-v2-payment-status/, 'dashboard displays derived payment status counts');
+
+assert.match(html, /expense-search/, 'expense register supports text search');
+assert.match(html, /ledger-search/, 'financial ledger supports text search');
+assert.match(app, /window\.duplicateInvoiceDraft\s*=\s*function/, 'duplicate draft action is implemented');
+assert.match(app, /window\.viewDocumentHistory\s*=\s*function/, 'document history action is implemented');
+assert.match(app, /No additional payment entries recorded/, 'history view handles documents without payments');
