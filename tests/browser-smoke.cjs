@@ -98,6 +98,13 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/border-collapse:\s*collapse/,'Document table uses collapsed borders');
     assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/b8860b/,'Document table uses gold borders');
     assert.ok(await page.locator('style').evaluateAll(nodes=>nodes.some(node=>node.textContent.includes('@media print') && node.textContent.includes('#a4-wrapper-element'))),'Print CSS isolates the A4 document');
+    const printInvoked = await page.evaluate(() => {
+      let called = false;
+      window.print = () => { called = true; };
+      document.querySelector('#document-preview-modal .preview-modal-toolbar button[onclick="window.print()"]').click();
+      return called;
+    });
+    assert.equal(printInvoked,true,'Print toolbar button invokes the browser print dialog');
     await page.evaluate(() => {
       state.documents.push({refCode:'CI-DUP-001',type:'Invoice',clientName:'Test Staff',companyName:'Test Company',contactPerson:'Not copied for staff',notes:'Duplicate note',advanceAmount:75,paymentLogs:[{date:'2026-11-20',amount:25,note:'Balance'}],items:[{serviceName:'Visa renewal',description:'Renewal service',p:100,q:2}],totalAmount:200});
       window.duplicateInvoiceDraft('CI-DUP-001');
