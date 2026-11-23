@@ -66,6 +66,12 @@ const assert = require('node:assert/strict');
         subtotalAmount:4907,processingCharges:200,discountAmount:250,discountPercent:5,
         advanceAmount:500,advanceAmt:500,totalAmount:4857
       });
+      state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',branchTag:'company',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
+      state.documents.push(
+        {refCode:'CI-QTN-COMPANY',type:'Quotation',clientName:'Contact Name',companyName:'Quotation Company LLC',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Company service',p:100,q:1}],subtotalAmount:100,discountPercent:10,advanceAmt:0,totalAmount:90},
+        {refCode:'CI-QTN-STAFF',type:'Quotation',clientName:'Staff Member',companyName:'Staff Employer LLC',contactPerson:'Do Not Display',branchTag:'staff',items:[{serviceName:'Staff service',p:200,q:1}],subtotalAmount:200,discountPercent:5,advanceAmt:50,totalAmount:190},
+        {refCode:'CI-QTN-DIRECT',type:'Quotation',clientName:'Direct Customer',companyName:'Direct Clients',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Direct service',p:75,q:1}],subtotalAmount:75,discountPercent:0,advanceAmt:0,totalAmount:75}
+      );
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
@@ -75,20 +81,12 @@ const assert = require('node:assert/strict');
     assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\\s+AED 4857\\.00/,'Stored grand total is displayed');
     assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'Document has no removed terms box');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','Document table font size is 12px');
-    await page.evaluate(() => {
-      state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',branchTag:'company',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
-      state.documents.push(
-        {refCode:'CI-QTN-COMPANY',type:'Quotation',clientName:'Contact Name',companyName:'Quotation Company LLC',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Company service',p:100,q:1}],subtotalAmount:100,discountPercent:10,advanceAmt:0,totalAmount:90},
-        {refCode:'CI-QTN-STAFF',type:'Quotation',clientName:'Staff Member',companyName:'Staff Employer LLC',contactPerson:'Do Not Display',branchTag:'staff',items:[{serviceName:'Staff service',p:200,q:1}],subtotalAmount:200,discountPercent:5,advanceAmt:50,totalAmount:190},
-        {refCode:'CI-QTN-DIRECT',type:'Quotation',clientName:'Direct Customer',companyName:'Direct Clients',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Direct service',p:75,q:1}],subtotalAmount:75,discountPercent:0,advanceAmt:0,totalAmount:75}
-      );
-    });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-ZERO-001'));
     assert.match(await page.locator('#p-table-body').innerText(),/Grand Total \/ المبلغ الإجمالي\\s+AED 0\\.00/,'A deliberately zero-total document stays zero');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-COMPANY'));
     assert.equal(await page.locator('#p-client-name').innerText(),'Quotation Company LLC','Company quotation shows company name only');
     assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Company quotation hides contact person');
-    assert.match(await page.locator('#p-table-body').innerText(),/Subtotal\\s+AED 100\\.00[\\s\\S]*Adv\\. Amount\\s+AED 0\\.00[\\s\\S]*Dis\\. %\\s+10\\.00%[\\s\\S]*Grand Total \/ المبلغ الإجمالي\\s+AED 90\\.00/,'Quotation totals follow the requested order');
+    assert.match(await page.locator('#p-table-body').innerText(),/Subtotal\\s+AED 100\\.00[\\s\\S]*Adv\\. Amount\\s+AED 0\\.00[\\s\\S]*Dis\\. %\\s+10\\.00%[\\s\\S]*Grand Total \/ المبلغ الإجمالي\\s+AED 90\\.00/,'Quotation totals follow requested order');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-STAFF'));
     assert.equal(await page.locator('#p-client-name').innerText(),'Staff Member','Staff quotation shows staff name');
     assert.equal(await page.locator('#p-company-name').innerText(),'Staff Employer LLC','Staff quotation shows company name');
@@ -101,28 +99,7 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/b8860b/,'Document table uses gold borders');
     assert.ok(await page.locator('style').evaluateAll(nodes=>nodes.some(node=>node.textContent.includes('@media print') && node.textContent.includes('#a4-wrapper-element'))),'Print CSS isolates the A4 document');
     await page.evaluate(() => {
-      state.documents.push(
-        {refCode:'CI-QTN-COMPANY',type:'Quotation',clientName:'Contact Name',companyName:'Quotation Company LLC',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Company service',p:100,q:1}],subtotalAmount:100,discountPercent:10,advanceAmt:0,totalAmount:90},
-        {refCode:'CI-QTN-STAFF',type:'Quotation',clientName:'Staff Member',companyName:'Staff Employer LLC',contactPerson:'Do Not Display',branchTag:'staff',items:[{serviceName:'Staff service',p:200,q:1}],subtotalAmount:200,discountPercent:5,advanceAmt:50,totalAmount:190},
-        {refCode:'CI-QTN-DIRECT',type:'Quotation',clientName:'Direct Customer',companyName:'Direct Clients',contactPerson:'Do Not Display',branchTag:'company',items:[{serviceName:'Direct service',p:75,q:1}],subtotalAmount:75,discountPercent:0,advanceAmt:0,totalAmount:75}
-      );
-    });
-    await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-COMPANY'));
-    assert.equal(await page.locator('#p-client-name').innerText(),'Quotation Company LLC','Company quotation displays company only');
-    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Company quotation hides contact person');
-    assert.match(await page.locator('#p-table-body').innerText(),/Subtotal\\s+AED 100\\.00[\\s\\S]*Adv\\. Amount\\s+AED 0\\.00[\\s\\S]*Dis\\. %\\s+10\\.00%[\\s\\S]*Grand Total \/ المبلغ الإجمالي\\s+AED 90\\.00/,'Quotation totals appear in requested order');
-    await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-STAFF'));
-    assert.equal(await page.locator('#p-client-name').innerText(),'Staff Member','Staff quotation displays staff name');
-    assert.equal(await page.locator('#p-company-name').innerText(),'Staff Employer LLC','Staff quotation displays company name');
-    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'block','Staff quotation shows company line');
-    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Do Not Display/,'Staff quotation omits contact person');
-    await page.evaluate(async () => window.previewInvoiceDocument('CI-QTN-DIRECT'));
-    assert.equal(await page.locator('#p-client-name').innerText(),'Direct Customer','Direct quotation displays client only');
-    assert.equal(await page.locator('#p-company-line').evaluate(e=>getComputedStyle(e).display),'none','Direct quotation hides company line');
-    assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/border-collapse: collapse/,'Document table uses collapsed borders');
-    assert.match(await page.locator('#a4-wrapper-element table').getAttribute('style'),/b8860b/,'Document table uses gold border');
-    assert.ok(await page.locator('style').evaluateAll(nodes=>nodes.some(node=>node.textContent.includes('@media print') && node.textContent.includes('#a4-wrapper-element'))),'Print CSS isolates A4 document');
-state.documents.push({refCode:'CI-DUP-001',type:'Invoice',clientName:'Test Staff',companyName:'Test Company',contactPerson:'Not copied for staff',notes:'Duplicate note',advanceAmount:75,paymentLogs:[{date:'2026-11-20',amount:25,note:'Balance'}],items:[{serviceName:'Visa renewal',description:'Renewal service',p:100,q:2}],totalAmount:200});
+      state.documents.push({refCode:'CI-DUP-001',type:'Invoice',clientName:'Test Staff',companyName:'Test Company',contactPerson:'Not copied for staff',notes:'Duplicate note',advanceAmount:75,paymentLogs:[{date:'2026-11-20',amount:25,note:'Balance'}],items:[{serviceName:'Visa renewal',description:'Renewal service',p:100,q:2}],totalAmount:200});
       window.duplicateInvoiceDraft('CI-DUP-001');
     });
     assert.equal(await page.locator('#st-ref-code').inputValue(),'','Duplicated document receives a new reference');
@@ -130,7 +107,7 @@ state.documents.push({refCode:'CI-DUP-001',type:'Invoice',clientName:'Test Staff
     assert.equal(await page.locator('#st-client-name').inputValue(),'Test Staff','Duplicate retains client');
     assert.equal(await page.locator('#st-spreadsheet-body tr').count(),1,'Duplicate retains line items');
     await page.evaluate(() => window.viewDocumentHistory('CI-DUP-001'));
-    assert.match(await page.locator('#modal-message').innerText(),/AED 25\.00/,'History view includes recorded payments');
+    assert.match(await page.locator('#modal-message').innerText(),/AED 25\\.00/,'History view includes recorded payments');
 
     const pdfResult = await page.evaluate(async () => {
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
