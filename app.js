@@ -1005,18 +1005,27 @@ window.previewInvoiceDocument = async function(refCode) {
 };
 
 /* Fit short documents to one A4 page for both browser print and PDF export. */
-window.applyDarDocumentPrintFit = function() {
-  const page = document.getElementById('a4-wrapper-element');
+window.applyDarDocumentPrintFit = function(targetPage) {
+  const page = targetPage || document.getElementById('a4-wrapper-element');
   if (!page) return 1;
   const rows = page.querySelectorAll('#p-table-body > tr:not(.dar-summary-host-row)').length;
   const single = rows <= 16;
   page.classList.toggle('dar-single-page-fit', single);
-  if (!single) { page.style.zoom='1'; page.style.width='800px'; page.style.maxWidth='800px'; page.style.setProperty('--dar-print-zoom','1'); return 1; }
-  page.style.zoom='1'; page.style.width='800px'; page.style.maxWidth='800px';
+  page.style.zoom = '1';
+  page.style.width = '800px';
+  page.style.maxWidth = '800px';
+  page.style.setProperty('--dar-print-zoom', '1');
+  if (!single) return 1;
+
+  // Measure the unscaled page, including notes, terms and signature artwork.
+  // The target is the printable A4 height at this template width.
   const height = Math.max(page.scrollHeight, page.getBoundingClientRect().height);
-  const zoom = Math.min(1, 1080 / Math.max(1,height));
-  page.style.zoom=String(zoom); page.style.width=(800/zoom)+'px'; page.style.maxWidth=(800/zoom)+'px';
-  page.style.setProperty('--dar-print-zoom',String(zoom)); return zoom;
+  const zoom = Math.min(1, 1080 / Math.max(1, height));
+  page.style.zoom = String(zoom);
+  page.style.width = (800 / zoom) + 'px';
+  page.style.maxWidth = (800 / zoom) + 'px';
+  page.style.setProperty('--dar-print-zoom', String(zoom));
+  return zoom;
 };
 // Export the existing invoice design as one correctly fitted A4 page.
 // Capture the original desktop-width invoice, not the scaled mobile preview.
@@ -1038,7 +1047,7 @@ window.saveAsPDF = async function() {
                 const copy = clonedDocument.getElementById(element.id);
                 if (copy) {
                     copy.style.transform = 'none';
-                    const zoom = window.applyDarDocumentPrintFit?.() || 1;
+                    const zoom = window.applyDarDocumentPrintFit?.(copy) || 1;
                     copy.style.zoom = String(zoom);
                     copy.style.width = (800 / zoom) + 'px';
                     copy.style.maxWidth = (800 / zoom) + 'px';
