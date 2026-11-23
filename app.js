@@ -354,6 +354,7 @@ window.switchTab = function(tabId) {
     if (tabId === 'works-detail' && typeof renderWorksDetailView === 'function') renderWorksDetailView();
     if (tabId === 'services-config' && typeof renderServicesCatalog === 'function') renderServicesCatalog();
     if (tabId === 'documents' && typeof renderDocumentsTable === 'function') renderDocumentsTable();
+    if (tabId === 'quotations' && typeof renderQuotationTable === 'function') renderQuotationTable();
     if (tabId === 'work-tracking' && typeof darRenderWorkTracking === 'function') darRenderWorkTracking();
     if (tabId === 'completed-files' && typeof darRenderCompletedFiles === 'function') darRenderCompletedFiles();
     if (tabId === 'expiry-notifications' && typeof darRenderExpiryNotifications === 'function') darRenderExpiryNotifications();
@@ -956,10 +957,10 @@ window.previewInvoiceDocument = async function(refCode) {
             const service = getWorkItemDescription(item) || 'Service Record';
             return `
                 <tr style="background:#fff;">
-                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${idx + 1}</td>
-                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
-                    <td style="padding:6px;border-bottom:1px solid #dedede;text-align:center;">${qty}</td>
-                    <td style="padding:6px 8px;border-bottom:1px solid #dedede;text-align:right;">${rate.toFixed(2)}</td>
+                    <td style="padding:6px;border-bottom:1px solid #d2b06b;text-align:center;">${idx + 1}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #d2b06b;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(service)}</td>
+                    <td style="padding:6px;border-bottom:1px solid #d2b06b;text-align:center;">${qty}</td>
+                    <td style="padding:6px 8px;border-bottom:1px solid #d2b06b;text-align:right;">${rate.toFixed(2)}</td>
                 </tr>
             `;
         }).join('') + (() => {
