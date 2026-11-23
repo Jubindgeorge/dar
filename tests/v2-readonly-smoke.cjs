@@ -33,7 +33,7 @@ assert.match(html, /client-date-from/, 'client date filters');
 assert.match(html, /works-date-from/, 'works date filters');
 assert.match(html, /expense-date-from/, 'expense date filters');
 assert.match(html, /ledger-date-from/, 'ledger date filters');
-assert.match(html, /section-terms/, 'invoice terms box');
+assert.doesNotMatch(html, /section-terms/, 'invoice printout excludes the removed terms box');
 assert.match(html, /st-legacy-discount-amt/, 'legacy discount compatibility');
 assert.match(app, /exportDarFinancialReport/, 'period report export');
 assert.match(app, /duplicateInvoiceDraft/, 'duplicate invoice draft');
