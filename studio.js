@@ -5,6 +5,8 @@ function studioLocalISODate() {
 }
 function openStudio(type, editRefCode = null) {
     state.activeEditingId = editRefCode || null;
+    const studioPanel = document.getElementById('tab-studio');
+    if (studioPanel) studioPanel.classList.toggle('dar-edit-popup', !!editRefCode);
     switchTab('studio');
     const titleEl = document.getElementById('studio-mode-title');
     if (titleEl) titleEl.innerText = editRefCode ? `Edit ${type} - ${editRefCode}` : `Create New ${type}`;
@@ -117,6 +119,13 @@ function openStudio(type, editRefCode = null) {
     if (typeof populateCompanyClients === 'function') populateCompanyClients();
     recalculateStudioTotals();
 }
+
+window.closeStudioEditor = function() {
+    const panel = document.getElementById('tab-studio');
+    if (panel) panel.classList.remove('dar-edit-popup');
+    state.activeEditingId = null;
+    switchTab('documents');
+};
 
 function populateStudioClientDropdown() {
     const sel = document.getElementById('st-client-selector');
@@ -419,14 +428,21 @@ function commitDocumentToMemory() {
             const savedIndex = (state.documents || []).findIndex(d => d.refCode === refCode);
             if (savedIndex >= 0) state.documents[savedIndex] = { ...state.documents[savedIndex], ...payload };
             else { state.documents = state.documents || []; state.documents.push(payload); }
+            const wasEditing = !!state.activeEditingId;
+            const destinationTab = type === 'Quotation' ? 'quotations' : 'documents';
+            const studioPanel = document.getElementById('tab-studio');
+            if (studioPanel) studioPanel.classList.remove('dar-edit-popup');
+            if (wasEditing) switchTab(destinationTab);
+            if (typeof renderQuotationTable === 'function') renderQuotationTable();
+            if (typeof renderDocumentsTable === 'function') renderDocumentsTable();
             if (typeof showCustomModal === 'function') {
                 const staffAction = payload.branchTag === 'staff' && typeof openStaffModalFromInvoice === 'function'
                     ? `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); openStaffModalFromInvoice('${refCode}')">Complete Staff Details</button> `
                     : '';
-                showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
+                showCustomModal(wasEditing ? 'Document Updated' : 'Document Saved', `${type} ${refCode} ${wasEditing ? 'updated' : 'saved'} successfully. The original reference and payment history are retained.`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('${destinationTab}')">Back to ${type === 'Quotation' ? 'Quotations' : 'Invoices'}</button>`);
             }
             state.activeEditingId = null;
-            // Keep the completed entry visible until the user chooses the next action.
+            // Existing records are updated in place; the editor popup closes after the save.
         } else if (typeof showCustomModal === 'function') {
             showCustomModal('Save failed', 'The document could not be saved. Please check your connection and try again.');
         }
