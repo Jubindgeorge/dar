@@ -1294,7 +1294,7 @@ window.renderQuotationTable = function() {
             <td style="white-space:nowrap;text-align:center;">
                 <button type="button" class="btn btn-secondary" onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' title="Preview"><i class="fa-solid fa-eye"></i></button>
                 <button type="button" class="btn btn-secondary" onclick='openStudio("Quotation",${darSafeDocumentKey(d.refCode)})' title="Edit"><i class="fa-solid fa-pen"></i></button>
-                <button type="button" class="btn btn-primary" onclick='openQuotationConversion(${darSafeDocumentKey(d.refCode)})' title="Convert to invoice">Convert</button>
+                <button type="button" class="btn btn-primary" ${balance <= 0.005 ? 'disabled title="Quotation fully invoiced"' : 'onclick=\'openQuotationConversion(' + darSafeDocumentKey(d.refCode) + ')\' title="Convert to invoice"'}>${balance <= 0.005 ? 'Fully Invoiced' : 'Convert'}</button>
             </td>
         </tr>`;
     }).join('');
