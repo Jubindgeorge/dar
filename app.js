@@ -1058,7 +1058,7 @@ window.getDarDocumentPaymentStatus = function(doc) {
 };
 // V2: read-only financial overview; does not change ledger or invoice calculations.
 window.getDarV2FinancialOverview = function(documents, expenses) {
-    const docs = Array.isArray(documents) ? documents : [];
+    const docs = (Array.isArray(documents) ? documents : []).filter(doc => (doc.type || 'Invoice') !== 'Quotation');
     const costs = Array.isArray(expenses) ? expenses : [];
     const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0, paid: 0, partial: 0, unpaid: 0, overdue: 0 };
     docs.forEach(doc => {
@@ -1094,7 +1094,7 @@ window.buildDarFinancialReportRows = function() {
     (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{
         const row=get(keyFor(d.transactionDate||d.createdDate||d.date));
         const total=Math.max(0,Number(getDarDocumentAmount(d))||0);
-        const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(d.paymentLogs||[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0));
+        const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(Array.isArray(d.paymentLogs)?d.paymentLogs:[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0));
         row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;row[window.getDarDocumentPaymentStatus(d)]++;
     });
     (state.monthlyExpenses||[]).forEach(e=>{
@@ -1108,7 +1108,7 @@ window.buildDarFinancialReportRows = function() {
 window.exportDarFinancialReport = function() {
     const rows=window.buildDarFinancialReportRows();
     const period=document.getElementById('dar-report-period')?.value||'monthly';
-    const name='dar-financial-report-'+period+'-'+new Date().toISOString().slice(0,10);
+    const name='dar-financial-report-'+period+'-'+localISODate();
     if(window.XLSX?.utils){
         const sheet=window.XLSX.utils.aoa_to_sheet(rows);
         const book=window.XLSX.utils.book_new();
