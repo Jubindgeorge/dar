@@ -909,8 +909,9 @@ window.previewInvoiceDocument = async function(refCode) {
     
     const companyValue = String(doc.companyName || '').trim();
     const clientValue = String(doc.clientName || '').trim();
-    const isStaffDocument = (typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff';
-    const isCompanyDocument = !isStaffDocument && companyValue && !/^direct clients?$/i.test(companyValue);
+    const isDirectClient = !companyValue || /^direct clients?$/i.test(companyValue);
+    const isStaffDocument = !isDirectClient && ((typeof getAutomaticWorkBranch === 'function' && getAutomaticWorkBranch(doc) === 'staff') || doc.branchTag === 'staff');
+    const isCompanyDocument = !isStaffDocument && !isDirectClient;
     const primaryRecipient = isStaffDocument ? (clientValue || 'N/A') : isCompanyDocument ? companyValue : (clientValue || 'N/A');
     // Client-facing PDFs show only the company, staff + company, or direct client.
     const secondaryLabel = 'Company:';
