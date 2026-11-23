@@ -46,6 +46,8 @@ function openStudio(type, editRefCode = null) {
 
             const contactInput = document.getElementById('st-contact-person');
             if (contactInput) contactInput.value = doc.contactPerson || '';
+            const notesInput = document.getElementById('st-notes');
+            if (notesInput) notesInput.value = doc.notes || '';
 
             const govtInput = document.getElementById('st-govt-amt');
             if (govtInput) govtInput.value = doc.govtAmt ?? doc.govtFee ?? 0;
@@ -73,7 +75,8 @@ function openStudio(type, editRefCode = null) {
                 tbody.innerHTML = editItems.map((item, idx) => `
                     <tr>
                         <td style="text-align: center;">${idx + 1}</td>
-                        <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Package name"></td>
+                        <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Work title"></td>
+                        <td><input type="text" class="st-item-description" value="${escapeHtml(item.description || '')}" placeholder="Description"></td>
                         <td style="text-align: center;"><input type="number" class="st-item-qty" value="${item.q || item.quantity || 1}" oninput="recalculateStudioTotals()"></td>
                         <td style="text-align: right;"><input type="number" class="st-item-price" value="${item.p || item.price || 0}" oninput="recalculateStudioTotals()"></td>
                         <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
@@ -94,6 +97,8 @@ function openStudio(type, editRefCode = null) {
         if (compNameInput) compNameInput.value = '';
         const contactInput = document.getElementById('st-contact-person');
         if (contactInput) contactInput.value = '';
+        const notesInput = document.getElementById('st-notes');
+        if (notesInput) notesInput.value = '';
         const govtInput = document.getElementById('st-govt-amt');
         if (govtInput) govtInput.value = 0;
         const totalInput = document.getElementById('st-total-amt');
@@ -208,7 +213,8 @@ function injectServicePresetToItems() {
     tbody.innerHTML = (srv.items || []).map((item, idx) => `
         <tr>
             <td style="text-align: center;">${idx + 1}</td>
-            <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Package name"></td>
+            <td><input type="text" class="st-item-title" value="${escapeHtml(item.packageName || item.serviceName || item.title || item.d || '')}" placeholder="Service / Work title"></td>
+            <td><input type="text" class="st-item-description" value="${escapeHtml(item.description || '')}" placeholder="Description"></td>
             <td style="text-align: center;"><input type="number" class="st-item-qty" value="${item.q || 1}" oninput="recalculateStudioTotals()"></td>
             <td style="text-align: right;"><input type="number" class="st-item-price" value="${item.p || 0}" oninput="recalculateStudioTotals()"></td>
             <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
@@ -225,7 +231,8 @@ function addStudioRow() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td style="text-align: center;">${rowCount}</td>
-        <td><input type="text" class="st-item-title" placeholder="Service / Package name"></td>
+        <td><input type="text" class="st-item-title" placeholder="Service / Work title"></td>
+        <td><input type="text" class="st-item-description" placeholder="Description"></td>
         <td style="text-align: center;"><input type="number" class="st-item-qty" value="1" oninput="recalculateStudioTotals()"></td>
         <td style="text-align: right;"><input type="number" class="st-item-price" value="0" oninput="recalculateStudioTotals()"></td>
         <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove(); recalculateStudioTotals();" class="btn btn-danger" style="padding: 4px 8px;">×</button></td>
@@ -266,6 +273,7 @@ function commitDocumentToMemory() {
     const clientName = document.getElementById('st-client-name')?.value.trim() || '';
     const companyName = document.getElementById('st-company-name')?.value.trim() || '';
     const contactPerson = document.getElementById('st-contact-person')?.value.trim() || '';
+    const notes = document.getElementById('st-notes')?.value.trim() || '';
     const govtAmt = parseFloat(document.getElementById('st-govt-amt')?.value) || 0;
     const subtotalAmt = [...document.querySelectorAll('#st-spreadsheet-body tr')].reduce((sum, row) => {
         const qty = Number(row.querySelector('.st-item-qty')?.value) || 0;
@@ -339,6 +347,7 @@ function commitDocumentToMemory() {
             packageName: rowTitle,
             serviceName: rowTitle,
             title: rowTitle,
+            description: row.querySelector('.st-item-description')?.value.trim() || '',
             q: parseFloat(row.querySelector('.st-item-qty')?.value) || 1,
             p: parseFloat(row.querySelector('.st-item-price')?.value) || 0
         });
@@ -363,6 +372,7 @@ function commitDocumentToMemory() {
         clientName: clientName || companyName || 'Direct Client',
         companyName: companyName || 'Direct Clients',
         contactPerson,
+        notes,
         companyClientId: state.selectedCompanyClientId || '',
         createdDate: previousDocument ? (previousDocument.createdDate || previousDocument.createdAt || '') : createdDate,
         transactionDate: createdDate,
