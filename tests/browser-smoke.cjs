@@ -54,7 +54,7 @@ const assert = require('node:assert/strict');
     assert.deepEqual(await page.locator('#p-table-body > tr:first-child > td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container thead th').count(),4,'Invoice print header has exactly four columns');
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
-    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
+    assert.match(await page.locator('#p-table-body').innerText(),/Grand Total \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
     await page.evaluate(() => {
       state.documents.push({
         refCode:'CI-BREAKDOWN-001',type:'Invoice',clientName:'Breakdown Client',companyName:'Breakdown Co',
@@ -65,7 +65,7 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
+    assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
     assert.match(breakdownText,/Subtotal\\s+AED 5107\\.00/,'Invoice displays subtotal including processing charges');
     assert.match(breakdownText,/Adv\\. Amount\\s+AED 500\\.00/,'Invoice displays advance amount');
     assert.match(breakdownText,/Dis\\. %\\s+0\\.00%/,'Invoice displays discount percentage');
