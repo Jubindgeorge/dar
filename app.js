@@ -965,7 +965,8 @@ window.previewInvoiceDocument = async function(refCode) {
             `;
         }).join('') + (() => {
             const itemSubtotal = normalizedItems.reduce((sum, item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)), 0);
-            const subtotal = Number.isFinite(Number(doc.subtotalAmount ?? doc.subTotal)) ? Number(doc.subtotalAmount ?? doc.subTotal) : itemSubtotal;
+            const storedSubtotal = Number(doc.subtotalAmount ?? doc.subTotal);
+            const subtotal = (Number.isFinite(storedSubtotal) ? storedSubtotal : itemSubtotal) + Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0);
             const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
             const discountPercent = Math.max(0, Number(doc.discountPercent) || 0);
             const gold = '#b8860b';
