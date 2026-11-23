@@ -72,7 +72,7 @@ const assert = require('node:assert/strict');
     assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'Invoice displays grand total after the summary rows');
     assert.match(await page.locator('#p-table-body table').getAttribute('style'),/b8860b/,'Totals box uses matching gold borders');
     assert.equal(await page.locator('#a4-wrapper-element .section-terms').isVisible(),false,'October invoice hides its empty terms section');
-    assert.equal(await page.locator('#a4-wrapper-element #p-content-container > table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container > table').evaluate(e=>getComputedStyle(e).fontSize),'10px','October invoice table font matches the totals summary size');
     const fitThreshold = await page.evaluate(() => {
       const page=document.getElementById('a4-wrapper-element');
       const body=document.getElementById('p-table-body');
