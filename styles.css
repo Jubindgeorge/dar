@@ -593,3 +593,6 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
     #a4-wrapper-element table { page-break-inside:avoid; }
     #a4-wrapper-element img { max-width:100% !important; }
 }
+
+/* Validation and confirmation dialogs must sit above the popup editor. */
+.custom-modal-backdrop { z-index:2700; }
