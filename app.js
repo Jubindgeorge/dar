@@ -420,9 +420,11 @@ function normalizeCompanyFolderKey(value) {
 }
 
 function getAutomaticWorkBranch(doc) {
-    const company = normalizeCompanyFolderKey(doc?.companyName || '');
+    const rawCompany = String(doc?.companyName || '').trim();
+    const company = normalizeCompanyFolderKey(rawCompany);
     const client = normalizeCompanyFolderKey(doc?.clientName || '');
-    if (!String(doc?.companyName || '').trim()) return 'unassigned';
+    // "Direct Clients" is a storage placeholder, not a real company account.
+    if (!rawCompany || /^direct clients?$/i.test(rawCompany)) return 'unassigned';
     return client && company !== client ? 'staff' : 'company';
 }
 
