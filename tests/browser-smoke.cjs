@@ -51,7 +51,7 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-TEST-001'));
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
-    assert.deepEqual(await page.locator('#p-table-body tr:first-child > td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
+    assert.deepEqual(await page.locator('#p-table-body > tr:first-child > td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container thead th').count(),4,'Invoice print header has exactly four columns');
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
     assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
