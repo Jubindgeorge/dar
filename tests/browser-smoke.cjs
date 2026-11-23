@@ -121,7 +121,7 @@ const assert = require('node:assert/strict');
     assert.equal(printLayout.toolbarDisplay,'none','Print layout hides preview toolbar controls');
     const fixedFrame = await page.evaluate(() => ({position:getComputedStyle(document.getElementById('document-preview-modal'),'::after').position,inset:getComputedStyle(document.getElementById('document-preview-modal'),'::after').inset,border:getComputedStyle(document.getElementById('document-preview-modal'),'::after').borderTopWidth}));
     assert.equal(fixedFrame.position,'fixed','Print gold frame is fixed to the physical sheet, not the content height');
-    assert.equal(fixedFrame.inset,'1mm','Print gold frame is inset 1mm from all four paper edges');
+    assert.ok(Math.abs(parseFloat(fixedFrame.inset)-3.77953)<0.01,'Print gold frame is inset exactly 1mm (3.77953 CSS px) from all four paper edges');
     assert.equal(fixedFrame.border,'1px','Print gold frame is exactly 1px');
     assert.ok(printLayout.pageWidth>0,'A4 document retains a printable width');
     await page.emulateMedia({media:'screen'});
