@@ -52,3 +52,15 @@ assert.match(html, /ledger-search/, 'financial ledger supports text search');
 assert.match(app, /window\.duplicateInvoiceDraft\s*=\s*function/, 'duplicate draft action is implemented');
 assert.match(app, /window\.viewDocumentHistory\s*=\s*function/, 'document history action is implemented');
 assert.match(app, /No additional payment entries recorded/, 'history view handles documents without payments');
+
+assert.match(html, /id="tab-quotations"/, 'quotations have a separate workspace');
+assert.match(html, /id="quotation-conversion-modal"/, 'quotation conversion dialog exists');
+assert.match(app, /window\.renderQuotationTable\s*=\s*function/, 'quotation register has its own renderer');
+assert.match(app, /root\.transaction\(/, 'quotation conversion updates balances atomically');
+assert.match(app, /invoicedStageIndexes/, 'stage invoices cannot duplicate already invoiced items');
+assert.match(app, /sourceQuotationRef/, 'progress invoices link back to the source quotation');
+assert.match(staff, /dar-edit-popup/, 'existing document editing opens as a popup');
+assert.match(staff, /Billed stages are locked/, 'stage-linked quotation rows are protected');
+assert.match(styles, /@media print/, 'invoice and quotation previews have an A4 print layout');
+assert.match(app, /Adv\. Amount/, 'PDF summary displays advance amount');
+assert.match(app, /Dis\. %/, 'PDF summary displays discount percentage');
