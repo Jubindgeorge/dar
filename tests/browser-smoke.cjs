@@ -27,25 +27,41 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#staff-import-file').isDisabled(),false,'Excel/PDF file selection is enabled after choosing a company');
     assert.equal(await page.locator('#staff-import-button').isDisabled(),true,'Import action stays disabled until a file preview is ready');
     const mohrePreview = await page.evaluate(async () => {
-      const rows = [
+      const page1Items = [
         'The List Of Employees',
         'Passport Number Person Name Card Type Job Name Nationality Card Number Contract Type'
       ];
-      for (let index=0; index<22; index++) {
+      const page2Items = [
+        'The List Of Employees',
+        'Passport Number Person Name Card Type Job Name Nationality Card Number Contract Type'
+      ];
+      const employeeLine = index => {
         const passport = index===16 ? '12040746' : 'P'+String(1000000+index);
-        const person = String(31601040264647+index);
         const name = index===0 ? 'MOHAMMAD IDRIS MOHAMMAD MUNSHI' : index===16 ? 'SUJAN BHANDARI' : 'TEST EMPLOYEE '+String(index+1).padStart(2,'0');
         const nationality = index===16 ? 'NEPAL' : 'INDIA';
         const card = String(153447450+index);
-        const expiry = index===16 ? '31/08/2028' : '14/09/2028';
-        rows.push(passport+' '+name+' '+person+' NEW ELECTRONIC WORK PERMIT BUILDING LABOURER '+nationality+' '+card+' '+expiry+' LIMITED');
+        return passport+' '+name+' RENEW ELECTRONIC WORK PERMIT BUILDING LABOURER '+nationality+' '+card+' LIMITED';
+      };
+      const personNumber = index => '316010402646'+String(47+index).padStart(2,'0');
+      for (let index=0; index<16; index++) {
+        page1Items.push(employeeLine(index));
+        page1Items.push(index===0 ? '14/09/2028' : '14/09/2028');
+        if (index<15) page1Items.push(personNumber(index));
       }
-      const items = rows.map((str,index) => ({str,transform:[1,0,0,1,40,1000-index*20]}));
+      // The page starts with the previous page's trailing Person Labour No.
+      page2Items.push(personNumber(15));
+      for (let index=16; index<22; index++) {
+        page2Items.push(employeeLine(index));
+        page2Items.push(index===16 ? '31/08/2028' : '14/09/2028');
+        page2Items.push(personNumber(index));
+      }
+      const makeItems = rows => rows.map((str,index) => ({str,transform:[1,0,0,1,40,1000-index*20]}));
+      const pageItems = [makeItems(page1Items),makeItems(page2Items)];
       window.pdfjsLib = {
         GlobalWorkerOptions:{},
         getDocument:() => ({promise:Promise.resolve({
           numPages:2,
-          getPage:async pageNo => ({getTextContent:async () => ({items:pageNo===1?items.slice(0,18):items.slice(18)})})
+          getPage:async pageNo => ({getTextContent:async () => ({items:pageItems[pageNo-1]})})
         })})
       };
       await window.previewStaffImportFile({name:'mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
@@ -55,7 +71,7 @@ const assert = require('node:assert/strict');
     assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first full employee name');
     assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts the page-two employee');
     assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
-    assert.match(mohrePreview,/31601040264663/,'MOHRE parser keeps the person number separate from the numeric passport');
+    assert.match(mohrePreview,/31601040264663/,'MOHRE parser assigns the page-two Person Labour No. to the correct employee');
     const pipeMohrePreview = await page.evaluate(async () => {
       const rows = [
         'The List Of Employees',
