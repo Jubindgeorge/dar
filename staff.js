@@ -354,7 +354,7 @@
             const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
             for (let i=0;i<flat.length;i++) {
                 const passport = flat[i];
-                if (!passportPattern.test(passport) || !/\\d/.test(passport)) continue;
+                if (!passportPattern.test(passport) || (!/[A-Z]/i.test(passport) && passport.length !== 8)) continue;
                 let idIndex = -1;
                 for (let j=i+1;j<flat.length && j<i+35;j++) { if (idPattern.test(flat[j])) { idIndex=j; break; } }
                 if (idIndex < 0) continue;
