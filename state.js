@@ -58,6 +58,7 @@ function initFirebaseListeners() {
         const val = snapshot.val();
         state.staff = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderStaffTable === 'function') renderStaffTable();
+        if (typeof renderCompanyStaffLedger === 'function') renderCompanyStaffLedger();
     }, error => showFirebaseReadError('staff', error));
 
     db.ref('companyClients').on('value', snapshot => {
