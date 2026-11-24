@@ -339,7 +339,15 @@ const assert = require('node:assert/strict');
     await page.locator('#st-notes').fill('Updated in place');
     const editResult = await page.evaluate(() => {
       const oldRef=db.ref; const oldModal=window.showCustomModal; const calls=[];
-      db.ref=path=>({update:(payload,callback)=>{calls.push({path,payload});callback(null);}});
+      db.ref=path=>({
+        update:(payload,callback)=>{calls.push({path,payload});callback(null);},
+        transaction:(updater,callback)=>{
+          const current=state.documents.find(doc=>('documents/'+doc.refCode)===path) || null;
+          const next=updater(current);
+          calls.push({path,payload:next});
+          callback(null,next!==undefined,{val:()=>next});
+        }
+      });
       window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
       try { commitDocumentToMemory(); return calls; } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
     });
