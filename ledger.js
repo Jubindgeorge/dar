@@ -302,6 +302,16 @@ window.closeAddPaymentModal = function() {
     document.getElementById('payment-modal').style.display = 'none';
 };
 
+function transactDarDocument(refCode, update) {
+    if (!db) return Promise.reject(new Error('Firebase is not connected.'));
+    return new Promise((resolve, reject) => {
+        db.ref('documents/' + refCode).transaction(update, (error, committed, snapshot) => {
+            if (error) reject(error);
+            else resolve({committed, snapshot});
+        }, false);
+    });
+}
+
 window.savePaymentLogData = async function() {
     const select = document.getElementById('acc-invoice-select');
     if (!select || !select.value) return;
@@ -311,23 +321,31 @@ window.savePaymentLogData = async function() {
     const amount = Number(document.getElementById('pay-input-amount').value);
     const note = document.getElementById('pay-input-note').value;
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter a valid payment amount.'); return; }
-    const invoiceTotal = Number(getDarDocumentAmount(doc)) || 0;
-    const alreadyPaid = window.getDarDocumentPaidAmount(doc);
-    if (amount > Math.max(0, invoiceTotal - alreadyPaid)) { alert('This payment is greater than the remaining balance. Please check the amount.'); return; }
-
-    const nextLogs = window.getDarDocumentPaymentLogs(doc);
-    let advanceIncluded = doc.advanceIncludedInPaymentLogs;
-    if (advanceIncluded == null) {
-        const oldLogged = nextLogs.reduce((sum, entry) => sum + Math.max(0, Number(entry.amount) || 0), 0);
-        const oldAdvance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
-        advanceIncluded = oldLogged >= oldAdvance;
-    }
-    nextLogs.push({date,transactionDate:date,amount,note,createdAt:new Date().toISOString(),createdBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'});
-    const patch = {paymentLogs:nextLogs,advanceIncludedInPaymentLogs:advanceIncluded};
+    const payment = {date,transactionDate:date,amount,note,createdAt:new Date().toISOString(),createdBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
+    let validationError = '';
     try {
-        await saveStateToFirebase('documents', doc.refCode, patch);
-        doc.paymentLogs = nextLogs;
-        doc.advanceIncludedInPaymentLogs = advanceIncluded;
+        const result = await transactDarDocument(doc.refCode, current => {
+            if (!current) return;
+            const total = Number(getDarDocumentAmount(current)) || 0;
+            const paid = window.getDarDocumentPaidAmount(current);
+            if (amount > Math.max(0, total - paid) + 0.005) {
+                validationError = 'This payment is greater than the latest remaining balance. Refresh the invoice and try again.';
+                return;
+            }
+            const logs = window.getDarDocumentPaymentLogs(current);
+            let advanceIncluded = current.advanceIncludedInPaymentLogs;
+            if (advanceIncluded == null) {
+                const logged = logs.reduce((sum, entry) => sum + Math.max(0, Number(entry.amount) || 0), 0);
+                const advance = Math.max(0, Number(current.advanceAmount ?? current.advanceAmt ?? current.advance ?? 0) || 0);
+                advanceIncluded = logged >= advance;
+            }
+            logs.push(payment);
+            current.paymentLogs = logs;
+            current.advanceIncludedInPaymentLogs = advanceIncluded;
+            return current;
+        });
+        if (!result.committed) { alert(validationError || 'The invoice changed while saving. Refresh and retry.'); return; }
+        Object.assign(doc, result.snapshot.val() || {});
         closeAddPaymentModal();
         renderAccountsLedgerDetail(doc.refCode);
         renderFullLedgerTableBody();
@@ -339,12 +357,21 @@ window.savePaymentLogData = async function() {
 window.deletePaymentLog = async function(refCode, index) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
-    const nextLogs = window.getDarDocumentPaymentLogs(doc);
-    if (!Number.isInteger(index) || index < 0 || index >= nextLogs.length) return;
-    nextLogs.splice(index, 1);
+    const selectedLogs = window.getDarDocumentPaymentLogs(doc);
+    if (!Number.isInteger(index) || index < 0 || index >= selectedLogs.length) return;
+    const targetFingerprint = JSON.stringify(selectedLogs[index]);
     try {
-        await saveStateToFirebase('documents', doc.refCode, {paymentLogs:nextLogs});
-        doc.paymentLogs = nextLogs;
+        const result = await transactDarDocument(refCode, current => {
+            if (!current) return;
+            const logs = window.getDarDocumentPaymentLogs(current);
+            const currentIndex = logs.findIndex(entry => JSON.stringify(entry) === targetFingerprint);
+            if (currentIndex < 0) return;
+            logs.splice(currentIndex, 1);
+            current.paymentLogs = logs;
+            return current;
+        });
+        if (!result.committed) { alert('That payment entry changed or was removed by another user. Refresh the invoice.'); return; }
+        Object.assign(doc, result.snapshot.val() || {});
         renderAccountsLedgerDetail(refCode);
         renderFullLedgerTableBody();
     } catch (error) {
@@ -452,10 +479,22 @@ window.promptEditAdvance = async function() {
     const total = Number(getDarDocumentAmount(doc)) || 0;
     const proposedPaid = window.getDarDocumentPaidAmount({...doc,advanceAmount:value});
     if (Math.max(value,proposedPaid) > total + 0.005) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
+    let validationError = '';
     try {
-        await saveStateToFirebase('documents', doc.refCode, {advanceAmount:value,advanceAmt:value});
-        doc.advanceAmount = value;
-        doc.advanceAmt = value;
+        const result = await transactDarDocument(doc.refCode, current => {
+            if (!current) return;
+            const totalNow = Number(getDarDocumentAmount(current)) || 0;
+            const paidNow = window.getDarDocumentPaidAmount({...current,advanceAmount:value});
+            if (Math.max(value,paidNow) > totalNow + 0.005) {
+                validationError = 'Advance and recorded payments cannot exceed the latest invoice total.';
+                return;
+            }
+            current.advanceAmount = value;
+            current.advanceAmt = value;
+            return current;
+        });
+        if (!result.committed) { alert(validationError || 'The invoice changed while saving. Refresh and retry.'); return; }
+        Object.assign(doc, result.snapshot.val() || {});
         renderAccountsLedgerDetail(doc.refCode);
         renderFullLedgerTableBody();
     } catch (error) {
