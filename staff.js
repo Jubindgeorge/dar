@@ -388,7 +388,7 @@
                 if(pageIndex>0){
                     const firstY=anchors[0].y;
                     items.filter(item=>item.x>=85 && item.x<235 && item.y>firstY &&
-                        personPattern.test(item.text)).forEach(item=>leadingPersonNumbers.push(item.text));
+                        personPattern.test(item.text)).forEach(item=>leadingPersonNumbers.push({recordIndex:records.length-1,number:item.text}));
                 }
                 anchors.forEach((anchor,index)=>{
                     const nextY=anchors[index+1]?.y ?? -Infinity;
@@ -418,10 +418,10 @@
             });
             // Attach a page-leading orphan Person Labour No. to the last employee
             // from the preceding page, never to the first employee on this page.
-            if(leadingPersonNumbers.length && records.length){
-                const previous=records[records.length-1];
-                if(!previous.personNumber)previous.personNumber=leadingPersonNumbers[0];
-            }
+            leadingPersonNumbers.forEach(carryover=>{
+                const previous=records[carryover.recordIndex];
+                if(previous && !previous.personNumber)previous.personNumber=carryover.number;
+            });
             if(records.length){
                 const declaredTotal=(combined.match(/total\\s+number\\s+of\\s+employees\\s*[:：]?\\s*(\\d+)/i)||[])[1];
                 if(declaredTotal && Number(declaredTotal)!==records.length){
