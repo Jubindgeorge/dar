@@ -350,7 +350,7 @@
             const permitStartPattern = /^(NEW|RENEW|PRE)$/i;
             const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
             const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
-            const isPassport = value => passportPattern.test(value) && (/[A-Z]/i.test(value) || value.length === 8);
+            const isPassport = value => passportPattern.test(value) && /[A-Z]/i.test(value);
             const records = [];
             const passportIndexes = [];
             flat.forEach((token,index)=>{ if (isPassport(token)) passportIndexes.push(index); });
