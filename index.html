@@ -98,7 +98,8 @@
                 <li class="sidebar-subitem" data-group="operations" onclick="switchTab('work-tracking')" data-target="work-tracking"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></li>
                 <li class="sidebar-subitem" data-group="operations" onclick="switchTab('completed-files')" data-target="completed-files"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="sales" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('sales')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('sales')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>SALES</span></li>
-                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-lines"></i><span>Invoices & Quotations</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('documents')" data-target="documents"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></li>
+                <li class="sidebar-subitem" data-group="sales" onclick="switchTab('quotations')" data-target="quotations"><i class="fa-solid fa-file-signature"></i><span>Quotations</span></li>
                 <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Invoice')"><i class="fa-solid fa-file-invoice"></i><span>+ Create Invoice</span></li>
                 <li class="sidebar-subitem" data-group="sales" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>+ Create Quotation</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="purchase" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('purchase')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('purchase')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>PURCHASE</span></li>
@@ -383,8 +384,8 @@
                 <section id="tab-documents" class="view-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                         <div>
-                            <h2 style="color: var(--primary); font-size: 1.4rem;">Financial Ledger & Records</h2>
-                            <p style="font-size: 0.85rem; color: var(--text-muted);">Track client invoices, statements, and expiry schedules.</p>
+                            <h2 style="color: var(--primary); font-size: 1.4rem;">Invoices</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Manage issued invoices, payment records, and invoice statements.</p>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button id="btn-batch-delete" disabled onclick="deleteSelectedDocuments()" class="btn btn-danger">Delete Selected</button>
@@ -427,6 +428,30 @@
                                     </tr>
                                 </thead>
                                 <tbody id="doc-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- Separate quotations workspace -->
+                <section id="tab-quotations" class="view-panel">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:18px;">
+                        <div><h2 style="color:var(--primary);font-size:1.4rem;">Quotations</h2><p style="font-size:.85rem;color:var(--text-muted);">Prepare, edit, print and convert quotations into one or more progress invoices.</p></div>
+                        <button type="button" class="btn btn-primary" onclick="openStudio('Quotation')">+ Create Quotation</button>
+                    </div>
+                    <div class="studio-editor" style="margin-bottom:16px;">
+                        <div class="v2-filter-toolbar">
+                            <input id="quotation-search" type="search" placeholder="Search quotation, client or company" aria-label="Search quotations">
+                            <label class="v2-filter-date">From <input id="quotation-date-from" type="date" onchange="renderQuotationTable()"></label>
+                            <label class="v2-filter-date">To <input id="quotation-date-to" type="date" onchange="renderQuotationTable()"></label>
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('quotation-search').value='';document.getElementById('quotation-date-from').value='';document.getElementById('quotation-date-to').value='';renderQuotationTable()">Clear</button>
+                            <strong style="margin-left:auto;">Total: <span id="quotation-total-amount">AED 0.00</span></strong>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Quotation Ref</th><th>Date</th><th>Client</th><th>Company</th><th>Quotation Total</th><th>Invoiced / Remaining</th><th style="text-align:center;">Actions</th></tr></thead>
+                                <tbody id="quotation-table-body"><tr><td colspan="7">Loading quotations…</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -566,7 +591,7 @@
                 <section id="tab-studio" class="view-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h2 id="studio-mode-title" style="color: var(--primary); font-size: 1.4rem;">Service Entry Studio</h2>
-                        <button onclick="switchTab('documents')" class="btn btn-secondary" style="font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Back to Records</button>
+                        <button type="button" onclick="closeStudioEditor()" class="btn btn-secondary" style="font-size: 0.8rem;"><i class="fa-solid fa-xmark"></i> Close Editor</button>
                     </div>
 
                     <div class="studio-horizontal-meta">
@@ -829,6 +854,25 @@
         </div>
     </div>
 
+
+    <!-- Quotation-to-invoice progress billing modal -->
+    <div id="quotation-conversion-modal" class="dar-conversion-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="qc-title">
+        <div class="dar-conversion-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><h3 id="qc-title">Convert Quotation to Invoice</h3><button type="button" class="btn btn-secondary" onclick="closeQuotationConversion()">Close</button></div>
+            <p class="dar-hint">Quotation: <strong id="qc-ref"></strong> · Remaining to invoice: <strong id="qc-remaining"></strong></p>
+            <input type="hidden" id="qc-source-ref">
+            <label for="qc-mode">Billing method</label>
+            <select id="qc-mode"><option value="amount">Amount / percentage based</option><option value="stage">Completed service stages</option></select>
+            <div id="qc-amount-fields" class="qc-field-group">
+                <label for="qc-amount">Invoice amount (AED)</label><input id="qc-amount" type="number" min="0.01" step="0.01">
+                <label style="display:flex;align-items:center;gap:8px;margin-top:8px;"><input id="qc-use-percent" type="checkbox"> Calculate by quotation percentage</label>
+                <input id="qc-percent" type="number" min="0.01" max="100" step="0.01" value="100" aria-label="Quotation percentage">
+            </div>
+            <div id="qc-stage-fields" class="qc-field-group" hidden><label>Completed items to invoice</label><div id="qc-stage-items"></div><small class="dar-hint">Selected item values are added to this invoice. The system checks the remaining quotation balance before saving.</small></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;"><button type="button" class="btn btn-secondary" onclick="closeQuotationConversion()">Cancel</button><button type="button" class="btn btn-primary" onclick="submitQuotationConversion()">Create Invoice</button></div>
+        </div>
+    </div>
+
     <!-- Document Print / PDF Preview Modal -->
     <div id="document-preview-modal" class="preview-modal-backdrop" style="display:none;">
         <div class="preview-modal-toolbar">
@@ -845,10 +889,10 @@
 
         <div class="preview-modal-body-canvas" style="padding: 24px; overflow-y: auto;">
             <!-- A4 Page Container -->
-            <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 6mm 7mm; width: 800px; max-width: 800px; margin: auto; box-sizing: border-box; border: 3px double #b8860b; position: relative;">
+            <div id="a4-wrapper-element" class="a4-wrapper" style="background:#fff; color:#1e293b; font-family: 'Segoe UI', Arial, sans-serif; padding: 6mm 7mm; width: 800px; max-width: 800px; margin: auto; box-sizing: border-box; border: 0; position: relative;">
                 
                 <!-- Header Section -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #b8860b; padding-bottom: 16px; margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #b8860b; padding-bottom: 10px; margin-bottom: 12px;">
                     <!-- Left: Logo -->
                     <div style="flex-shrink: 0; width: 110px;">
                         <img src="logo white .png" alt="Dar Al Shams Logo" style="width: 105px; height: auto; object-fit: contain;" onerror="this.style.display='none'">
@@ -872,14 +916,14 @@
                 </div>
 
                 <!-- Centered Document Title -->
-                <div style="text-align: center; margin-bottom: 28px;">
+                <div style="text-align: center; margin-bottom: 14px;">
                     <h3 id="p-doc-title" style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: 1px; text-transform: uppercase;">
                         INVOICE / <span style="font-family: 'Amiri', serif;">فاتورة</span>
                     </h3>
                 </div>
 
                 <!-- Metadata Info Section -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; font-size: 12.5px; line-height: 1.7; color: #0f172a;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; font-size: 11.5px; line-height: 1.7; color: #0f172a;">
                     <div>
                         <div><strong style="color: #475569;">M/s:</strong> <span id="p-client-name" style="font-weight: 700; color: #0f172a;">-</span></div>
                    <div id="p-company-line"><strong id="p-company-label" style="color: #475569;">Company:</strong> <span id="p-company-name" style="font-weight: 700; color: #0f172a;">-</span></div>
@@ -892,36 +936,40 @@
                 </div>
 
                 <!-- Enhanced Table Container -->
-                <div id="p-content-container" style="position: relative; margin-bottom: 40px; min-height: 260px;">
+                <div id="p-content-container" style="position: relative; margin-bottom: 10px; min-height: 0;">
                     <!-- Faded Watermark -->
                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.06; pointer-events: none; text-align: center; width: 60%;">
-                        <img src="logo white .png" alt="Watermark" style="width: 280px; height: auto;" onerror="this.style.display='none'">
+                        <img src="logo white .png" alt="Watermark" style="width: 210px; height: auto;" onerror="this.style.display='none'">
                     </div>
 
                     <!-- Styled Data Table -->
-                    <table style="width:100%;border-collapse:collapse;border-spacing:0;font-size:12px;position:relative;z-index:1;color:#222;">
+                    <table style="width:100%;border-collapse:collapse;border-spacing:0;font-size:10px;position:relative;z-index:1;color:#222;border:0;">
                         <thead>
                             <tr style="background:#eeeeee;color:#111;">
-                                <th style="padding:7px 6px;border-bottom:1px solid #d2d2d2;width:7%;text-align:center;font-weight:600;">#</th>
-                                <th style="padding:7px 8px;border-bottom:1px solid #d2d2d2;text-align:left;font-weight:600;">Service</th>
-                                <th style="padding:7px 6px;border-bottom:1px solid #d2d2d2;width:12%;text-align:center;font-weight:600;">Qty</th>
-                                <th style="padding:7px 8px;border-bottom:1px solid #d2d2d2;width:23%;text-align:right;font-weight:600;">Rate (AED)</th>
+                                <th style="padding:7px 6px;border-bottom:1px solid #b8860b;width:7%;text-align:center;font-weight:600;">#</th>
+                                <th style="padding:7px 8px;border-bottom:1px solid #b8860b;text-align:left;font-weight:600;">Service</th>
+                                <th style="padding:7px 6px;border-bottom:1px solid #b8860b;width:12%;text-align:center;font-weight:600;">Qty</th>
+                                <th style="padding:7px 8px;border-bottom:1px solid #b8860b;width:23%;text-align:right;font-weight:600;">Rate (AED)</th>
                             </tr>
                         </thead>
                         <tbody id="p-table-body">
                             <!-- Populated dynamically via ui.js -->
                         </tbody>
                     </table>
-                    <div id="p-notes-section" style="display:none;margin-top:14px;padding:9px 11px;background:#f1f1f1;border-top:1px solid #d6d6d6;border-bottom:1px solid #d6d6d6;font-size:11px;line-height:1.5;color:#222;position:relative;z-index:1;">
+                    <div id="p-notes-section" style="display:none;margin-top:6px;padding:4px 0;background:transparent;border:0;font-size:10px;line-height:1.35;color:#222;position:relative;z-index:1;">
                         <strong style="display:block;margin-bottom:3px;">Notes</strong>
                         <div id="p-notes" style="white-space:pre-wrap;overflow-wrap:anywhere;"></div>
+                    </div>
+                    <div id="p-terms-section" class="section-terms" style="display:none;width:50%;max-width:50%;margin:8px 0 0;padding:0;background:transparent;border:0;font-size:9px;line-height:1.3;color:#222;position:relative;z-index:1;">
+                        <strong style="display:block;margin-bottom:3px;">Terms &amp; Conditions</strong>
+                        <div id="p-terms-text" style="white-space:pre-wrap;overflow-wrap:anywhere;"></div>
                     </div>
                 </div>
 
                     <!-- Signature Line Footer -->
                
                 
-<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; font-size: 11.5px; color: #334155;">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; font-size: 10px; color: #334155;">
 
     <!-- Receiver's Signature -->
     <div style="text-align: center; width: 38%;">
@@ -935,7 +983,7 @@
     <!-- Authorized Signature + Company Seal Together -->
                             <div style="text-align: center; width: 45%;">
                         
-                                <div style="height: 90px; display: flex; align-items: center; justify-content: center;">
+                                <div style="height: 55px; display: flex; align-items: center; justify-content: center;">
                         
                                     <img
                                         src="Seal&Sign.PNG"

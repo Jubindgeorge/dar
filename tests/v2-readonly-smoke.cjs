@@ -7,6 +7,7 @@ const styles = fs.readFileSync('styles.css', 'utf8');
 const dates = fs.readFileSync('date-utils.js', 'utf8');
 const ledger = fs.readFileSync('ledger.js', 'utf8');
 const staff = fs.readFileSync('staff.js', 'utf8');
+const studio = fs.readFileSync('studio.js', 'utf8');
 const purchases = fs.readFileSync('purchase.js', 'utf8');
 for (const id of ['doc-date-from','doc-date-to','dash-v2-received','dash-v2-outstanding','dash-v2-unassigned']) {
   assert.match(html, new RegExp('id="' + id + '"'), 'missing UI element: ' + id);
@@ -33,7 +34,17 @@ assert.match(html, /client-date-from/, 'client date filters');
 assert.match(html, /works-date-from/, 'works date filters');
 assert.match(html, /expense-date-from/, 'expense date filters');
 assert.match(html, /ledger-date-from/, 'ledger date filters');
-assert.doesNotMatch(html, /section-terms/, 'invoice printout excludes the removed terms box');
+assert.match(html, /id="p-terms-section"/, 'invoice printout retains the optional terms section');
+assert.match(html, /width:50%;max-width:50%/, 'terms section is limited to the left half of the page');
+assert.match(html, /p-notes-section[^>]*border:0/, 'notes section has no surrounding border');
+assert.match(html, /width:100%;border-collapse:collapse;border-spacing:0;font-size:10px/, 'invoice item table uses the totals summary font size');
+assert.match(styles, /#a4-wrapper-element::before\s*\{[\s\S]*?inset:\s*1px;[\s\S]*?border:\s*1px solid #b8860b;/, 'gold page frame is fixed 1px and inset 1px from every paper edge');
+assert.match(styles, /@page\s*\{\s*size:A4 portrait;\s*margin:0;\s*\}/, 'print page uses the physical A4 sheet as its coordinate space');
+assert.match(styles, /#document-preview-modal::after\s*\{[\s\S]*?position:fixed !important;[\s\S]*?inset:1mm !important;[\s\S]*?border:1px solid #b8860b !important;/, 'print border is fixed to all four physical paper edges on every page');
+assert.match(app, /const drawFixedGoldFrame = \(\) => \{[\s\S]*?pdf\.rect\(1, 1, 208, 295\);[\s\S]*?drawFixedGoldFrame\(\);[\s\S]*?drawFixedGoldFrame\(\);/, 'Save PDF draws the same fixed gold frame on every page');
+
+assert.match(styles, /#a4-wrapper-element #p-content-container table,\s*#a4-wrapper-element #p-content-container table th,\s*#a4-wrapper-element #p-content-container table td\s*\{\s*font-size:\s*10px !important;/, 'all invoice table text uses the same 10px size');
+
 assert.match(html, /st-legacy-discount-amt/, 'legacy discount compatibility');
 assert.match(app, /exportDarFinancialReport/, 'period report export');
 assert.match(app, /duplicateInvoiceDraft/, 'duplicate invoice draft');
@@ -52,3 +63,15 @@ assert.match(html, /ledger-search/, 'financial ledger supports text search');
 assert.match(app, /window\.duplicateInvoiceDraft\s*=\s*function/, 'duplicate draft action is implemented');
 assert.match(app, /window\.viewDocumentHistory\s*=\s*function/, 'document history action is implemented');
 assert.match(app, /No additional payment entries recorded/, 'history view handles documents without payments');
+
+assert.match(html, /id="tab-quotations"/, 'quotations have a separate workspace');
+assert.match(html, /id="quotation-conversion-modal"/, 'quotation conversion dialog exists');
+assert.match(app, /window\.renderQuotationTable\s*=\s*function/, 'quotation register has its own renderer');
+assert.match(app, /root\.transaction\(/, 'quotation conversion updates balances atomically');
+assert.match(app, /invoicedStageIndexes/, 'stage invoices cannot duplicate already invoiced items');
+assert.match(app, /sourceQuotationRef/, 'progress invoices link back to the source quotation');
+assert.match(studio, /dar-edit-popup/, 'existing document editing opens as a popup');
+assert.match(studio, /Billed stages are locked/, 'stage-linked quotation rows are protected');
+assert.match(styles, /@media print/, 'invoice and quotation previews have an A4 print layout');
+assert.match(app, /Adv\. Amount/, 'PDF summary displays advance amount');
+assert.match(app, /Dis\. %/, 'PDF summary displays discount percentage');

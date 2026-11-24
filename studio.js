@@ -5,15 +5,17 @@ function studioLocalISODate() {
 }
 function openStudio(type, editRefCode = null) {
     state.activeEditingId = editRefCode || null;
+    const studioPanel = document.getElementById('tab-studio');
+    if (studioPanel) studioPanel.classList.toggle('dar-edit-popup', !!editRefCode);
     switchTab('studio');
     const titleEl = document.getElementById('studio-mode-title');
     if (titleEl) titleEl.innerText = editRefCode ? `Edit ${type} - ${editRefCode}` : `Create New ${type}`;
 
     const docTypeEl = document.getElementById('st-doc-type');
-    if (docTypeEl) docTypeEl.value = type;
+    if (docTypeEl) { docTypeEl.value = type; docTypeEl.disabled = !!editRefCode; }
 
     const editRefEl = document.getElementById('st-ref-code');
-    if (editRefEl) editRefEl.value = editRefCode || '';
+    if (editRefEl) { editRefEl.value = editRefCode || ''; editRefEl.readOnly = !!editRefCode; }
 
     const dateEl = document.getElementById('st-created-date');
     if (dateEl) dateEl.value = studioLocalISODate();
@@ -117,6 +119,14 @@ function openStudio(type, editRefCode = null) {
     if (typeof populateCompanyClients === 'function') populateCompanyClients();
     recalculateStudioTotals();
 }
+
+window.closeStudioEditor = function() {
+    const panel = document.getElementById('tab-studio');
+    const type = document.getElementById('st-doc-type')?.value || 'Invoice';
+    if (panel) panel.classList.remove('dar-edit-popup');
+    state.activeEditingId = null;
+    switchTab(type === 'Quotation' ? 'quotations' : 'documents');
+};
 
 function populateStudioClientDropdown() {
     const sel = document.getElementById('st-client-selector');
@@ -342,8 +352,13 @@ function commitDocumentToMemory() {
         showCustomModal('Invalid amounts', 'Amounts must be valid and non-negative. Discounts cannot exceed the subtotal plus processing charges.');
         return;
     }
-    const recordedPayments = (state.documents || []).find(d => d.refCode === refCode)?.paymentLogs || [];
+    const previousDocumentForValidation = (state.documents || []).find(d => d.refCode === refCode);
+    const recordedPayments = Array.isArray(previousDocumentForValidation?.paymentLogs) ? previousDocumentForValidation.paymentLogs : [];
     const paidInLogs = recordedPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+    if (previousDocumentForValidation?.type === 'Quotation' && (Number(previousDocumentForValidation.invoicedAmount) || 0) > totalAmt + 0.005) {
+        showCustomModal('Quotation balance protected', 'The quotation total cannot be reduced below the amount already invoiced.');
+        return;
+    }
     if (advanceAmt + paidInLogs > totalAmt) {
         showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
         return;
@@ -365,6 +380,36 @@ function commitDocumentToMemory() {
             p: parseFloat(row.querySelector('.st-item-price')?.value) || 0
         });
     });
+
+    const previousForStageEdit = (state.documents || []).find(d => d.refCode === refCode);
+    if (previousForStageEdit?.sourceQuotationRef && totalAmt <= 0) {
+        showCustomModal('Converted invoice total required', 'A progress or stage invoice linked to a quotation must keep a positive total.');
+        return;
+    }
+    if (previousForStageEdit?.billingMode === 'stage' && previousForStageEdit.sourceQuotationRef) {
+        const stageShape = list => JSON.stringify((Array.isArray(list) ? list : []).map(item => ({
+            title: item.packageName || item.serviceName || item.title || '',
+            description: item.description || ''
+        })));
+        if (stageShape(previousForStageEdit.items) !== stageShape(items)) {
+            showCustomModal('Stage invoice items protected', 'Keep the service names and descriptions of a stage invoice unchanged. You may still adjust its quantity or rate.');
+            return;
+        }
+    }
+
+    const existingQuotation = (state.documents || []).find(d => d.refCode === refCode && d.type === 'Quotation');
+    if (existingQuotation && Array.isArray(existingQuotation.invoicedStageIndexes) && existingQuotation.invoicedStageIndexes.length) {
+        const signature = list => JSON.stringify((Array.isArray(list) ? list : []).map(item => ({
+            title: item.packageName || item.serviceName || item.title || '',
+            description: item.description || '',
+            quantity: Number(item.q ?? item.quantity ?? 1),
+            rate: Number(item.p ?? item.price ?? 0)
+        })));
+        if (signature(existingQuotation.items) !== signature(items)) {
+            showCustomModal('Billed stages are locked', 'This quotation already has stage invoices. Keep its service rows unchanged so previous stage invoices remain correctly linked.');
+            return;
+        }
+    }
 
     const selectedCatalogId = document.getElementById('st-service-injector')?.value;
     const selectedCatalog = (state.services || []).find(service => service.id === selectedCatalogId);
@@ -410,25 +455,66 @@ function commitDocumentToMemory() {
         total: totalAmt,
         amount: totalAmt,
         items,
-        branchTag: companyName && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
+        branchTag: companyName && !/^direct clients?$/i.test(companyName) && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
     };
 
-    // Update only editable invoice fields; preserve PRO history, expiry metadata and payment logs.
-    db.ref(`documents/${refCode}`).update(payload, (err) => {
+    // Update the existing record in place. For converted invoices, atomically adjust
+    // the source quotation's invoiced balance as well.
+    const wasEditing = !!state.activeEditingId;
+    const destinationTab = type === 'Quotation' ? 'quotations' : 'documents';
+    const finishSave = (err, committedDocuments = null) => {
         if (!err) {
-            const savedIndex = (state.documents || []).findIndex(d => d.refCode === refCode);
-            if (savedIndex >= 0) state.documents[savedIndex] = { ...state.documents[savedIndex], ...payload };
-            else { state.documents = state.documents || []; state.documents.push(payload); }
+            if (committedDocuments) {
+                state.documents = Object.values(committedDocuments).filter(d => d && d.refCode);
+            } else {
+                const savedIndex = (state.documents || []).findIndex(d => d.refCode === refCode);
+                if (savedIndex >= 0) state.documents[savedIndex] = { ...state.documents[savedIndex], ...payload };
+                else { state.documents = state.documents || []; state.documents.push(payload); }
+            }
+            const studioPanel = document.getElementById('tab-studio');
+            if (studioPanel) studioPanel.classList.remove('dar-edit-popup');
+            if (wasEditing) switchTab(destinationTab);
+            if (typeof renderQuotationTable === 'function') renderQuotationTable();
+            if (typeof renderDocumentsTable === 'function') renderDocumentsTable();
             if (typeof showCustomModal === 'function') {
                 const staffAction = payload.branchTag === 'staff' && typeof openStaffModalFromInvoice === 'function'
                     ? `<button type="button" class="btn btn-primary" onclick="closeCustomModal(); openStaffModalFromInvoice('${refCode}')">Complete Staff Details</button> `
                     : '';
-                showCustomModal('Document Saved', `${type} ${refCode} saved successfully. What would you like to do next?`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('documents')">Back to Ledger</button>`);
+                showCustomModal(wasEditing ? 'Document Updated' : 'Document Saved', `${type} ${refCode} ${wasEditing ? 'updated' : 'saved'} successfully. The original reference and payment history are retained.`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('${destinationTab}')">Back to ${type === 'Quotation' ? 'Quotations' : 'Invoices'}</button>`);
             }
             state.activeEditingId = null;
-            // Keep the completed entry visible until the user chooses the next action.
         } else if (typeof showCustomModal === 'function') {
-            showCustomModal('Save failed', 'The document could not be saved. Please check your connection and try again.');
+            showCustomModal('Save failed', err.message || 'The document could not be saved. Please check your connection and try again.');
         }
-    });
+    };
+
+    if (previousDocument?.sourceQuotationRef) {
+        db.ref('documents').transaction(current => {
+            const docs = current && typeof current === 'object' ? current : {};
+            const liveInvoice = docs[refCode];
+            const sourceRef = previousDocument.sourceQuotationRef;
+            const liveQuote = docs[sourceRef];
+            if (!liveInvoice || !liveQuote || liveQuote.type !== 'Quotation') return;
+            const oldInvoiceTotal = Number(liveInvoice.totalAmount ?? liveInvoice.totalAmt ?? liveInvoice.total ?? liveInvoice.amount) || 0;
+            const quoteTotal = Number(liveQuote.totalAmount ?? liveQuote.totalAmt ?? liveQuote.total ?? liveQuote.amount) || 0;
+            const updatedInvoiced = Math.max(0, (Number(liveQuote.invoicedAmount) || 0) + totalAmt - oldInvoiceTotal);
+            if (updatedInvoiced > quoteTotal + 0.005) return;
+            docs[refCode] = { ...liveInvoice, ...payload };
+            docs[sourceRef] = {
+                ...liveQuote,
+                invoicedAmount: Math.round(updatedInvoiced * 100) / 100,
+                conversionHistory: (Array.isArray(liveQuote.conversionHistory) ? liveQuote.conversionHistory : []).map(entry =>
+                    entry.invoiceRef === refCode ? { ...entry, amount: totalAmt, updatedAt: new Date().toISOString() } : entry
+                ),
+                updatedAt: new Date().toISOString()
+            };
+            return docs;
+        }, (err, committed, snapshot) => {
+            if (err) { finishSave(err); return; }
+            if (!committed) { finishSave(new Error('This edit would exceed the remaining amount on the source quotation.')); return; }
+            finishSave(null, snapshot.val() || {});
+        }, false);
+    } else {
+        db.ref(`documents/${refCode}`).update(payload, finishSave);
+    }
 }

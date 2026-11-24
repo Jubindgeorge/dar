@@ -51,10 +51,10 @@ const assert = require('node:assert/strict');
     await page.evaluate(async () => window.previewInvoiceDocument('CI-TEST-001'));
     assert.equal(await page.locator('#document-preview-modal').evaluate(e=>e.style.display),'flex','Invoice preview opens');
     assert.match(await page.locator('#p-table-body').innerText(),/Air conditioner maintenance/);
-    assert.deepEqual(await page.locator('#p-table-body tr:first-child td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
+    assert.deepEqual(await page.locator('#p-table-body > tr:first-child > td').allInnerTexts(),['1','Air conditioner maintenance','2','100.00'],'Invoice print table contains only #, Service, Qty and Rate');
     assert.equal(await page.locator('#a4-wrapper-element #p-content-container thead th').count(),4,'Invoice print header has exactly four columns');
     assert.match(await page.locator('#p-table-body').innerText(),/200\.00/);
-    assert.match(await page.locator('#p-table-body').innerText(),/Total Amount \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
+    assert.match(await page.locator('#p-table-body').innerText(),/Grand Total \/ المبلغ الإجمالي\s+AED 200\.00/, 'Legacy invoice total remains unchanged');
     await page.evaluate(() => {
       state.documents.push({
         refCode:'CI-BREAKDOWN-001',type:'Invoice',clientName:'Breakdown Client',companyName:'Breakdown Co',
@@ -65,10 +65,26 @@ const assert = require('node:assert/strict');
     });
     await page.evaluate(async () => window.previewInvoiceDocument('CI-BREAKDOWN-001'));
     const breakdownText = await page.locator('#p-table-body').innerText();
-    assert.match(breakdownText,/Total Amount \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
-    assert.doesNotMatch(breakdownText,/Sub Total|Advance Payment|Processing Charges|Discounts/,'October invoice hides newer breakdown rows');
-    assert.equal(await page.locator('#a4-wrapper-element .section-terms').count(),0,'October invoice has no terms box');
-    assert.equal(await page.locator('#a4-wrapper-element #p-content-container table').evaluate(e=>getComputedStyle(e).fontSize),'12px','October invoice restores original table font size');
+    assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'October invoice shows the stored final total only');
+    assert.match(breakdownText,/Subtotal\s+AED 5107\.00/,'Invoice displays subtotal including processing charges');
+    assert.match(breakdownText,/Adv\. Amount\s+AED 500\.00/,'Invoice displays advance amount');
+    assert.match(breakdownText,/Dis\. %\s+4\.90%/,'Invoice displays discount percentage');
+    assert.match(breakdownText,/Grand Total \/ المبلغ الإجمالي\s+AED 4857\.00/,'Invoice displays grand total after the summary rows');
+    assert.match(await page.locator('#p-table-body table').getAttribute('style'),/b8860b/,'Totals box uses matching gold borders');
+    assert.equal(await page.locator('#a4-wrapper-element .section-terms').isVisible(),false,'October invoice hides its empty terms section');
+    assert.equal(await page.locator('#a4-wrapper-element #p-content-container > table').evaluate(e=>getComputedStyle(e).fontSize),'10px','October invoice table font matches the totals summary size');
+    const fitThreshold = await page.evaluate(() => {
+      const page=document.getElementById('a4-wrapper-element');
+      const body=document.getElementById('p-table-body');
+      const makeRows=count=>{body.innerHTML='';for(let i=0;i<count;i++){const tr=document.createElement('tr');tr.innerHTML='<td>1</td><td>Test service '+i+'</td><td>1</td><td>100.00</td>';body.appendChild(tr);}};
+      makeRows(16); const sixteen=window.applyDarDocumentPrintFit(page); const sixteenClass=page.classList.contains('dar-single-page-fit');
+      makeRows(17); const seventeen=window.applyDarDocumentPrintFit(page); const seventeenClass=page.classList.contains('dar-single-page-fit');
+      return {sixteen,seventeen,sixteenClass,seventeenClass};
+    });
+    assert.ok(fitThreshold.sixteen>0 && fitThreshold.sixteen<=1,'Sixteen rows receive a valid single-page fit scale');
+    assert.equal(fitThreshold.sixteenClass,true,'Sixteen rows are marked for single-page output');
+    assert.equal(fitThreshold.seventeen,1,'Seventeen rows retain normal scale for pagination');
+    assert.equal(fitThreshold.seventeenClass,false,'Seventeen rows use multi-page output');
     await page.evaluate(() => {
       state.documents.push({refCode:'CI-ZERO-001',type:'Invoice',clientName:'Zero Client',companyName:'Direct Clients',items:[{serviceName:'Fully discounted service',p:100,q:1}],totalAmount:0});
     });
@@ -89,12 +105,32 @@ const assert = require('node:assert/strict');
       const oldCanvas=window.html2canvas,oldPdf=window.jspdf;
       let captured=false,saved=false;
       window.html2canvas=async () => {captured=true;return {width:800,height:1000,toDataURL:()=> 'data:image/jpeg;base64,AA=='};};
-      window.jspdf={jsPDF:class {addImage(){} save(){saved=true;}}};
+      window.jspdf={jsPDF:class {addImage(){} setDrawColor(){} setLineWidth(){} rect(){} save(){saved=true;}}};
       await window.saveAsPDF();
       window.html2canvas=oldCanvas;window.jspdf=oldPdf;
       return {captured,saved};
     });
     assert.deepEqual(pdfResult,{captured:true,saved:true},'PDF export calls capture and save pipeline');
+    await page.emulateMedia({media:'print'});
+    const printLayout = await page.evaluate(() => ({
+      modalDisplay:getComputedStyle(document.getElementById('document-preview-modal')).display,
+      toolbarDisplay:getComputedStyle(document.querySelector('#document-preview-modal .preview-modal-toolbar')).display,
+      pageWidth:parseFloat(getComputedStyle(document.getElementById('a4-wrapper-element')).width)
+    }));
+    assert.equal(printLayout.modalDisplay,'block','Print layout exposes only the document preview');
+    assert.equal(printLayout.toolbarDisplay,'none','Print layout hides preview toolbar controls');
+    const fixedFrame = await page.evaluate(() => ({position:getComputedStyle(document.getElementById('document-preview-modal'),'::after').position,inset:getComputedStyle(document.getElementById('document-preview-modal'),'::after').inset,border:getComputedStyle(document.getElementById('document-preview-modal'),'::after').borderTopWidth}));
+    assert.equal(fixedFrame.position,'fixed','Print gold frame is fixed to the physical sheet, not the content height');
+    assert.ok(Math.abs(parseFloat(fixedFrame.inset)-3.77953)<0.01,'Print gold frame is inset exactly 1mm (3.77953 CSS px) from all four paper edges');
+    assert.equal(fixedFrame.border,'1px','Print gold frame is exactly 1px');
+    assert.ok(printLayout.pageWidth>0,'A4 document retains a printable width');
+    await page.emulateMedia({media:'screen'});
+    const printAction = await page.evaluate(() => {
+      const original=window.print; let called=false; window.print=()=>{called=true;};
+      try { document.querySelector('#document-preview-modal .preview-modal-toolbar button:nth-of-type(2)').click(); return called; }
+      finally {window.print=original;}
+    });
+    assert.equal(printAction,true,'Print button invokes the browser print action');
     const saveFlow = await page.evaluate(async () => {
       const oldRef=db.ref, oldModal=window.showCustomModal;
       const calls=[];
@@ -119,12 +155,114 @@ const assert = require('node:assert/strict');
     assert.equal(saveFlow.saved?.branchTag,'staff','Different client and company automatically classify as staff');
     assert.match(saveFlow.modal?.actions||'',/Preview \/ Print/);
     assert.match(saveFlow.modal?.actions||'',/Create Next/);
-    assert.match(saveFlow.modal?.actions||'',/Back to Ledger/);
+    assert.match(saveFlow.modal?.actions||'',/Back to Invoices/);
     assert.equal(await page.locator('#doc-table-body').count(),1);
     await page.evaluate(() => renderDocumentsTable());
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
     assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),9,'Invoice register rows have 9 cells including Invoice Date');
     assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),9,'Invoice register headings have 9 cells including Invoice Date');
+    await page.evaluate(() => {
+      state.documents.push(
+        {refCode:'QTN-TEST-001',type:'Quotation',clientName:'Sample Client',companyName:'Sample Company',branchTag:'company',totalAmount:300,subtotalAmount:300,items:[{serviceName:'Stage A',p:100,q:1},{serviceName:'Stage B',p:200,q:1}]},
+        {refCode:'CI-STAFF-001',type:'Invoice',clientName:'Staff Member',companyName:'Sample Company',contactPerson:'Contact Must Not Appear',branchTag:'staff',totalAmount:100,items:[{serviceName:'Staff service',p:100,q:1}]},
+        {refCode:'CI-DIRECT-001',type:'Invoice',clientName:'Direct Customer',companyName:'Direct Clients',contactPerson:'Do Not Show',branchTag:'company',totalAmount:80,items:[{serviceName:'Direct service',p:80,q:1}]}
+      );
+      renderDocumentsTable();
+      renderQuotationTable();
+    });
+    assert.match(await page.locator('#doc-table-body').innerText(),/CI-STAFF-001/,'Invoice page contains invoice records');
+    assert.doesNotMatch(await page.locator('#doc-table-body').innerText(),/QTN-TEST-001/,'Invoice page excludes quotations');
+    assert.match(await page.locator('#quotation-table-body').innerText(),/QTN-TEST-001/,'Quotation page contains quotations');
+    assert.doesNotMatch(await page.locator('#quotation-table-body').innerText(),/CI-STAFF-001/,'Quotation page excludes invoices');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-STAFF-001'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Staff Member','Staff invoice displays staff name');
+    assert.equal(await page.locator('#p-company-name').innerText(),'Sample Company','Staff invoice displays company name');
+    assert.equal(await page.locator('#p-company-line').isVisible(),true,'Staff invoice displays company line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Contact Must Not Appear/,'Staff invoice hides contact person');
+    await page.evaluate(async () => window.previewInvoiceDocument('CI-DIRECT-001'));
+    assert.equal(await page.locator('#p-client-name').innerText(),'Direct Customer','Direct invoice displays client name');
+    assert.equal(await page.locator('#p-company-line').isVisible(),false,'Direct invoice hides company line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Do Not Show/,'Direct invoice hides contact person');
+    assert.equal(await page.evaluate(() => getAutomaticWorkBranch(state.documents.find(d=>d.refCode==='CI-DIRECT-001'))),'unassigned','Direct clients are not classified as company staff');
+    await page.evaluate(async () => {
+      state.documents.push({refCode:'CI-COMPANY-001',type:'Invoice',clientName:'Sample Company',companyName:'Sample Company',contactPerson:'Hidden Company Contact',branchTag:'company',totalAmount:50,items:[{serviceName:'Company work',p:50,q:1}]});
+      await window.previewInvoiceDocument('CI-COMPANY-001');
+    });
+    assert.equal(await page.locator('#p-client-name').innerText(),'Sample Company','Company invoice displays company name only');
+    assert.equal(await page.locator('#p-company-line').isVisible(),false,'Company invoice does not show contact person line');
+    assert.doesNotMatch(await page.locator('#a4-wrapper-element').innerText(),/Hidden Company Contact/,'Company invoice hides contact person');
+    await page.evaluate(() => {
+      openStudio('Invoice','CI-STAFF-001');
+    });
+    assert.equal(await page.locator('#tab-studio').evaluate(el=>el.classList.contains('dar-edit-popup')),true,'Editing an existing invoice opens the popup editor');
+    await page.locator('#st-notes').fill('Updated in place');
+    const editResult = await page.evaluate(() => {
+      const oldRef=db.ref; const oldModal=window.showCustomModal; const calls=[];
+      db.ref=path=>({update:(payload,callback)=>{calls.push({path,payload});callback(null);}});
+      window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
+      try { commitDocumentToMemory(); return calls; } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
+    });
+    assert.equal(editResult.find(x=>x.path)?.path,'documents/CI-STAFF-001','Editing updates the same invoice Firebase key');
+    assert.equal(await page.evaluate(() => state.documents.filter(d=>d.refCode==='CI-STAFF-001').length),1,'Editing does not create a second invoice');
+    assert.equal(await page.locator('#tab-studio').evaluate(el=>el.classList.contains('dar-edit-popup')),false,'Popup closes after successful edit');
+    const conversionResult = await page.evaluate(() => {
+      const oldRef=db.ref; const oldModal=window.showCustomModal;
+      db.ref=path=>({transaction:(updater,callback)=>{const current=Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc]));const next=updater(current);callback(null,!!next,{val:()=>next});}});
+      window.showCustomModal=()=>{};
+      try {
+        openQuotationConversion('QTN-TEST-001');
+        const quoteModal=document.getElementById('quotation-conversion-modal');
+        document.getElementById('qc-use-percent').checked=true;
+        document.getElementById('qc-percent').value='25';
+        document.getElementById('qc-mode').value='amount';
+        submitQuotationConversion();
+        const firstQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
+        const amountInvoice=state.documents.find(d=>d.sourceQuotationRef==='QTN-TEST-001');
+        openQuotationConversion('QTN-TEST-001');
+        document.getElementById('qc-mode').value='stage';
+        document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        const stageA=document.querySelector('#qc-stage-items input[value="0"]');
+        const stageB=document.querySelector('#qc-stage-items input[value="1"]');
+        stageA.checked=true; stageB.checked=false;
+        submitQuotationConversion();
+        const finalQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
+        const stageInvoice=state.documents.find(d=>d.billingMode==='stage' && d.sourceQuotationRef==='QTN-TEST-001');
+        openQuotationConversion('QTN-TEST-001');
+        document.getElementById('qc-mode').value='stage';
+        document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        return {
+          amount:amountInvoice?.totalAmount, afterAmount:firstQuote?.invoicedAmount,
+          stage:stageInvoice?.totalAmount, afterStage:finalQuote?.invoicedAmount,
+          stageADisabled:document.querySelector('#qc-stage-items input[value="0"]').disabled,
+          stageBDisabled:document.querySelector('#qc-stage-items input[value="1"]').disabled,
+          modalVisible:quoteModal.style.display
+        };
+      } finally {db.ref=oldRef;window.showCustomModal=oldModal;closeQuotationConversion();}
+    });
+    assert.equal(conversionResult.amount,75,'Percentage billing calculates the correct partial invoice');
+    assert.equal(conversionResult.afterAmount,75,'Quotation tracks the amount already invoiced');
+    assert.equal(conversionResult.stage,100,'Stage billing invoices the selected completed item');
+    assert.equal(conversionResult.afterStage,175,'Quotation balance updates after a stage invoice');
+    assert.equal(conversionResult.stageADisabled,true,'A stage cannot be invoiced twice');
+    assert.equal(conversionResult.stageBDisabled,false,'Unbilled stages remain available');
+    assert.equal(conversionResult.modalVisible,'flex','Quotation conversion dialog opens');
+    const linkedEditResult = await page.evaluate(() => {
+      const oldRef=db.ref; const oldModal=window.showCustomModal;
+      db.ref=path=>({transaction:(updater,callback)=>{const current=Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc]));const next=updater(current);callback(null,!!next,{val:()=>next});}});
+      window.showCustomModal=()=>{};
+      try {
+        const stageInvoice=state.documents.find(d=>d.billingMode==='stage' && d.sourceQuotationRef==='QTN-TEST-001');
+        openStudio('Invoice',stageInvoice.refCode);
+        document.querySelector('#st-spreadsheet-body .st-item-price').value='90';
+        commitDocumentToMemory();
+        return {
+          quoteInvoiced:state.documents.find(d=>d.refCode==='QTN-TEST-001').invoicedAmount,
+          invoiceTotal:state.documents.find(d=>d.refCode===stageInvoice.refCode).totalAmount
+        };
+      } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
+    });
+    assert.equal(linkedEditResult.invoiceTotal,90,'Editing a converted invoice updates its existing record');
+    assert.equal(linkedEditResult.quoteInvoiced,165,'Editing a converted invoice adjusts the source quotation balance');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];

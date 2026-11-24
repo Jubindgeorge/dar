@@ -549,3 +549,110 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 .v2-report-toolbar strong{color:var(--primary);margin-right:auto}
 .v2-report-toolbar select{width:auto;min-width:120px}
 @media(max-width:640px){.v2-filter-toolbar{align-items:stretch}.v2-filter-toolbar .btn{flex:1}.v2-report-toolbar>*{flex:1 1 100%}.v2-report-toolbar strong{margin:0}}
+
+/* Sales document editing and quotation conversion */
+#tab-studio.dar-edit-popup.active {
+    display:block !important; position:fixed; z-index:2500; inset:3vh 3vw;
+    width:auto; height:94vh; overflow:auto; padding:24px;
+    background:var(--bg-dark); border:1px solid var(--primary); border-radius:14px;
+    box-shadow:0 0 0 100vmax rgba(2,6,23,.78),0 24px 70px rgba(0,0,0,.5);
+}
+.dar-conversion-backdrop {
+    position:fixed; inset:0; z-index:2600; display:flex; align-items:center; justify-content:center;
+    padding:18px; background:rgba(2,6,23,.78);
+}
+.dar-conversion-card {
+    width:min(620px,100%); max-height:90vh; overflow:auto; padding:22px;
+    background:var(--panel-bg); color:var(--text-main); border:1px solid var(--primary);
+    border-radius:12px; box-shadow:var(--modal-shadow);
+}
+.dar-conversion-card h3 {color:var(--primary);margin:0;}
+.dar-conversion-card label {display:block;margin:12px 0 6px;font-weight:600;font-size:.88rem;}
+.dar-conversion-card input:not([type=checkbox]),.dar-conversion-card select {
+    width:100%;padding:10px;border:1px solid var(--border-color);border-radius:6px;
+    background:var(--bg-dark);color:var(--text-main);
+}
+.qc-stage-row {display:flex !important;align-items:center;gap:10px;padding:10px;border:1px solid var(--primary);border-radius:6px;margin:7px 0 !important;}
+.qc-stage-row input {width:auto !important;}
+.qc-stage-row span {flex:1;}
+.qc-field-group[hidden] {display:none !important;}
+@media(max-width:700px) {
+    #tab-studio.dar-edit-popup.active {inset:0;width:100%;height:100%;padding:14px;border-radius:0;}
+    .dar-conversion-card {padding:16px;}
+}
+
+@media print {
+    @page { size:A4 portrait; margin:0; }
+    html, body { width:100% !important; height:auto !important; margin:0 !important; padding:0 !important; background:#fff !important; overflow:visible !important; }
+    /* Keep the print modal (a direct body child) and remove the rest of the app
+       from the print tree. Avoid visibility:hidden, which produced blank output
+       in some browser print engines. */
+    body > *:not(#document-preview-modal) { display:none !important; }
+    #document-preview-modal { position:static !important; display:block !important; visibility:visible !important; inset:auto !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; background:#fff !important; overflow:visible !important; }
+    #document-preview-modal * { visibility:visible !important; }
+    #document-preview-modal .preview-modal-toolbar { display:none !important; }
+    #document-preview-modal .preview-modal-body-canvas { position:static !important; display:block !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; overflow:visible !important; background:#fff !important; }
+    /* Fixed paper-edge frame: repeated by the print engine on every A4 sheet. */
+    #document-preview-modal::after { content:"" !important; display:block !important; position:fixed !important; inset:1mm !important; border:1px solid #b8860b !important; box-sizing:border-box !important; pointer-events:none !important; z-index:2147483000 !important; }
+    #a4-wrapper-element { width:190mm !important; max-width:190mm !important; min-width:0 !important; margin:5mm auto !important; padding:6mm 7mm !important; height:auto !important; min-height:0 !important; border:0 !important; box-shadow:none !important; transform:none !important; page-break-inside:auto !important; }
+    #a4-wrapper-element::before { display:none !important; }
+    #a4-wrapper-element table { page-break-inside:auto !important; }
+    #a4-wrapper-element tr { page-break-inside:avoid !important; }
+    #a4-wrapper-element img { max-width:100% !important; }
+}
+
+/* Validation and confirmation dialogs must sit above the popup editor. */
+.custom-modal-backdrop { z-index:2700; }
+
+/* Compact A4 output for short invoices and quotations. */
+#a4-wrapper-element .dar-summary-host-row, #a4-wrapper-element .dar-summary-host-row > td { border:0 !important; outline:0 !important; }
+#a4-wrapper-element .dar-totals-summary { width:43% !important; font-size:10px !important; margin-top:6px !important; }
+#a4-wrapper-element .dar-totals-summary td { padding:4px 6px !important; line-height:1.15 !important; }
+#a4-wrapper-element #p-notes-section { border:0 !important; background:transparent !important; padding:4px 0 !important; margin-top:6px !important; }
+#a4-wrapper-element .section-terms { width:50% !important; max-width:50% !important; margin-left:0 !important; margin-right:auto !important; box-sizing:border-box !important; }
+#a4-wrapper-element.dar-single-page-fit { zoom:var(--dar-print-zoom,1); }
+@media print {
+  #a4-wrapper-element.dar-single-page-fit { width:calc(190mm / var(--dar-print-zoom,1)) !important; max-width:none !important; }
+  #a4-wrapper-element:not(.dar-single-page-fit) { width:190mm !important; max-width:190mm !important; page-break-inside:auto !important; }
+  #a4-wrapper-element.dar-single-page-fit { page-break-inside:avoid !important; }
+  #a4-wrapper-element table { page-break-inside:auto !important; }
+  #a4-wrapper-element tr { page-break-inside:avoid !important; page-break-after:auto !important; }
+  #a4-wrapper-element .dar-summary-host-row { page-break-inside:avoid !important; }
+  #a4-wrapper-element:not(.dar-single-page-fit) #p-content-container { page-break-inside:auto !important; }
+  #a4-wrapper-element .section-terms { width:50% !important; max-width:50% !important; margin-left:0 !important; }
+}
+
+/* Fixed gold page frame and consistent invoice table typography. */
+#a4-wrapper-element {
+  border: 0 !important;
+  position: relative !important;
+  height: 1122px;
+  min-height: 1122px;
+  box-sizing: border-box !important;
+}
+#a4-wrapper-element::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1px solid #b8860b;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 20;
+}
+#a4-wrapper-element #p-content-container table,
+#a4-wrapper-element #p-content-container table th,
+#a4-wrapper-element #p-content-container table td {
+  font-size: 10px !important;
+}
+@media print {
+  /* The wrapper can span multiple sheets; never draw its content-sized frame.
+     The fixed modal frame above is the sole physical-page border in print. */
+  #a4-wrapper-element::before {
+    display: none !important;
+  }
+  #a4-wrapper-element #p-content-container table,
+  #a4-wrapper-element #p-content-container table th,
+  #a4-wrapper-element #p-content-container table td {
+    font-size: 10px !important;
+  }
+}
