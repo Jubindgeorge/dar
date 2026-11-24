@@ -271,9 +271,14 @@
     let staffImportCompanyId = '';
     const staffImportFields = {
         staffCode: ['staff id','staff code','employee id','employee code','id','code'],
-        fullName: ['full name','staff name','employee name','name'],
+        personNumber: ['person number','person no','person #'],
+        fullName: ['full name','staff name','employee name','person name','name'],
         nationality: ['nationality','country'],
-        designation: ['designation','position','job title','occupation'],
+        designation: ['designation','position','job title','occupation','job name'],
+        cardType: ['card type','labour card type','labor card type','work permit type'],
+        contractType: ['contract type'],
+        labourCardNumber: ['labour card number','labor card number','card number','labour card no','labor card no'],
+        labourCardExpiry: ['labour card expiry','labour card expiry date','card expiry','card expiry date'],
         lastWorkDone: ['last work done','work done','service','last service'],
         passportNumber: ['passport number','passport no','passport #','passport'],
         passportExpiry: ['passport expiry','passport expiry date','passport valid until'],
@@ -315,8 +320,14 @@
         if (!grid || !grid.length) return [];
         const headers = grid[0].map(staffImportHeader);
         const aliases = Object.values(staffImportFields).flat();
-        const headerCount = headers.filter(header => aliases.includes(header)).length;
-        if (headerCount < 2) throw new Error('Could not identify a staff table. Include column headings such as Staff ID and Full Name.');
+        const matchedHeaders = headers.filter(header => aliases.includes(header));
+        const mohreHeaders = ['person name','card type','job name','card number','contract type','passport number'];
+        // MOHRE exports do not contain DAR's Staff ID / Full Name headings.
+        // Accept a MOHRE-shaped table when at least one distinctive MOHRE heading exists.
+        const hasMohreHeading = headers.some(header => mohreHeaders.includes(header));
+        if (matchedHeaders.length < 2 && !hasMohreHeading) {
+            throw new Error('Could not identify a staff table. Include recognised staff headings or MOHRE headings such as Person Name, Card Number or Passport Number.');
+        }
         return grid.slice(1).filter(row => row.some(cell => clean(cell) !== '')).map(row => {
             const source = {}; headers.forEach((header,index) => { source[header] = row[index] == null ? '' : row[index]; });
             return mapStaffImportObject(source);
