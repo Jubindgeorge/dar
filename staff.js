@@ -400,7 +400,8 @@
                 if (!cardType || cardIndex < 0 || expiryIndex < 0) return;
                 const contract = fields.find(value=>/^(LIMITED|UNLIMITED)$/i.test(value)) || '';
                 const nationalityIndex = fields.findIndex((value,index)=>index>0 && knownNationalities.has(value.toUpperCase()));
-                const nationality = nationalityIndex >= 0 ? fields[nationalityIndex].toUpperCase() : '';
+                const arabicNationalityMap = {'الهند':'INDIA','باكستان':'PAKISTAN','غانا':'GHANA','نيبال':'NEPAL','سريلانكا':'SRI LANKA','بنغلاديش':'BANGLADESH','الفلبين':'PHILIPPINES'};
+            const nationality = nationalityIndex >= 0 ? fields[nationalityIndex].toUpperCase() : (fields.find(value=>arabicNationalityMap[value]) ? arabicNationalityMap[fields.find(value=>arabicNationalityMap[value])] : '');
                 const nameFields = fields.slice(1, cardTypeIndex >= 0 ? cardTypeIndex : cardIndex);
                 const englishName = nameFields.find(value=>/[A-Za-z]/.test(value) && !knownNationalities.has(value.toUpperCase()) && !/^\\d+$/.test(value)) || '';
                 const arabicName = nameFields.find(value=>/[\\u0600-\\u06FF]/.test(value)) || '';
@@ -409,7 +410,7 @@
                 const personNumber = fields.find(value=>/^\\d{12,16}$/.test(value)) || '';
                 pipeRecords.push({
                     staffCode:'', personNumber, fullName:pipeLatin(englishName), fullNameArabic:arabicName,
-                    nationality, designation, cardType, contractType:contract,
+                    nationality, designation, cardType:cardTypeLabel, contractType:contract,
                     passportNumber, labourCardNumber:fields[cardIndex],
                     labourCardExpiry:normalizeStaffImportDate(fields[expiryIndex]),
                     visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
@@ -724,7 +725,8 @@
             const record={
                 id, staffCode:generatedStaffCode, staffId:generatedStaffCode, fullName:row.fullName,
                 companyId:company.id, companyName:company.companyName,
-                personNumber:row.personNumber||'', nationality:row.nationality||'', designation:row.designation||'',
+                personNumber:row.personNumber||'', fullNameArabic:row.fullNameArabic||'', nationality:row.nationality||'', designation:row.designation||'',
+                cardType:row.cardType||'', contractType:row.contractType||'',
                 labourCardNumber:row.labourCardNumber||'', labourCardExpiry:row.labourCardExpiry||'',
                 lastWorkDone:row.lastWorkDone||'', passportNumber:row.passportNumber||'',
                 passportExpiry:row.passportExpiry||'', visaNumber:row.visaNumber||'',
