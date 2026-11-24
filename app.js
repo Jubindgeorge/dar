@@ -541,7 +541,7 @@ window.viewClientDetail = function(clientId) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No records linked to this account.</td></tr>`;
     } else {
         tbody.innerHTML = clientDocs.map(d => {
-            const amt = parseFloat(d.totalAmount) || parseFloat(d.totalAmt) || parseFloat(d.total) || parseFloat(d.amount) || 0;
+            const amt = Number(getDarDocumentAmount(d)) || 0;
             return `
                 <tr>
                     <td><strong>${darEscapeHTML(d.refCode)}</strong></td>
