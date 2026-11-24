@@ -878,7 +878,7 @@ window.viewDocumentHistory = function(refCode) {
         'Updated by: ' + (doc.updatedBy || 'Not recorded'),
         'Initial advance: AED ' + (Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0).toFixed(2)
     ];
-    const payments = Array.isArray(doc.paymentLogs) ? doc.paymentLogs.slice() : [];
+    const payments = window.getDarDocumentPaymentLogs(doc).slice();
     payments.sort((a, b) => String(a.date || a.transactionDate || a.createdAt || '').localeCompare(String(b.date || b.transactionDate || b.createdAt || '')));
     if (payments.length) {
         lines.push('', 'Additional payments:');
@@ -1121,11 +1121,25 @@ function darDownloadJSON(name, data) {
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+// Normalize Firebase array/object payment histories without mutating stored records.
+window.getDarDocumentPaymentLogs = function(doc) {
+    const raw = doc?.paymentLogs;
+    const entries = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
+    return entries.filter(entry => entry && typeof entry === 'object');
+};
+// One shared payment rule for dashboard, ledger, archive and invoice validation.
+// Legacy records without an explicit marker use the larger figure to avoid
+// double-counting an advance that may already be represented in paymentLogs.
+window.getDarDocumentPaidAmount = function(doc) {
+    const advance = Math.max(0, Number(doc?.advanceAmount ?? doc?.advanceAmt ?? doc?.advance ?? 0) || 0);
+    const logged = window.getDarDocumentPaymentLogs(doc).reduce((sum, payment) => sum + Math.max(0, Number(payment.amount) || 0), 0);
+    if (doc?.advanceIncludedInPaymentLogs === true) return logged;
+    if (doc?.advanceIncludedInPaymentLogs === false) return advance + logged;
+    return Math.max(advance, logged);
+};
 window.getDarDocumentPaymentStatus = function(doc) {
     const total=Math.max(0,Number(getDarDocumentAmount(doc))||0);
-    const advance=Math.max(0,Number(doc?.advanceAmount??doc?.advanceAmt??doc?.advance??0)||0);
-    const logs=Array.isArray(doc?.paymentLogs)?doc.paymentLogs:[];
-    const paid=Math.min(total,Math.max(0,advance+logs.reduce((sum,p)=>sum+(Number(p.amount)||0),0)));
+    const paid=Math.min(total,window.getDarDocumentPaidAmount(doc));
     const outstanding=Math.max(0,total-paid);
     if(outstanding<=0)return 'paid';
     if(paid>0)return 'partial';
@@ -1133,16 +1147,14 @@ window.getDarDocumentPaymentStatus = function(doc) {
     const today=window.darDates?window.darDates.todayISO():localISODate();
     return due&&due<today?'overdue':'unpaid';
 };
-// V2: read-only financial overview; does not change ledger or invoice calculations.
+// V2: read-only financial overview; does not change invoice or stored payment records.
 window.getDarV2FinancialOverview = function(documents, expenses) {
     const docs = (Array.isArray(documents) ? documents : []).filter(doc => (doc.type || 'Invoice') !== 'Quotation');
     const costs = Array.isArray(expenses) ? expenses : [];
     const summary = { records: docs.length, invoiced: 0, received: 0, outstanding: 0, expenses: 0, business: 0, staff: 0, unassigned: 0, paid: 0, partial: 0, unpaid: 0, overdue: 0 };
     docs.forEach(doc => {
         const total = Math.max(0, Number(getDarDocumentAmount(doc)) || 0);
-        const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
-        const logs = Array.isArray(doc.paymentLogs) ? doc.paymentLogs : [];
-        const paid = Math.max(0, advance + logs.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
+        const paid = window.getDarDocumentPaidAmount(doc);
         summary.invoiced += total;
         summary.received += Math.min(total, paid);
         summary.outstanding += Math.max(0, total - paid);
@@ -1171,7 +1183,7 @@ window.buildDarFinancialReportRows = function() {
     (state.documents||[]).filter(d=>(d.type||'Invoice')!=='Quotation').forEach(d=>{
         const row=get(keyFor(d.transactionDate||d.createdDate||d.date));
         const total=Math.max(0,Number(getDarDocumentAmount(d))||0);
-        const paid=Math.max(0,Number(d.advanceAmount??d.advanceAmt??d.advance??0)+(Array.isArray(d.paymentLogs)?d.paymentLogs:[]).reduce((sum,p)=>sum+(Number(p.amount)||0),0));
+        const paid=window.getDarDocumentPaidAmount(d);
         row.invoiced+=total;row.received+=Math.min(total,paid);row.outstanding+=Math.max(0,total-paid);row.invoices++;row[window.getDarDocumentPaymentStatus(d)]++;
     });
     (state.monthlyExpenses||[]).forEach(e=>{
