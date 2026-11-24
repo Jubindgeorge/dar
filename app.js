@@ -60,6 +60,7 @@ function clearDarUserData() {
     state.selectedCompanyClientId = '';
     state.currentStudioItems = [];
     state.activeEditingId = null;
+    state.activeEditingUpdatedAt = '';
     state.activeViewingClientId = null;
     state.activeViewingCompanyWorksName = null;
     state.activeWorksBranch = 'company';
