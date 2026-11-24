@@ -321,7 +321,7 @@ window.savePaymentLogData = async function() {
     const amount = Number(document.getElementById('pay-input-amount').value);
     const note = document.getElementById('pay-input-note').value;
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter a valid payment amount.'); return; }
-    const payment = {date,transactionDate:date,amount,note,createdAt:new Date().toISOString(),createdBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
+    const payment = {date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
     let validationError = '';
     try {
         const result = await transactDarDocument(doc.refCode, current => {
