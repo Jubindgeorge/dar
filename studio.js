@@ -146,7 +146,7 @@ function populateStudioInjectorSelect() {
     const sel = document.getElementById('st-service-injector');
     if (!sel) return;
     sel.innerHTML = `<option value="">-- Choose Preset Catalog --</option>` +
-        (state.services || []).map(s => `<option value="${s.id}">${s.title} (Govt: AED ${s.govtAmt || 0})</option>`).join('');
+        (state.services || []).filter(Boolean).map(s => `<option value="${escapeHtml(s.id || '')}">${escapeHtml(s.title || 'Untitled Service')} (Govt: AED ${Number.isFinite(Number(s.govtAmt)) ? Number(s.govtAmt) : 0})</option>`).join('');
 }
 
 function normalizeStudioCompanyName(value) {
