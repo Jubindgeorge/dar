@@ -358,24 +358,24 @@
                 line.items.push(item);
             });
             visualLines.sort((a,b)=>b.y-a.y).forEach(line=>{
-                const value=line.items.sort((a,b)=>a.x-b.x).map(item=>item.text).join(' ').replace(/\\s+/g,' ').trim();
+                const value=line.items.sort((a,b)=>a.x-b.x).map(item=>item.text).join(' ').replace(/\s+/g,' ').trim();
                 if(value)allLines.push(value);
             });
         }
         const combined=allLines.join(' ').toLowerCase();
-        const looksMohre=/list\\s+of\\s+employees|establishment\\s*(?:number|no\\.? )|passport\\s*(?:number|no\\.? )|person\\s*name|card\\s*type|job\\s*name|card\\s*number|mohre/i.test(combined);
+        const looksMohre=/list\s+of\s+employees|establishment\s*(?:number|no\.? )|passport\s*(?:number|no\.? )|person\s*name|card\s*type|job\s*name|card\s*number|mohre/i.test(combined);
         if(looksMohre){
             // MOHRE PDF is a positioned table, not a sequence of pipe-delimited
             // records. Use the printed column geometry and passport-column anchors.
             // PDF.js coordinates use the same left-to-right x positions on every page.
             const passportPattern=/^[A-Z0-9]{6,12}$/i;
-            const personPattern=/^\\d{12,16}$/;
-            const cardPattern=/^\\d{8,10}$/;
-            const datePattern=/^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/;
+            const personPattern=/^\d{12,16}$/;
+            const cardPattern=/^\d{8,10}$/;
+            const datePattern=/^\d{1,2}\/\d{1,2}\/\d{4}$/;
             const latinText=(items)=>items.map(item=>item.text)
                 .filter(value=>/[A-Za-z]/.test(value))
-                .map(value=>value.replace(/[^A-Za-z0-9 .&'()/-]/g,' ').replace(/\\s+/g,' ').trim())
-                .filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+                .map(value=>value.replace(/[^A-Za-z0-9 .&'()\/-]/g,' ').replace(/\s+/g,' ').trim())
+                .filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
             const records=[];
             const leadingPersonNumbers=[];
             pages.forEach((items,pageIndex)=>{
@@ -423,7 +423,7 @@
                 if(previous && !previous.personNumber)previous.personNumber=carryover.number;
             });
             if(records.length){
-                const declaredTotal=(combined.match(/total\\s+number\\s+of\\s+employees\\s*[:：]?\\s*(\\d+)/i)||[])[1];
+                const declaredTotal=(combined.match(/total\s+number\s+of\s+employees\s*[:：]?\s*(\d+)/i)||[])[1];
                 if(declaredTotal && Number(declaredTotal)!==records.length){
                     throw new Error('MOHRE employee rows were partially identified ('+records.length+' of '+declaredTotal+'). No records have been imported.');
                 }
@@ -433,7 +433,7 @@
             const pipeRows=[];
             let activePipe=[];
             allLines.forEach(line=>{
-                if(/^\\s*[A-Z0-9]{6,12}\\s*\\|/i.test(line)){
+                if(/^\s*[A-Z0-9]{6,12}\s*\|/i.test(line)){
                     if(activePipe.length)pipeRows.push(activePipe.join(' '));
                     activePipe=[line];
                 }else if(activePipe.length && line.includes('|'))activePipe.push(line);
@@ -442,7 +442,7 @@
             const pipeRecords=pipeRows.map(line=>{
                 const fields=line.split('|').map(value=>clean(value)).filter(Boolean);
                 const passport=fields[0]||'';
-                const cardIndex=fields.findIndex(value=>/^\\d{8,10}$/.test(value));
+                const cardIndex=fields.findIndex(value=>/^\d{8,10}$/.test(value));
                 const expiryIndex=fields.findIndex(value=>datePattern.test(value));
                 const cardType=fields.find(value=>/WORK PERMIT/i.test(value))||'';
                 if(!passportPattern.test(passport)||cardIndex<0||expiryIndex<0||!cardType)return null;
@@ -457,8 +457,8 @@
         if(/staff id|employee id|full name|staff name|employee name/i.test(combined)){
             const headerIndex=allLines.findIndex(line=>/staff id|employee id|full name|staff name|employee name/i.test(line));
             if(headerIndex>=0){
-                const rows=[allLines[headerIndex].split(/\\s{2,}/)];
-                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\\s{2,}/)));
+                const rows=[allLines[headerIndex].split(/\s{2,}/)];
+                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\s{2,}/)));
                 const parsed=staffImportRowsFromGrid(rows);
                 if(parsed.length)return parsed;
             }
