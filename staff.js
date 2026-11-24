@@ -499,6 +499,7 @@
                 const current=clean(field==='staffCode'?(existing.staffCode||existing.staffId):existing[field]);
                 if (norm(current)!==norm(incoming)) changes[field]=incoming;
             });
+            if (Object.prototype.hasOwnProperty.call(changes,'staffCode')) changes.staffId=changes.staffCode;
             return {status:Object.keys(changes).length?'update':'same',existing,changes};
         }
         const incomingCode=norm(row.staffCode);
@@ -507,11 +508,11 @@
         return {status:'new'};
     }
     function buildStaffImportPlan(rows, companyStaff) {
-        const claimedIds=new Set(), seenKeys=new Set();
+        const claimedIds=new Set(), seenIdentifiers=new Set();
         return rows.map(row=>{
-            const key=staffImportIdentityFields.map(field=>norm(row[field])).filter(Boolean).join('|');
-            if (key && seenKeys.has(key)) return {row,status:'duplicate',reason:'Duplicate row in this import'};
-            if (key) seenKeys.add(key);
+            const identifiers=staffImportIdentityFields.map(field=>norm(row[field])).filter(Boolean);
+            if (identifiers.some(value=>seenIdentifiers.has(value))) return {row,status:'duplicate',reason:'Duplicate identifier in this import'};
+            identifiers.forEach(value=>seenIdentifiers.add(value));
             const result=resolveStaffImportRow(row,companyStaff,claimedIds);
             if (result.existing) claimedIds.add(result.existing.id);
             return {row,...result};
@@ -590,7 +591,7 @@
             if(item.status==='update') {
                 const patch={...item.changes,updatedAt:timestamp,updatedBy:firebase.auth().currentUser?.email||firebase.auth().currentUser?.uid||'Unknown'};
                 // Keep the canonical staff ID and all existing document/link metadata untouched.
-                delete patch.id; delete patch.staffId;
+                delete patch.id;
                 Object.entries(patch).forEach(([field,value])=>{updates['staff/'+item.existing.id+'/'+field]=value;});
                 changed.push({id:item.existing.id,patch});
                 return;
