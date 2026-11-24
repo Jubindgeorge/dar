@@ -472,7 +472,13 @@
                 if (parsed.length) return parsed;
             }
         }
-        throw new Error('No readable staff records found. Use a text-based MOHRE employee-list PDF; scanned/image-only PDFs require OCR.');
+        if (!allLines.length || !combined.trim()) {
+            throw new Error('This PDF contains no selectable text. It may be scanned or image-only; please use an OCR-enabled PDF or upload the original file for review.');
+        }
+        if (looksMohre) {
+            throw new Error('MOHRE headings were detected, but employee rows could not be identified. The PDF text layout needs a parser adjustment. Please upload the original PDF for verification.');
+        }
+        throw new Error('PDF text was found, but this file does not match a supported staff-import layout. Please use the MOHRE employee-list PDF or upload the original file for review.');
     }
     function renderStaffImportPreview() {
         const panel = byId('staff-import-preview');
