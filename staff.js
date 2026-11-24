@@ -357,13 +357,13 @@
             // First parse each visual PDF row independently. The previous parser flattened
             // every page into one token stream, so wrapped headers/rows and numeric passports
             // could shift the boundaries and make every employee disappear.
-            const datePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
-            const cardTypePattern = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
+            const rowDatePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+            const rowCardTypePattern = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
+            const rowLatin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
             const rowRecords = [];
             allRows.forEach(rowText => {
                 const tokens = rowText.split(/\s+/).map(value=>value.trim()).filter(Boolean);
-                const cardIndex = tokens.findIndex((token,index)=>/^\d{8,10}$/.test(token) && datePattern.test(tokens[index+1] || ''));
+                const cardIndex = tokens.findIndex((token,index)=>/^\d{8,10}$/.test(token) && rowDatePattern.test(tokens[index+1] || ''));
                 if (cardIndex < 2) return;
                 const expiry = tokens[cardIndex+1];
                 const beforeCard = tokens.slice(0,cardIndex);
@@ -373,19 +373,19 @@
                     (/^[A-Z0-9]{6,12}$/i.test(token) && (/[A-Z]/i.test(token) && /\d/.test(token) || /^\d{6,12}$/.test(token))) &&
                     !/^\d{12,16}$/.test(token));
                 if (passportIndex < 0 || passportIndex >= cardIndex) return;
-                const typeIndex = tokens.findIndex((token,index)=>index>passportIndex && index<cardIndex && cardTypePattern.test(token));
+                const typeIndex = tokens.findIndex((token,index)=>index>passportIndex && index<cardIndex && rowCardTypePattern.test(token));
                 const nationalityEnd = cardIndex;
                 let nationalityStart = nationalityEnd-1;
                 if (nationalityStart>passportIndex && tokens[nationalityStart].toUpperCase()==='LANKA' &&
                     tokens[nationalityStart-1]?.toUpperCase()==='SRI') nationalityStart--;
-                const nationality = latin(tokens.slice(nationalityStart,nationalityEnd).join(' ')).toUpperCase();
+                const nationality = rowLatin(tokens.slice(nationalityStart,nationalityEnd).join(' ')).toUpperCase();
                 if (!nationality || !/[A-Z]/.test(nationality)) return;
                 const nameEnd = typeIndex>passportIndex ? typeIndex : nationalityStart;
-                const name = latin(tokens.slice(passportIndex+1,nameEnd)
+                const name = rowLatin(tokens.slice(passportIndex+1,nameEnd)
                     .filter(token=>!/^\d{12,16}$/.test(token) && !/^PERMIT$/i.test(token)).join(' '));
                 if (!name || !/[A-Za-z]/.test(name)) return;
                 const designationStart = typeIndex>0 ? typeIndex+1 : nameEnd;
-                const designation = latin(tokens.slice(designationStart,nationalityStart).join(' '));
+                const designation = rowLatin(tokens.slice(designationStart,nationalityStart).join(' '));
                 rowRecords.push({
                     staffCode:'',
                     personNumber:personIndex>=0 ? tokens[personIndex] : '',
