@@ -343,7 +343,7 @@
             });
             lines.sort((a,b)=>b.y-a.y).forEach(line=>{
                 line.cells.sort((a,b)=>a.x-b.x);
-                allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\\s+/g,' ').trim());
+                allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\s+/g,' ').trim());
             });
         }
         const combined = allLines.join(' ').toLowerCase();
@@ -352,11 +352,11 @@
             // Use passport numbers as record anchors. Do not depend on a fixed nationality
             // list: MOHRE reports contain many nationalities and that list caused valid rows
             // to be silently dropped.
-            const flat = allLines.join(' ').split(/\\s+/).map(value=>value.trim()).filter(Boolean);
-            const datePattern = /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/;
+            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
+            const datePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
             const cardTypePattern = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
-            const isPassport = value => /^[A-Z0-9]{6,12}$/i.test(value) && /[A-Z]/i.test(value) && /\\d/.test(value);
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
+            const isPassport = value => /^[A-Z0-9]{6,12}$/i.test(value) && /[A-Z]/i.test(value) && /\d/.test(value);
             const passportIndexes = [];
             flat.forEach((token,index)=>{ if (isPassport(token)) passportIndexes.push(index); });
             const records = [];
@@ -364,19 +364,19 @@
                 const nextIndex = passportIndexes[recordIndex+1] ?? flat.length;
                 const segment = flat.slice(index,nextIndex);
                 if (segment.length < 5) return;
-                const cardNumberIndex = segment.findIndex((token,pos)=>pos>0 && /^\\d{8,10}$/.test(token));
+                const cardNumberIndex = segment.findIndex((token,pos)=>pos>0 && /^\d{8,10}$/.test(token));
                 if (cardNumberIndex < 0) return;
                 const expiryIndex = segment.findIndex((token,pos)=>pos>cardNumberIndex && datePattern.test(token));
                 if (expiryIndex < 0) return;
                 const typeIndex = segment.findIndex((token,pos)=>pos>0 && pos<cardNumberIndex && cardTypePattern.test(token));
                 // Person number is a separate MOHRE identifier, not a visa/permit field.
                 const beforePassport = flat.slice(Math.max(0,index-4),index);
-                const personNumber = beforePassport.slice().reverse().find(token=>/^\\d{12,16}$/.test(token)) || '';
+                const personNumber = beforePassport.slice().reverse().find(token=>/^\d{12,16}$/.test(token)) || '';
                 // Nationality is the final alphabetic field before card number; do not use
                 // a fixed country list because MOHRE reports include many nationalities.
                 const nationalityTokens = segment.slice(1,cardNumberIndex)
                     .map((token,pos)=>({token,pos:pos+1}))
-                    .filter(item=>/[A-Za-z]/.test(item.token) && !/^\\d+$/.test(item.token));
+                    .filter(item=>/[A-Za-z]/.test(item.token) && !/^\d+$/.test(item.token));
                 if (!nationalityTokens.length) return;
                 const lastNationality = nationalityTokens[nationalityTokens.length-1];
                 const isSriLanka = lastNationality.token.toUpperCase()==='LANKA' && nationalityTokens.length>1 && nationalityTokens[nationalityTokens.length-2].token.toUpperCase()==='SRI';
@@ -384,12 +384,12 @@
                 const nationalityStart = isSriLanka ? nationalityTokens[nationalityTokens.length-2].pos : lastNationality.pos;
                 const nameEnd = typeIndex > 1 ? typeIndex : nationalityStart;
                 const name = segment.slice(1,nameEnd)
-                    .filter(token=>!/^\\d{12,16}$/.test(token) && !/^PERMIT$/i.test(token))
-                    .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\\s+/g,' ').trim();
+                    .filter(token=>!/^\d{12,16}$/.test(token) && !/^PERMIT$/i.test(token))
+                    .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\s+/g,' ').trim();
                 if (!name) return;
                 const designationStart = typeIndex > 0 ? typeIndex+1 : nameEnd;
                 const designation = segment.slice(designationStart,nationalityStart)
-                    .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\\s+/g,' ').trim();
+                    .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\s+/g,' ').trim();
                 const expiry = segment[expiryIndex];
                 records.push({
                     staffCode:'', personNumber, fullName:name, nationality,
@@ -407,8 +407,8 @@
         if (/staff id|employee id|full name|staff name|employee name/.test(combined)) {
             const headerIndex = allLines.findIndex(line=>/staff id|employee id|full name|staff name|employee name/i.test(line));
             if (headerIndex >= 0) {
-                const rows = [allLines[headerIndex].split(/\\s{2,}/)];
-                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\\s{2,}/)));
+                const rows = [allLines[headerIndex].split(/\s{2,}/)];
+                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\s{2,}/)));
                 const parsed = staffImportRowsFromGrid(rows);
                 if (parsed.length) return parsed;
             }
