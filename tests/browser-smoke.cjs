@@ -468,6 +468,20 @@ const assert = require('node:assert/strict');
     assert.equal(legacyLedgerSmoke.remaining,'AED 100.00','Accounts Ledger computes the correct legacy outstanding balance');
     assert.match(legacyLedgerSmoke.rows,/Advance recorded in legacy log/,'Accounts Ledger renders legacy keyed payment rows');
     assert.doesNotMatch(legacyLedgerSmoke.rows,/Advance Payment/,'Accounts Ledger does not display a duplicate advance row');
+    const zeroTotalLedgerSmoke = await page.evaluate(() => {
+      state.documents=[{refCode:'ZERO-TOTAL-LEDGER',type:'Invoice',clientName:'Zero Total Client',companyName:'Zero Total Company',totalAmount:0,totalAmt:350,total:350,amount:350,advanceAmount:0,paymentLogs:[]}];
+      document.getElementById('acc-invoice-select').value='';
+      renderAccountsLedgerMaster();
+      return {
+        option:document.getElementById('acc-invoice-select').options[1]?.textContent || '',
+        total:document.getElementById('acc-card-total').innerText,
+        remaining:document.getElementById('acc-card-remaining').innerText
+      };
+    });
+    assert.match(zeroTotalLedgerSmoke.option,/AED 0\.00/,'Invoice selector respects an explicit zero total over stale legacy aliases');
+    assert.equal(zeroTotalLedgerSmoke.total,'AED 0.00','Accounts Ledger total respects explicit zero');
+    assert.equal(zeroTotalLedgerSmoke.remaining,'AED 0.00','Accounts Ledger balance respects explicit zero');
+    console.log('PASS: zero-value invoice totals are preserved across ledger views');
     console.log('PASS: shared payment totals, legacy keyed payment history and advance double-count protection');
     console.log('PASS: Accounts Ledger renders legacy keyed payment history without duplicate advance rows');
     const serviceCatalogSafety = await page.evaluate(() => {
