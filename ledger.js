@@ -61,7 +61,7 @@ window.renderAccountsLedgerMaster = function() {
         opt.value = doc.refCode;
         
         // Robust fallback mapping for totals
-        const totalVal = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
+        const totalVal = Number(getDarDocumentAmount(doc)) || 0;
         opt.textContent = `${doc.refCode} - ${doc.clientName || doc.companyName || 'Client'} [AED ${totalVal.toFixed(2)}] (${doc.companyName || 'General'})`;
         
         if (doc.refCode === currentSelected) opt.selected = true;
@@ -85,7 +85,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
     if (!doc) return;
 
     doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
-    doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
+    doc.totalAmount = Number(getDarDocumentAmount(doc)) || 0;
     const paymentLogs = window.getDarDocumentPaymentLogs(doc);
     const logsTotal = paymentLogs.reduce((sum, p) => sum + Math.max(0, Number(p.amount) || 0), 0);
     const totalPaid = window.getDarDocumentPaidAmount(doc);
@@ -204,7 +204,7 @@ window.renderFullLedgerTableBody = function() {
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
-        const totalAmt = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
+        const totalAmt = Number(getDarDocumentAmount(doc)) || 0;
         const totalPaid = window.getDarDocumentPaidAmount(doc);
         const balance = Math.max(0, totalAmt - totalPaid);
         const profit = totalAmt - govtFee - expenseShare;
