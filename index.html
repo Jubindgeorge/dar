@@ -346,7 +346,7 @@
                     <div class="staff-page-heading">
                         <div>
                             <h2 style="color:var(--primary);font-size:1.4rem;">Company Staff Data</h2>
-                            <p class="dar-hint">MOHRE staff records, person numbers, labour cards and passport details.</p>
+                            <p class="dar-hint">MOHRE staff records, Person Labour No., labour cards and passport details.</p>
                             <p id="staff-company-context" class="staff-context">All companies</p>
                         </div>
                         <div class="staff-toolbar">
@@ -366,7 +366,7 @@
                         <div id="staff-import-preview" class="staff-import-preview" aria-live="polite" hidden></div>
                     </div>
                     <div class="staff-filter-row">
-                        <input id="staff-search" type="search" placeholder="Search staff ID, person number, name, company, labour card or passport..." oninput="renderStaffTable()" aria-label="Search staff">
+                        <input id="staff-search" type="search" placeholder="Search staff ID, Person Labour No., name, company, labour card or passport..." oninput="renderStaffTable()" aria-label="Search staff">
                         <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
                         <label class="v2-filter-date">From <input type="date" id="staff-date-from" onchange="renderStaffTable()" aria-label="Staff joined from date"></label><label class="v2-filter-date">To <input type="date" id="staff-date-to" onchange="renderStaffTable()" aria-label="Staff joined through date"></label><select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
                             <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
@@ -374,7 +374,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="data-table staff-table">
-                            <thead><tr><th>Staff ID</th><th>Name / Person No.</th><th>Company</th><th>Nationality</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th><th>Renewal Status</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Staff ID</th><th>Name / Person Labour No.</th><th>Company</th><th>Nationality</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th><th>Renewal Status</th><th>Actions</th></tr></thead>
                             <tbody id="staff-table-body"><tr><td colspan="9">Loading staff records…</td></tr></tbody>
                         </table>
                     </div>
@@ -766,6 +766,7 @@
             <div class="staff-form-grid">
                 <div class="form-group"><label for="sf-staff-code">Staff ID (Auto-generated)</label><input id="sf-staff-code" type="text" readonly required placeholder="Generated automatically"></div>
                 <div class="form-group"><label for="sf-full-name">Full Name *</label><input id="sf-full-name" type="text" required></div>
+                <div class="form-group"><label for="sf-person-number">Person Labour No.</label><input id="sf-person-number" type="text" inputmode="numeric" autocomplete="off"></div>
                 <div class="form-group"><label for="sf-company">Company *</label><select id="sf-company" required onchange="refreshStaffCompanyClients()"></select></div>
                 <div class="form-group"><label for="sf-nationality">Nationality</label><input id="sf-nationality" type="text"></div>
                 <div class="form-group"><label for="sf-designation">Designation / Position</label><input id="sf-designation" type="text"></div>
