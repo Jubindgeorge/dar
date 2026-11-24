@@ -5,6 +5,8 @@ function studioLocalISODate() {
 }
 function openStudio(type, editRefCode = null) {
     state.activeEditingId = editRefCode || null;
+    const openedDocument = editRefCode ? (state.documents || []).find(item => item.refCode === editRefCode) : null;
+    state.activeEditingUpdatedAt = openedDocument?.updatedAt || '';
     const studioPanel = document.getElementById('tab-studio');
     if (studioPanel) studioPanel.classList.toggle('dar-edit-popup', !!editRefCode);
     switchTab('studio');
@@ -146,7 +148,7 @@ function populateStudioInjectorSelect() {
     const sel = document.getElementById('st-service-injector');
     if (!sel) return;
     sel.innerHTML = `<option value="">-- Choose Preset Catalog --</option>` +
-        (state.services || []).map(s => `<option value="${s.id}">${s.title} (Govt: AED ${s.govtAmt || 0})</option>`).join('');
+        (state.services || []).filter(Boolean).map(s => `<option value="${escapeHtml(s.id || '')}">${escapeHtml(s.title || 'Untitled Service')} (Govt: AED ${Number.isFinite(Number(s.govtAmt)) ? Number(s.govtAmt) : 0})</option>`).join('');
 }
 
 function normalizeStudioCompanyName(value) {
@@ -354,13 +356,19 @@ function commitDocumentToMemory() {
         return;
     }
     const previousDocumentForValidation = (state.documents || []).find(d => d.refCode === refCode);
-    const recordedPayments = Array.isArray(previousDocumentForValidation?.paymentLogs) ? previousDocumentForValidation.paymentLogs : [];
-    const paidInLogs = recordedPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
     if (previousDocumentForValidation?.type === 'Quotation' && (Number(previousDocumentForValidation.invoicedAmount) || 0) > totalAmt + 0.005) {
         showCustomModal('Quotation balance protected', 'The quotation total cannot be reduced below the amount already invoiced.');
         return;
     }
-    if (advanceAmt + paidInLogs > totalAmt) {
+    const previousAdvanceValue = Number(previousDocumentForValidation?.advanceAmount ?? previousDocumentForValidation?.advanceAmt ?? previousDocumentForValidation?.advance ?? 0) || 0;
+    const advanceWasChanged = !!previousDocumentForValidation && Math.abs(previousAdvanceValue - advanceAmt) > 0.005;
+    const proposedPaymentAdvanceBalance = previousDocumentForValidation?.advanceIncludedInPaymentLogs === false
+        ? (advanceWasChanged ? advanceAmt : Number(previousDocumentForValidation.paymentAdvanceBalance ?? previousAdvanceValue) || 0)
+        : undefined;
+    const proposedPaid = previousDocumentForValidation && window.getDarDocumentPaidAmount
+        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt, ...(previousDocumentForValidation.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:proposedPaymentAdvanceBalance} : {})})
+        : advanceAmt;
+    if (Math.max(advanceAmt, proposedPaid) > totalAmt + 0.005) {
         showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
         return;
     }
@@ -419,8 +427,6 @@ function commitDocumentToMemory() {
 
     // Preserve recorded payments when editing an invoice; never silently reset the ledger.
     const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
-    const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
-
     const auditUser = window.firebase?.auth?.().currentUser;
     const payload = {
         refCode,
@@ -451,6 +457,7 @@ function commitDocumentToMemory() {
         legacyDiscountAmount,
         advanceAmt,
         advanceAmount: advanceAmt,
+        ...(previousDocument?.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:advanceWasChanged ? advanceAmt : (previousDocument.paymentAdvanceBalance ?? previousAdvanceValue)} : {}),
         totalAmount: totalAmt,
         totalAmt,
         total: totalAmt,
@@ -484,22 +491,40 @@ function commitDocumentToMemory() {
                 showCustomModal(wasEditing ? 'Document Updated' : 'Document Saved', `${type} ${refCode} ${wasEditing ? 'updated' : 'saved'} successfully. The original reference and payment history are retained.`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('${destinationTab}')">Back to ${type === 'Quotation' ? 'Quotations' : 'Invoices'}</button>`);
             }
             state.activeEditingId = null;
+            state.activeEditingUpdatedAt = '';
         } else if (typeof showCustomModal === 'function') {
             showCustomModal('Save failed', err.message || 'The document could not be saved. Please check your connection and try again.');
         }
     };
 
     if (previousDocument?.sourceQuotationRef) {
+        let saveConflict = '';
+        const previousUpdatedAt = state.activeEditingUpdatedAt || previousDocument.updatedAt || '';
         db.ref('documents').transaction(current => {
             const docs = current && typeof current === 'object' ? current : {};
             const liveInvoice = docs[refCode];
             const sourceRef = previousDocument.sourceQuotationRef;
             const liveQuote = docs[sourceRef];
-            if (!liveInvoice || !liveQuote || liveQuote.type !== 'Quotation') return;
+            if (!liveInvoice || !liveQuote || liveQuote.type !== 'Quotation') {
+                saveConflict = 'The invoice or source quotation was removed. Refresh and retry.';
+                return;
+            }
+            if (previousUpdatedAt && liveInvoice.updatedAt && liveInvoice.updatedAt !== previousUpdatedAt) {
+                saveConflict = 'This invoice was changed by another user. Refresh it before editing again.';
+                return;
+            }
+            const latestPaid = window.getDarDocumentPaidAmount({...liveInvoice,advanceAmount:advanceAmt,...(liveInvoice.advanceIncludedInPaymentLogs===false && advanceWasChanged?{paymentAdvanceBalance:advanceAmt}:{})});
+            if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
+                saveConflict = 'The latest recorded payments exceed the new invoice total.';
+                return;
+            }
             const oldInvoiceTotal = Number(liveInvoice.totalAmount ?? liveInvoice.totalAmt ?? liveInvoice.total ?? liveInvoice.amount) || 0;
             const quoteTotal = Number(liveQuote.totalAmount ?? liveQuote.totalAmt ?? liveQuote.total ?? liveQuote.amount) || 0;
             const updatedInvoiced = Math.max(0, (Number(liveQuote.invoicedAmount) || 0) + totalAmt - oldInvoiceTotal);
-            if (updatedInvoiced > quoteTotal + 0.005) return;
+            if (updatedInvoiced > quoteTotal + 0.005) {
+                saveConflict = 'This edit would exceed the remaining amount on the source quotation.';
+                return;
+            }
             docs[refCode] = { ...liveInvoice, ...payload };
             docs[sourceRef] = {
                 ...liveQuote,
@@ -512,10 +537,40 @@ function commitDocumentToMemory() {
             return docs;
         }, (err, committed, snapshot) => {
             if (err) { finishSave(err); return; }
-            if (!committed) { finishSave(new Error('This edit would exceed the remaining amount on the source quotation.')); return; }
+            if (!committed) { finishSave(new Error(saveConflict || 'The document changed while saving. Refresh and retry.')); return; }
             finishSave(null, snapshot.val() || {});
         }, false);
     } else {
-        db.ref(`documents/${refCode}`).update(payload, finishSave);
+        let saveConflict = '';
+        const previousUpdatedAt = state.activeEditingUpdatedAt || previousDocument?.updatedAt || '';
+        db.ref(`documents/${refCode}`).transaction(liveDocument => {
+            if (previousDocument && !liveDocument) {
+                saveConflict = 'This document was removed by another user. Refresh before editing.';
+                return;
+            }
+            if (!previousDocument && liveDocument) {
+                saveConflict = 'This document reference already exists. Refresh and choose a new reference.';
+                return;
+            }
+            if (liveDocument) {
+                if (previousUpdatedAt && liveDocument.updatedAt && liveDocument.updatedAt !== previousUpdatedAt) {
+                    saveConflict = 'This document was changed by another user. Refresh before editing again.';
+                    return;
+                }
+                const latestPaid = window.getDarDocumentPaidAmount({...liveDocument,advanceAmount:advanceAmt,...(liveDocument.advanceIncludedInPaymentLogs===false && advanceWasChanged?{paymentAdvanceBalance:advanceAmt}:{})});
+                if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
+                    saveConflict = 'The latest recorded payments exceed the new document total.';
+                    return;
+                }
+                return {...liveDocument,...payload};
+            }
+            return payload;
+        }, (err, committed, snapshot) => {
+            if (err) { finishSave(err); return; }
+            if (!committed) { finishSave(new Error(saveConflict || 'The document changed while saving. Refresh and retry.')); return; }
+            const committedDocs = Object.fromEntries((state.documents || []).filter(item => item?.refCode).map(item => [item.refCode, item]));
+            committedDocs[refCode] = snapshot.val();
+            finishSave(null, committedDocs);
+        }, false);
     }
 }

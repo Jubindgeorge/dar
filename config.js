@@ -38,28 +38,24 @@ function escapeHtml(value) {
     }[ch]));
 }
 
-function saveStateToFirebase() {
+// Persist only the exact record and fields changed by the caller.
+// Bulk-saving every item in the local cache can overwrite newer edits from another session.
+function saveStateToFirebase(collection, key, patch) {
     if (!db) {
+        const error = new Error('Firebase is not initialized');
         console.error('Firebase is not initialized; changes could not be saved.');
         if (typeof showCustomModal === 'function') showCustomModal('Connection unavailable', 'Firebase is not connected. Your changes were not saved.');
-        return Promise.reject(new Error('Firebase is not initialized'));
+        return Promise.reject(error);
     }
-    const writes = [];
-    // Update records by their existing keys; never replace entire collections.
-    (state.clients || []).forEach(item => {
-        if (item && item.id) { const copy = {...item}; delete copy.id; writes.push(db.ref(`clients/${item.id}`).update(copy)); }
-    });
-    (state.documents || []).forEach(item => {
-        const key = item && (item.refCode || item.id);
-        if (key) { const copy = {...item}; delete copy.id; writes.push(db.ref(`documents/${key}`).update(copy)); }
-    });
-    (state.monthlyExpenses || []).forEach(item => {
-        if (!item) return;
-        if (!item.id) item.id = db.ref('monthlyExpenses').push().key;
-        const copy = {...item}; delete copy.id;
-        writes.push(db.ref(`monthlyExpenses/${item.id}`).update(copy));
-    });
-    return Promise.all(writes).catch(error => {
+    const allowedCollections = new Set(['clients', 'documents', 'monthlyExpenses']);
+    const recordKey = String(key == null ? '' : key);
+    if (!allowedCollections.has(collection) || !recordKey || [...recordKey].some(ch => '.#$[]/'.includes(ch) || ch.charCodeAt(0) === 92 || ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127)) {
+        return Promise.reject(new Error('A valid collection and record key are required for a targeted save.'));
+    }
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+        return Promise.reject(new Error('A record update object is required.'));
+    }
+    return db.ref(collection + '/' + recordKey).update(patch).catch(error => {
         console.error('Firebase save failed:', error);
         if (typeof showCustomModal === 'function') showCustomModal('Save failed', 'Your changes could not be saved. Check your connection and Firebase permissions, then try again.');
         throw error;

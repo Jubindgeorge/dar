@@ -36,15 +36,21 @@
 
     window.batchUpdateAllArabicNames = async function () {
         if (!Array.isArray(state.clients) || state.clients.length === 0) return;
-        let changed = 0;
+        let changed = 0, failed = 0;
         for (const client of state.clients) {
-            if (client.companyName && !String(client.nameAr || '').trim()) {
-                client.nameAr = await window.translateCompanyName(client.companyName);
-                if (client.nameAr) changed++;
+            if (!client?.id || !client.companyName || String(client.nameAr || '').trim()) continue;
+            try {
+                const translated = await window.translateCompanyName(client.companyName);
+                if (!translated) continue;
+                await saveStateToFirebase('clients', client.id, {nameAr:translated});
+                client.nameAr = translated;
+                changed++;
+            } catch (error) {
+                failed++;
+                console.warn('Arabic name update failed for client:', client.id, error);
             }
         }
-        if (changed && typeof saveStateToFirebase === 'function') await saveStateToFirebase();
         if (typeof renderClientsTable === 'function') renderClientsTable();
-        if (typeof showCustomModal === 'function') showCustomModal('Arabic names updated', `${changed} client name(s) processed. Please review phonetic fallback results before official use.`);
+        if (typeof showCustomModal === 'function') showCustomModal('Arabic names updated', `${changed} client name(s) saved, ${failed} failed. Please review phonetic fallback results before official use.`);
     };
 })();

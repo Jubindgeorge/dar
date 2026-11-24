@@ -13,6 +13,7 @@ let state = {
     currentStudioMode: 'Invoice',
     currentStudioItems: [],
     activeEditingId: null,
+    activeEditingUpdatedAt: '',
     activeViewingClientId: null,
     activeViewingCompanyWorksName: null,
     activeWorksBranch: 'company'
