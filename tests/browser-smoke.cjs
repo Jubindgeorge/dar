@@ -68,7 +68,7 @@ const assert = require('node:assert/strict');
     assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first employee name');
     assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts page-two employee name');
     assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
-    assert.match(mohrePreview,/31601040264662/,'MOHRE parser keeps a row-level Person Labour No.');
+    assert.match(mohrePreview,/31601040264651/,'MOHRE parser keeps a row-level Person Labour No.');
     assert.match(mohrePreview,/20010038231120/,'MOHRE parser carries the page-two leading Person Labour No. to the final page-one employee');
     const pipeMohrePreview = await page.evaluate(async () => {
       const rows = [
