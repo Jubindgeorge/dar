@@ -118,6 +118,8 @@ const assert = require('node:assert/strict');
         await window.previewStaffImportFile({name:'staff.xlsx',arrayBuffer:async()=>new ArrayBuffer(0)});
         const preview=document.getElementById('staff-import-preview').innerText;
         window.commitStaffImport();
+        const importModal=document.getElementById('custom-modal');
+        if(importModal) importModal.style.display='none';
         return {
           preview,writes:writes[0],staff:state.staff,
           buttonDisabled:document.getElementById('staff-import-button').disabled
