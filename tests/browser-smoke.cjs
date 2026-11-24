@@ -97,26 +97,31 @@ const assert = require('node:assert/strict');
     assert.match(pipeMohrePreview,/31\/08\/2028|2028-08-31/,'Pipe parser extracts the labour card expiry');
     const staffUpsert = await page.evaluate(async () => {
       const originalRef=db.ref;
-      const originalAuth=window.firebase.auth;
       const writes=[];
       state.staff=[
         {id:'staff-same',staffCode:'ST-100',staffId:'ST-100',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'11111111111111',fullName:'ALPHA STAFF',nationality:'INDIA',passportNumber:'P100',labourCardNumber:'L100',labourCardExpiry:'2028-08-31',linkedInvoiceRef:'INV-KEEP-1',linkedQuotationRef:'QTN-KEEP-1'},
         {id:'staff-update',staffCode:'ST-101',staffId:'ST-101',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'22222222222222',fullName:'BETA STAFF',nationality:'',passportNumber:'P200',labourCardNumber:'L200',labourCardExpiry:'',linkedInvoiceRef:'INV-KEEP-2',linkedQuotationRef:'QTN-KEEP-2'},
+        {id:'staff-name-1',staffCode:'ST-102',companyId:'import-company-test',fullName:'SHARED NAME'},
+        {id:'staff-name-2',staffId:'ST-103',companyId:'import-company-test',fullName:'SHARED NAME',passportNumber:'P-KEEP'},
         {id:'other-company-staff',staffCode:'STAFF-0001',staffId:'STAFF-0001',companyId:'another-company',companyName:'Another Company',fullName:'OTHER COMPANY STAFF'}
       ];
       state.documents=[
         {refCode:'INV-ALPHA',type:'Invoice',clientName:'ALPHA STAFF',companyName:'Import Test Company',totalAmount:1250},
-        {refCode:'QTN-GAMMA',type:'Quotation',clientName:'GAMMA STAFF',companyName:'Import Test Company',totalAmount:900}
+        {refCode:'QTN-GAMMA',type:'Quotation',clientName:'GAMMA STAFF',companyName:'Import Test Company',totalAmount:900},
+        {refCode:'INV-GAMMA',type:'Invoice',clientName:'GAMMA STAFF',companyName:'Import Test Company'}
       ];
       window.XLSX={read:()=>({SheetNames:['Staff'],Sheets:{Staff:{}}}),utils:{sheet_to_json:()=>[
         ['Staff ID','Person Labour No','Person Name','Nationality','Passport Number','Card Number','Card Expiry'],
         ['AUTO-ALPHA','11111111111111','ALPHA STAFF','INDIA','P100','L100','31/08/2028'],
         ['','22222222222222','BETA STAFF','INDIA','P200','L200','30/09/2028'],
-        ['','33333333333333','GAMMA STAFF','NEPAL','P300','L300','30/10/2028']
+        ['','33333333333333','GAMMA STAFF','NEPAL','P300','L300','30/10/2028'],
+        ['ST-102','','SHARED NAME','NEPAL','','',''],
+        ['ST-103','','SHARED NAME','INDIA','P-MISMATCH','',''],
+        ['','','SHARED NAME','INDIA','','','']
       ]}};
       db.ref=function(path){
         if(path==='staff')return {push:()=>({key:'staff-new'})};
-        if(!path)return {update:(payload,callback)=>{writes.push(payload);Object.entries(payload).forEach(([key,value])=>{const parts=key.split('/');if(parts[0]==='staff'&&parts.length===2){const id=parts[1];state.staff.push({id,...value});}else if(parts[0]==='staff'&&parts.length===3){const record=state.staff.find(item=>item.id===parts[1]);if(record)record[parts[2]]=value;}else if(parts[0]==='documents'&&parts.length===3){const doc=state.documents.find(item=>item.refCode===parts[1]);if(doc)doc[parts[2]]=value;}});callback(null);}};
+        if(!path)return {update:(payload,callback)=>{writes.push(payload);callback(null);}};
         return originalRef(path);
       };
       try {
@@ -131,11 +136,18 @@ const assert = require('node:assert/strict');
         };
       } finally {db.ref=originalRef;window.XLSX=undefined;}
     });
-    assert.match(staffUpsert.preview,/1 new · 1 updates · 1 unchanged/,'Import preview distinguishes new, changed and identical staff');
+    assert.match(staffUpsert.preview,/1 new · 2 updates · 1 unchanged · 2 skipped/,'Import preview distinguishes new, changed, identical and conflicting staff');
+    assert.match(staffUpsert.preview,/More than one existing employee has this exact name/,'Duplicate names without a matching code are still conflicts');
+    assert.match(staffUpsert.preview,/Staff ID matches, but person identifiers belong to a different employee/,'A conflicting passport prevents a code match');
+    assert.equal(staffUpsert.writes?.['staff/staff-name-1/nationality'],'NEPAL','A validated code resolves an otherwise ambiguous name');
     assert.ok(!Object.keys(staffUpsert.writes||{}).some(path=>path.startsWith('staff/staff-same/')&&!['staff/staff-same/linkedDocumentRefs'].includes(path)),'Identical staff identity fields stay unchanged while missing document links may be added');
     assert.equal(staffUpsert.writes?.['staff/staff-update/nationality'],'INDIA','Missing existing nationality is filled from import');
     assert.equal(staffUpsert.writes?.['staff/staff-update/labourCardExpiry'],'2028-09-30','Changed/missing labour card expiry is updated');
     assert.ok(staffUpsert.writes?.['staff/staff-new'],'New employee is created');
+    assert.deepEqual(staffUpsert.writes?.['staff/staff-new'].linkedDocumentRefs,['QTN-GAMMA','INV-GAMMA'],'New staff document links are part of the complete record');
+    assert.equal(staffUpsert.writes?.['staff/staff-new'].linkedInvoiceRef,'INV-GAMMA','The primary invoice link is also part of the complete record');
+    assert.ok(!Object.keys(staffUpsert.writes).some(path=>path.startsWith('staff/staff-new/')),'Firebase receives no overlapping paths for new staff');
+    assert.deepEqual(staffUpsert.writes?.['staff/staff-same/linkedDocumentRefs'],['INV-ALPHA'],'Existing staff still receive a field update');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.staffCode,'ST-100','Mismatched imported Staff ID does not replace existing canonical code');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-new')?.staffCode,'STAFF-0001','Staff numbering starts independently for each company, even when another company uses the same code');
     assert.equal(staffUpsert.writes?.['documents/INV-ALPHA/staffId'],'staff-same','Existing invoice is linked by company and exact person name');
@@ -146,6 +158,40 @@ const assert = require('node:assert/strict');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.linkedQuotationRef,'QTN-KEEP-1','Identical employee quotation link remains intact');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-update')?.linkedInvoiceRef,'INV-KEEP-2','Updated employee invoice link remains intact');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-update')?.linkedQuotationRef,'QTN-KEEP-2','Updated employee quotation link remains intact');
+    const staffMove = await page.evaluate(() => {
+      const originalRef=db.ref;
+      const writes=[];
+      state.clients.push({id:'another-company',companyName:'Another Company'},{id:'empty-company',companyName:'Empty Company'});
+      const chooseCompany=id=>{
+        const select=document.getElementById('sf-company');
+        select.value=id;
+        select.dispatchEvent(new Event('change'));
+        return document.getElementById('sf-staff-code').value;
+      };
+      db.ref=path=>({update:(record,callback)=>{writes.push({path,record});callback(null);}});
+      try {
+        openStaffModal('staff-new');
+        const collision=chooseCompany('another-company');
+        const available=chooseCompany('empty-company');
+        const readOnly=document.getElementById('sf-staff-code').readOnly;
+        chooseCompany('another-company');
+        state.staff.push({id:'late-staff',companyId:'another-company',staffCode:'STAFF-0002'});
+        saveStaffRecord();
+        openStaffModal('');
+        const newCode=chooseCompany('another-company');
+        closeStaffModal();
+        document.getElementById('custom-modal').style.display='none';
+        return {collision,available,readOnly,writes,newCode};
+      } finally {db.ref=originalRef;}
+    });
+    assert.equal(staffMove.collision,'STAFF-0002','Moving staff receive an available code when the original code is taken');
+    assert.equal(staffMove.available,'STAFF-0001','A free original code is preserved when choosing a different company');
+    assert.equal(staffMove.readOnly,true,'Staff code stays read-only');
+    assert.equal(staffMove.writes[0]?.path,'staff/staff-new','The move updates the same staff record');
+    assert.equal(staffMove.writes[0]?.record.companyId,'another-company');
+    assert.equal(staffMove.writes[0]?.record.staffCode,'STAFF-0003','Save checks the destination again for codes taken after company selection');
+    assert.equal(staffMove.writes[0]?.record.staffId,'STAFF-0003','The saved Staff ID agrees with the code');
+    assert.equal(staffMove.newCode,'STAFF-0004','New staff still receive the next code when the company changes');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {

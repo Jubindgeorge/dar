@@ -37,6 +37,10 @@
         } while (used.has(norm(candidate)));
         return candidate;
     }
+    function isStaffCodeUsed(staffCode, companyId, recordId) {
+        const companyName = companyNameById(companyId);
+        return (state.staff || []).some(item => item.id !== recordId && (item.companyId === companyId || norm(item.companyName) === norm(companyName)) && norm(item.staffCode || item.staffId) === norm(staffCode));
+    }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
         const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry].filter(Boolean).map(value => {
@@ -137,11 +141,14 @@
         const companySelect = byId('sf-company');
         companySelect.innerHTML = '<option value="">Select company</option>' + (state.clients || []).map(c => '<option value="'+html(c.id)+'">'+html(c.companyName)+'</option>').join('');
         const companyId = record.companyId || defaults.companyId || companyIdByName(record.companyName || defaults.companyName || '');
+        const originalStaffCode = record.staffCode || record.staffId || defaults.staffCode || nextStaffCode(companyId);
         companySelect.value = companyId;
         companySelect.onchange = () => {
-            if (!recordId) byId('sf-staff-code').value = nextStaffCode(companySelect.value);
+            const selectedCompanyId = companySelect.value;
+            const collision = selectedCompanyId && selectedCompanyId !== companyId && isStaffCodeUsed(originalStaffCode, selectedCompanyId, recordId);
+            byId('sf-staff-code').value = !recordId || collision ? nextStaffCode(selectedCompanyId) : originalStaffCode;
         };
-        byId('sf-staff-code').value = record.staffCode || record.staffId || defaults.staffCode || nextStaffCode(companyId);
+        byId('sf-staff-code').value = originalStaffCode;
         byId('sf-staff-code').readOnly = true;
         byId('sf-full-name').value = record.fullName || defaults.fullName || '';
         byId('sf-person-number').value = record.personNumber || '';
@@ -170,15 +177,17 @@
         const id = clean(byId('sf-record-id').value) || db.ref('staff').push().key;
         const companyId = clean(byId('sf-company').value);
         const companyName = companyNameById(companyId);
-        const staffCode = clean(byId('sf-staff-code').value) || nextStaffCode(companyId);
-        const duplicateCode = (state.staff || []).some(item => item.id !== id && (item.companyId === companyId || norm(item.companyName) === norm(companyName)) && norm(item.staffCode || item.staffId) === norm(staffCode));
-        if (duplicateCode) { showCustomModal('Duplicate Staff ID','This Staff ID is already used by another employee in the selected company. Please use a unique company Staff ID.'); return; }
+        const previous = (state.staff || []).find(item => item.id === id) || {};
+        const previousCompanyId = previous.companyId || companyIdByName(previous.companyName);
+        const movingCompany = previous.id && companyId && companyId !== previousCompanyId;
+        let staffCode = clean((movingCompany && (previous.staffCode || previous.staffId)) || byId('sf-staff-code').value) || nextStaffCode(companyId);
+        if (movingCompany && isStaffCodeUsed(staffCode, companyId, id)) staffCode = nextStaffCode(companyId);
+        if (isStaffCodeUsed(staffCode, companyId, id)) { showCustomModal('Duplicate Staff ID','This Staff ID is already used by another employee in the selected company. Please use a unique company Staff ID.'); return; }
         const fullName = clean(byId('sf-full-name').value);
         if (!staffCode || !fullName || !companyId || !companyName) {
             showCustomModal('Required fields','Staff ID, Full Name and Company are required.'); return;
         }
         const linkedInvoiceRef = clean(byId('sf-linked-invoice').value);
-        const previous = (state.staff || []).find(item => item.id === id) || {};
         const record = {
             ...previous, id, staffCode, staffId: staffCode, fullName, companyId, companyName,
             personNumber: clean(byId('sf-person-number').value),
@@ -494,11 +503,8 @@
         });
         if(matches.size>1)return {status:'conflict',reason:'Person identifiers point to different staff records'};
         let existing=matches.size===1?companyStaff.find(item=>item.id===[...matches][0]):null;
-        if(!existing&&matches.size===0){
-            const sameName=companyStaff.filter(item=>norm(item.fullName)===norm(row.fullName));
-            if(sameName.length===1)existing=sameName[0];
-            else if(sameName.length>1)return {status:'conflict',reason:'More than one existing employee has this exact name'};
-        }
+        const sameName=existing?[]:companyStaff.filter(item=>norm(item.fullName)===norm(row.fullName));
+        if(sameName.length===1)existing=sameName[0];
         if(!existing&&matches.size===0&&norm(row.staffCode)){
             const codeMatches=companyStaff.filter(item=>norm(item.staffCode||item.staffId)===norm(row.staffCode));
             if(codeMatches.length>1)return {status:'conflict',reason:'Staff ID matches multiple records'};
@@ -515,6 +521,7 @@
             staffImportMergeFields.forEach(field=>{const incoming=clean(row[field]);if(!incoming)return;const current=clean(existing[field]);if(norm(current)!==norm(incoming))changes[field]=incoming;});
             return {status:Object.keys(changes).length?'update':'same',existing,changes};
         }
+        if(sameName.length>1)return {status:'conflict',reason:'More than one existing employee has this exact name'};
         const incomingCode=norm(row.staffCode);
         if(incomingCode&&companyStaff.some(item=>norm(item.staffCode||item.staffId)===incomingCode))
             return {status:'conflict',reason:'Staff ID conflicts with an existing record whose person details do not match'};
@@ -634,9 +641,12 @@
         linkedByStaff.forEach((refs,id)=>{
             const person=importedRecords.find(item=>item.id===id);if(!person)return;
             const merged=[...new Set([...(Array.isArray(person.linkedDocumentRefs)?person.linkedDocumentRefs:[]),...refs])];
-            updates['staff/'+id+'/linkedDocumentRefs']=merged;
+            const links={linkedDocumentRefs:merged};
             const invoice=(state.documents||[]).find(doc=>refs.includes(clean(doc.refCode))&&String(doc.type||'').toLowerCase()==='invoice');
-            if(invoice&&!person.linkedInvoiceRef)updates['staff/'+id+'/linkedInvoiceRef']=invoice.refCode;
+            if(invoice&&!person.linkedInvoiceRef)links.linkedInvoiceRef=invoice.refCode;
+            const staffPath='staff/'+id;
+            if(updates[staffPath])Object.assign(updates[staffPath],links);
+            else Object.entries(links).forEach(([field,value])=>{updates[staffPath+'/'+field]=value;});
         });
         const unchanged=plan.filter(item=>item.status==='same').length;
         const skipped=plan.filter(item=>['duplicate','conflict','invalid'].includes(item.status)).length;
