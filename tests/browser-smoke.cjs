@@ -103,15 +103,19 @@ const assert = require('node:assert/strict');
         {id:'staff-same',staffCode:'ST-100',staffId:'ST-100',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'11111111111111',fullName:'ALPHA STAFF',nationality:'INDIA',passportNumber:'P100',labourCardNumber:'L100',labourCardExpiry:'2028-08-31',linkedInvoiceRef:'INV-KEEP-1',linkedQuotationRef:'QTN-KEEP-1'},
         {id:'staff-update',staffCode:'ST-101',staffId:'ST-101',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'22222222222222',fullName:'BETA STAFF',nationality:'',passportNumber:'P200',labourCardNumber:'L200',labourCardExpiry:'',linkedInvoiceRef:'INV-KEEP-2',linkedQuotationRef:'QTN-KEEP-2'}
       ];
+      state.documents=[
+        {refCode:'INV-ALPHA',type:'Invoice',clientName:'ALPHA STAFF',companyName:'Import Test Company',totalAmount:1250},
+        {refCode:'QTN-GAMMA',type:'Quotation',clientName:'GAMMA STAFF',companyName:'Import Test Company',totalAmount:900}
+      ];
       window.XLSX={read:()=>({SheetNames:['Staff'],Sheets:{Staff:{}}}),utils:{sheet_to_json:()=>[
-        ['Person Labour No','Person Name','Nationality','Passport Number','Card Number','Card Expiry'],
-        ['11111111111111','ALPHA STAFF','INDIA','P100','L100','31/08/2028'],
-        ['22222222222222','BETA STAFF','INDIA','P200','L200','30/09/2028'],
-        ['33333333333333','GAMMA STAFF','NEPAL','P300','L300','30/10/2028']
+        ['Staff ID','Person Labour No','Person Name','Nationality','Passport Number','Card Number','Card Expiry'],
+        ['AUTO-ALPHA','11111111111111','ALPHA STAFF','INDIA','P100','L100','31/08/2028'],
+        ['','22222222222222','BETA STAFF','INDIA','P200','L200','30/09/2028'],
+        ['','33333333333333','GAMMA STAFF','NEPAL','P300','L300','30/10/2028']
       ]}};
       db.ref=function(path){
         if(path==='staff')return {push:()=>({key:'staff-new'})};
-        if(!path)return {update:(payload,callback)=>{writes.push(payload);Object.entries(payload).forEach(([key,value])=>{const parts=key.split('/');if(parts.length===2){const id=parts[1];state.staff.push({id,...value});}else if(parts.length===3){const record=state.staff.find(item=>item.id===parts[1]);if(record)record[parts[2]]=value;}});callback(null);}};
+        if(!path)return {update:(payload,callback)=>{writes.push(payload);Object.entries(payload).forEach(([key,value])=>{const parts=key.split('/');if(parts[0]==='staff'&&parts.length===2){const id=parts[1];state.staff.push({id,...value});}else if(parts[0]==='staff'&&parts.length===3){const record=state.staff.find(item=>item.id===parts[1]);if(record)record[parts[2]]=value;}else if(parts[0]==='documents'&&parts.length===3){const doc=state.documents.find(item=>item.refCode===parts[1]);if(doc)doc[parts[2]]=value;}});callback(null);}};
         return originalRef(path);
       };
       try {
@@ -131,6 +135,12 @@ const assert = require('node:assert/strict');
     assert.equal(staffUpsert.writes?.['staff/staff-update/nationality'],'INDIA','Missing existing nationality is filled from import');
     assert.equal(staffUpsert.writes?.['staff/staff-update/labourCardExpiry'],'2028-09-30','Changed/missing labour card expiry is updated');
     assert.ok(staffUpsert.writes?.['staff/staff-new'],'New employee is created');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.staffCode,'ST-100','Mismatched imported Staff ID does not replace existing canonical code');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-new')?.staffCode,'STAFF-0001','New MOHRE-style row receives the next generated DAR staff code');
+    assert.equal(staffUpsert.writes?.['documents/INV-ALPHA/staffId'],'staff-same','Existing invoice is linked by company and exact person name');
+    assert.equal(staffUpsert.writes?.['documents/INV-ALPHA/staffCode'],'ST-100','Invoice receives the canonical DAR Staff ID');
+    assert.equal(staffUpsert.writes?.['documents/QTN-GAMMA/staffId'],'staff-new','Existing quotation is linked to the newly imported person');
+    assert.equal(staffUpsert.writes?.['documents/INV-ALPHA/totalAmount'],undefined,'Invoice financial amounts are never changed by staff linking');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.linkedInvoiceRef,'INV-KEEP-1','Identical employee invoice link remains intact');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.linkedQuotationRef,'QTN-KEEP-1','Identical employee quotation link remains intact');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-update')?.linkedInvoiceRef,'INV-KEEP-2','Updated employee invoice link remains intact');
