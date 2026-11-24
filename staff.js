@@ -372,24 +372,28 @@
                 // Person number is a separate MOHRE identifier, not a visa/permit field.
                 const beforePassport = flat.slice(Math.max(0,index-4),index);
                 const personNumber = beforePassport.slice().reverse().find(token=>/^\\d{12,16}$/.test(token)) || '';
-                const nameEnd = typeIndex > 1 ? typeIndex : cardNumberIndex;
-                const nameTokens = segment.slice(1,nameEnd);
-                const name = nameTokens
+                // Nationality is the final alphabetic field before card number; do not use
+                // a fixed country list because MOHRE reports include many nationalities.
+                const nationalityTokens = segment.slice(1,cardNumberIndex)
+                    .map((token,pos)=>({token,pos:pos+1}))
+                    .filter(item=>/[A-Za-z]/.test(item.token) && !/^\\d+$/.test(item.token));
+                if (!nationalityTokens.length) return;
+                const lastNationality = nationalityTokens[nationalityTokens.length-1];
+                const isSriLanka = lastNationality.token.toUpperCase()==='LANKA' && nationalityTokens.length>1 && nationalityTokens[nationalityTokens.length-2].token.toUpperCase()==='SRI';
+                const nationality = isSriLanka ? 'SRI LANKA' : latin(lastNationality.token).toUpperCase();
+                const nationalityStart = isSriLanka ? nationalityTokens[nationalityTokens.length-2].pos : lastNationality.pos;
+                const nameEnd = typeIndex > 1 ? typeIndex : nationalityStart;
+                const name = segment.slice(1,nameEnd)
                     .filter(token=>!/^\\d{12,16}$/.test(token) && !/^PERMIT$/i.test(token))
                     .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\\s+/g,' ').trim();
                 if (!name) return;
-                // Nationality is the last alphabetic field immediately before the card number;
-                // job titles may contain several words and are not constrained to a whitelist.
-                const nationalityCandidates = segment.slice(1,cardNumberIndex)
-                    .map((token,pos)=>({token,pos:pos+1}))
-                    .filter(item=>/[A-Za-z]/.test(item.token) && !/^\\d+$/.test(item.token));
-                const nationality = nationalityCandidates.length
-                    ? latin(nationalityCandidates[nationalityCandidates.length-1].token).toUpperCase()
-                    : '';
+                const designationStart = typeIndex > 0 ? typeIndex+1 : nameEnd;
+                const designation = segment.slice(designationStart,nationalityStart)
+                    .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\\s+/g,' ').trim();
                 const expiry = segment[expiryIndex];
                 records.push({
                     staffCode:'', personNumber, fullName:name, nationality,
-                    designation:'',
+                    designation,
                     passportNumber:segment[0],
                     labourCardNumber:segment[cardNumberIndex],
                     labourCardExpiry:normalizeStaffImportDate(expiry),
