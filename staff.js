@@ -324,7 +324,7 @@
                 line.cells.push({x:item.transform[4],text});
             });
             lines.sort((a,b)=>b.y-a.y).forEach(line=>line.cells.sort((a,b)=>a.x-b.x));
-            lines.forEach(line=>allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\\s+/g,' ').trim()));
+            lines.forEach(line=>allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\s+/g,' ').trim()));
         }
         const combined = allLines.join(' ').toLowerCase();
         // Standard tabular PDFs continue through the generic column-header parser.
@@ -333,8 +333,8 @@
             // Header cells can be split across PDF text runs; use the first matching line as the header.
             const headerIndex = allLines.findIndex(line => /staff id|employee id|full name|staff name|employee name/i.test(line));
             if (headerIndex >= 0) {
-                const rows = [allLines[headerIndex].split(/\\s{2,}/)];
-                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\\s{2,}/)));
+                const rows = [allLines[headerIndex].split(/\s{2,}/)];
+                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\s{2,}/)));
                 try { grids.push(...staffImportRowsFromGrid(rows)); } catch (_) {}
             }
             if (grids.length) return grids;
@@ -346,11 +346,11 @@
         if (isMohre) {
             const records = [];
             const passportPattern = /^[A-Z0-9]{7,10}$/i;
-            const idPattern = /^\\d{14}$/;
-            const datePattern = /^\\d{2}\\/\\d{2}\\/\\d{4}$/;
+            const idPattern = /^\d{14}$/;
+            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
             const permitPattern = /(?:NEW|RENEW|PRE APPROVAL).*WORK PERMIT/i;
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
-            const flat = allLines.join(' ').split(/\\s+/).map(value=>value.trim()).filter(Boolean);
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
+            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
             const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
             for (let i=0;i<flat.length;i++) {
                 const passport = flat[i];
@@ -358,7 +358,7 @@
                 let idIndex = -1;
                 for (let j=i+1;j<flat.length && j<i+35;j++) { if (idPattern.test(flat[j])) { idIndex=j; break; } }
                 if (idIndex < 0) continue;
-                const name = flat.slice(i+1,idIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\\s+/g,' ').trim();
+                const name = flat.slice(i+1,idIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\s+/g,' ').trim();
                 let permitStart = -1, permitEnd = -1;
                 for (let j=idIndex+1;j<Math.min(flat.length,idIndex+20);j++) {
                     if (/^(NEW|RENEW|PRE)$/i.test(flat[j])) {
@@ -377,7 +377,7 @@
                 const nationality = flat[nationalityIndex].toUpperCase()==='SRI' && flat[nationalityIndex+1]?.toUpperCase()==='LANKA' ? 'SRI LANKA' : flat[nationalityIndex].toUpperCase();
                 const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
                 const afterNationality = flat.slice(nationalityEnd+1,nationalityEnd+8);
-                const cardNumber = afterNationality.find(value=>/^\\d{8,10}$/.test(value)) || '';
+                const cardNumber = afterNationality.find(value=>/^\d{8,10}$/.test(value)) || '';
                 const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
                 records.push({
                     staffCode:cardNumber || passport, fullName:name, passportNumber:passport,
