@@ -522,7 +522,37 @@ const assert = require('node:assert/strict');
     assert.equal(targetedSaveSmoke.broadSaveRejected,true,'A save without an explicit record target is rejected');
     assert.deepEqual(targetedSaveSmoke.writes.map(write=>write.path),['documents/TARGETED-INVOICE'],'Saving one record writes only that exact Firebase path');
     assert.deepEqual(targetedSaveSmoke.writes[0].patch,{paymentLogs:[]},'Targeted save sends only the changed fields');
+    const paymentTransactionSmoke = await page.evaluate(async () => {
+      const originalRef=db.ref;
+      let record={totalAmount:100,advanceAmount:0,paymentLogs:[]};
+      db.ref=path=>({transaction:(update,complete)=>{
+        const next=update(JSON.parse(JSON.stringify(record)));
+        const committed=next!==undefined;
+        if(committed) record=next;
+        complete(null,committed,{val:()=>JSON.parse(JSON.stringify(record))});
+      }});
+      const add=amount=>transactDarDocument('TXN-INV',current=>{
+        const paid=getDarDocumentPaidAmount(current);
+        if(amount>Math.max(0,current.totalAmount-paid))return;
+        const logs=getDarDocumentPaymentLogs(current);
+        logs.push({amount});
+        current.paymentLogs=logs;
+        current.advanceIncludedInPaymentLogs=false;
+        return current;
+      });
+      try {
+        const first=await add(70);
+        const rejected=await add(40);
+        const last=await add(30);
+        return {first:first.committed,rejected:rejected.committed,last:last.committed,paid:getDarDocumentPaidAmount(record)};
+      } finally { db.ref=originalRef; }
+    });
+    assert.equal(paymentTransactionSmoke.first,true,'First invoice payment commits');
+    assert.equal(paymentTransactionSmoke.rejected,false,'Concurrent overpayment is rejected against the latest record');
+    assert.equal(paymentTransactionSmoke.last,true,'A payment for the exact remaining balance commits');
+    assert.equal(paymentTransactionSmoke.paid,100,'Atomic invoice payments cannot exceed the total');
     console.log('PASS: record-level Firebase writes avoid bulk stale-cache overwrites');
+    console.log('PASS: invoice payment transactions prevent concurrent overpayment');
     const serviceCatalogSafety = await page.evaluate(() => {
       state.services=[{id:'<img src=x onerror=window.__serviceIdInjected=true>',title:'<img src=x onerror=window.__serviceTitleInjected=true>',items:[]}];
       renderServicesCatalog();
