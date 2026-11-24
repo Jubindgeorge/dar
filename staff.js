@@ -348,9 +348,9 @@
             const records = [];
             const passportPattern = /^[A-Z0-9]{7,10}$/i;
             const permitStartPattern = /^(NEW|RENEW|PRE)$/i;
-            const datePattern = /^\\d{2}\\/\\d{2}\\/\\d{4}$/;
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
-            const flat = allLines.join(' ').split(/\\s+/).map(value=>value.trim()).filter(Boolean);
+            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
+            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
             const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
             const isPassport = value => passportPattern.test(value) && (/[A-Z]/i.test(value) || value.length === 8);
             for (let i=0;i<flat.length;i++) {
@@ -371,12 +371,13 @@
                 // Name is between passport and permit; discard a permit ID if
                 // it occurs in that span. This also handles a missing permit ID.
                 const name = flat.slice(i+1,permitStart)
-                    .filter(value=>!/^\\d{14}$/.test(value))
+                    .filter(value=>!/^\d{14}$/.test(value))
                     .map(latin).filter(value=>/[A-Za-z]/.test(value))
-                    .join(' ').replace(/\\s+/g,' ').trim();
+                    .join(' ').replace(/\s+/g,' ').trim();
                 if (!name) continue;
 
                 const permit = flat.slice(permitStart,permitEnd+1).join(' ');
+                const permitId = flat.slice(Math.max(0,i-3),permitStart).find(value=>/^\\d{14}$/.test(value)) || '';
                 let nationalityIndex = -1;
                 for (let j=permitEnd+1;j<Math.min(flat.length,permitEnd+18);j++) {
                     const token=flat[j].toUpperCase();
@@ -391,7 +392,7 @@
                     ? 'SRI LANKA' : flat[nationalityIndex].toUpperCase();
                 const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
                 const afterNationality = flat.slice(nationalityEnd+1,nationalityEnd+10);
-                const cardNumber = afterNationality.find(value=>/^\\d{8,10}$/.test(value)) || '';
+                const cardNumber = afterNationality.find(value=>/^\d{8,10}$/.test(value)) || '';
                 const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
 
                 records.push({
@@ -400,7 +401,7 @@
                     passportNumber:passport,
                     nationality,
                     designation,
-                    visaNumber:'',
+                    visaNumber:permitId,
                     visaExpiry:normalizeStaffImportDate(expiry),
                     visaStatus:permit,
                     renewalStatus:/RENEW/i.test(permit)?'Renewal':'Pending'
