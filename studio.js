@@ -489,16 +489,33 @@ function commitDocumentToMemory() {
     };
 
     if (previousDocument?.sourceQuotationRef) {
+        let saveConflict = '';
+        const previousUpdatedAt = previousDocument.updatedAt || '';
         db.ref('documents').transaction(current => {
             const docs = current && typeof current === 'object' ? current : {};
             const liveInvoice = docs[refCode];
             const sourceRef = previousDocument.sourceQuotationRef;
             const liveQuote = docs[sourceRef];
-            if (!liveInvoice || !liveQuote || liveQuote.type !== 'Quotation') return;
+            if (!liveInvoice || !liveQuote || liveQuote.type !== 'Quotation') {
+                saveConflict = 'The invoice or source quotation was removed. Refresh and retry.';
+                return;
+            }
+            if (previousUpdatedAt && liveInvoice.updatedAt && liveInvoice.updatedAt !== previousUpdatedAt) {
+                saveConflict = 'This invoice was changed by another user. Refresh it before editing again.';
+                return;
+            }
+            const latestPaid = window.getDarDocumentPaidAmount({...liveInvoice,advanceAmount:advanceAmt});
+            if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
+                saveConflict = 'The latest recorded payments exceed the new invoice total.';
+                return;
+            }
             const oldInvoiceTotal = Number(liveInvoice.totalAmount ?? liveInvoice.totalAmt ?? liveInvoice.total ?? liveInvoice.amount) || 0;
             const quoteTotal = Number(liveQuote.totalAmount ?? liveQuote.totalAmt ?? liveQuote.total ?? liveQuote.amount) || 0;
             const updatedInvoiced = Math.max(0, (Number(liveQuote.invoicedAmount) || 0) + totalAmt - oldInvoiceTotal);
-            if (updatedInvoiced > quoteTotal + 0.005) return;
+            if (updatedInvoiced > quoteTotal + 0.005) {
+                saveConflict = 'This edit would exceed the remaining amount on the source quotation.';
+                return;
+            }
             docs[refCode] = { ...liveInvoice, ...payload };
             docs[sourceRef] = {
                 ...liveQuote,
@@ -511,10 +528,38 @@ function commitDocumentToMemory() {
             return docs;
         }, (err, committed, snapshot) => {
             if (err) { finishSave(err); return; }
-            if (!committed) { finishSave(new Error('This edit would exceed the remaining amount on the source quotation.')); return; }
+            if (!committed) { finishSave(new Error(saveConflict || 'The document changed while saving. Refresh and retry.')); return; }
             finishSave(null, snapshot.val() || {});
         }, false);
     } else {
-        db.ref(`documents/${refCode}`).update(payload, finishSave);
+        let saveConflict = '';
+        const previousUpdatedAt = previousDocument?.updatedAt || '';
+        db.ref(`documents/${refCode}`).transaction(liveDocument => {
+            if (previousDocument && !liveDocument) {
+                saveConflict = 'This document was removed by another user. Refresh before editing.';
+                return;
+            }
+            if (!previousDocument && liveDocument) {
+                saveConflict = 'This document reference already exists. Refresh and choose a new reference.';
+                return;
+            }
+            if (liveDocument) {
+                if (previousUpdatedAt && liveDocument.updatedAt && liveDocument.updatedAt !== previousUpdatedAt) {
+                    saveConflict = 'This document was changed by another user. Refresh before editing again.';
+                    return;
+                }
+                const latestPaid = window.getDarDocumentPaidAmount({...liveDocument,advanceAmount:advanceAmt});
+                if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
+                    saveConflict = 'The latest recorded payments exceed the new document total.';
+                    return;
+                }
+                return {...liveDocument,...payload};
+            }
+            return payload;
+        }, (err, committed) => {
+            if (err) { finishSave(err); return; }
+            if (!committed) { finishSave(new Error(saveConflict || 'The document changed while saving. Refresh and retry.')); return; }
+            finishSave(null);
+        }, false);
     }
 }
