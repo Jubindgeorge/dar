@@ -440,7 +440,6 @@
                 });
             });
             if (mohreRecords.length) return mohreRecords;
-        }
             // First parse each visual PDF row independently. The previous parser flattened
             // every page into one token stream, so wrapped headers/rows and numeric passports
             // could shift the boundaries and make every employee disappear.
