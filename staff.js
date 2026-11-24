@@ -392,7 +392,8 @@
                 }
                 anchors.forEach((anchor,index)=>{
                     const nextY=anchors[index+1]?.y ?? -Infinity;
-                    const inRow=items.filter(item=>item.y<=anchor.y+2 && item.y>nextY+2);
+                    const rowBottom=Math.max(nextY+2,anchor.y-35);
+                    const inRow=items.filter(item=>item.y<=anchor.y+2 && item.y>rowBottom);
                     const inColumn=(min,max)=>inRow.filter(item=>item.x>=min && item.x<max);
                     const passport=anchor.text;
                     const nameItems=inColumn(85,235);
