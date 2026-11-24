@@ -246,11 +246,11 @@
         if (!select) return;
         const companyName = clean(byId('st-company-name')?.value);
         const clients = companyClientsFor(companyName);
-        const currentClientName = norm(byId('st-client-name')?.value);
         const options = '<option value="">-- Select existing company client --</option>' + clients.map(client => '<option value="'+html(client.id)+'">'+html(client.name)+'</option>').join('');
         select.innerHTML = options;
-        const selected = clients.find(client => client.id === state.selectedCompanyClientId) ||
-            clients.find(client => currentClientName && norm(client.name) === currentClientName);
+        // Only a persisted company-client ID represents an actual link. A matching
+        // display name (for example, from an old invoice) must not imply a saved link.
+        const selected = clients.find(client => client.source === 'saved' && client.id === state.selectedCompanyClientId);
         select.value = selected ? selected.id : '';
     };
     window.selectCompanyClient = function (clientId) {
