@@ -157,6 +157,7 @@ function previewStudioCompanyMatches() {
     const input = document.getElementById('st-company-name');
     const target = document.getElementById('st-company-matches');
     if (!input || !target) return;
+    if (typeof populateCompanyClients === 'function') populateCompanyClients();
     const query = normalizeStudioCompanyName(input.value);
     if (!query) { target.replaceChildren(); return; }
     const matches = (state.clients || []).filter(c => normalizeStudioCompanyName(c.companyName).includes(query)).slice(0, 6);
