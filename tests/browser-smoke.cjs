@@ -33,7 +33,7 @@ const assert = require('node:assert/strict');
       const make=(str,x,y)=>({str,transform:[1,0,0,1,x,y]});
       const employee=(target,index,y,person=true)=>{
         const passport=index===16?'12040746':'P'+String(1000000+index);
-        const name=index===0?'MOHAMMAD IDRIS MOHAMMAD MUNSHI':index===16?'SUJAN BHANDARI':'TEST EMPLOYEE '+String(index+1).padStart(2,'0');
+        const name=index===0?'MOHAMMAD IDRIS MOHAMMAD MUNSHI':index===15?'AFSAL THURUTHIKKATTIL ABDULRAHMAN':index===16?'SUJAN BHANDARI':'TEST EMPLOYEE '+String(index+1).padStart(2,'0');
         const nationality=index===16?'NEPAL':index===10?'GHANA':'INDIA';
         const card=String(153447450+index);
         target.push(
@@ -63,14 +63,18 @@ const assert = require('node:assert/strict');
         })})
       };
       await window.previewStaffImportFile({name:'mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
-      return document.getElementById('staff-import-preview').innerText;
+      const preview=document.getElementById('staff-import-preview');
+      return {text:preview.innerText,rows:Array.from(preview.querySelectorAll('tbody tr')).map(row=>row.innerText)};
     });
-    assert.match(mohrePreview,/22 rows detected/,'Coordinate-based MOHRE parser detects all 22 employees');
-    assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first employee name');
-    assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts page-two employee name');
-    assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
-    assert.match(mohrePreview,/31601040264662/,'MOHRE parser keeps a row-level Person Labour No.');
-    assert.match(mohrePreview,/20010038231120/,'MOHRE parser carries the page-two leading Person Labour No. to the final page-one employee');
+    assert.match(mohrePreview.text,/22 rows detected/,'Coordinate-based MOHRE parser detects all 22 employees');
+    assert.match(mohrePreview.text,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first employee name');
+    assert.match(mohrePreview.text,/SUJAN BHANDARI/,'MOHRE parser extracts page-two employee name');
+    assert.match(mohrePreview.text,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
+    assert.match(mohrePreview.text,/31601040264662/,'MOHRE parser keeps a row-level Person Labour No.');
+    const carryoverRow=mohrePreview.rows.find(row=>row.includes('AFSAL THURUTHIKKATTIL ABDULRAHMAN'))||'';
+    const firstPageTwoRow=mohrePreview.rows.find(row=>row.includes('SUJAN BHANDARI'))||'';
+    assert.match(carryoverRow,/20010038231120/,'Page-two leading Person Labour No. is attached to the final page-one employee');
+    assert.doesNotMatch(firstPageTwoRow,/20010038231120/,'Page-two leading Person Labour No. is not misassigned to the first page-two employee');
     const pipeMohrePreview = await page.evaluate(async () => {
       const rows = [
         'The List Of Employees',
