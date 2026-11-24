@@ -75,6 +75,14 @@ test('recovery and audit enforce valid writes', async () => {
   await assertSucceeds(db.ref('activityLog/log1').set({
     action:'delete',collection:'clients',recordKey:'example',actorUid:adminUid,at:Date.now()
   }));
+  for (const collection of ['staff','companyClients','suppliers','purchases']) {
+    await assertSucceeds(db.ref('deletedRecords/recovery-' + collection).set({
+      collection,recordKey:'sample',value:{sample:true},deletedBy:adminUid,deletedAt:Date.now()
+    }));
+    await assertSucceeds(db.ref('activityLog/audit-' + collection).set({
+      action:'delete',collection,recordKey:'sample',actorUid:adminUid,at:Date.now()
+    }));
+  }
   await assertFails(db.ref('activityLog/log1').remove());
   await assertFails(db.ref('activityLog/log2').set({
     action:'delete',collection:'clients',recordKey:'example',actorUid:pendingUid,at:Date.now()
