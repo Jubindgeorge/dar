@@ -424,10 +424,34 @@
             if(records.length){
                 const declaredTotal=(combined.match(/total\\s+number\\s+of\\s+employees\\s*[:：]?\\s*(\\d+)/i)||[])[1];
                 if(declaredTotal && Number(declaredTotal)!==records.length){
-                    throw new Error('MOHRE employee rows were partially identified ('+records.length+' of '+declaredTotal+'). Please review the original PDF layout; no records have been imported.');
+                    throw new Error('MOHRE employee rows were partially identified ('+records.length+' of '+declaredTotal+'). No records have been imported.');
                 }
                 return records;
             }
+            // Retain support for text exports that explicitly contain pipe-separated columns.
+            const pipeRows=[];
+            let activePipe=[];
+            allLines.forEach(line=>{
+                if(/^\\s*[A-Z0-9]{6,12}\\s*\\|/i.test(line)){
+                    if(activePipe.length)pipeRows.push(activePipe.join(' '));
+                    activePipe=[line];
+                }else if(activePipe.length && line.includes('|'))activePipe.push(line);
+            });
+            if(activePipe.length)pipeRows.push(activePipe.join(' '));
+            const pipeRecords=pipeRows.map(line=>{
+                const fields=line.split('|').map(value=>clean(value)).filter(Boolean);
+                const passport=fields[0]||'';
+                const cardIndex=fields.findIndex(value=>/^\\d{8,10}$/.test(value));
+                const expiryIndex=fields.findIndex(value=>datePattern.test(value));
+                const cardType=fields.find(value=>/WORK PERMIT/i.test(value))||'';
+                if(!passportPattern.test(passport)||cardIndex<0||expiryIndex<0||!cardType)return null;
+                const contractType=fields.find(value=>/^(LIMITED|UNLIMITED)$/i.test(value))||'';
+                const nationalityIndex=fields.findIndex(value=>/^[A-Z ]{3,20}$/.test(value) && !/^(LIMITED|UNLIMITED)$/.test(value));
+                const name=latinText([{text:fields.slice(1,fields.findIndex(value=>/WORK PERMIT/i.test(value))).join(' ')}]);
+                const designation=fields.slice(fields.findIndex(value=>/WORK PERMIT/i.test(value))+1,nationalityIndex>=0?nationalityIndex:cardIndex).join(' ');
+                return name?{staffCode:'',personNumber:fields.find(value=>personPattern.test(value))||'',fullName:name,nationality:nationalityIndex>=0?fields[nationalityIndex]:'',designation,passportNumber:passport,labourCardNumber:fields[cardIndex],labourCardExpiry:normalizeStaffImportDate(fields[expiryIndex]),cardType,contractType,visaNumber:'',visaExpiry:'',visaStatus:'',renewalStatus:'Pending'}:null;
+            }).filter(Boolean);
+            if(pipeRecords.length)return pipeRecords;
         }
         if(/staff id|employee id|full name|staff name|employee name/i.test(combined)){
             const headerIndex=allLines.findIndex(line=>/staff id|employee id|full name|staff name|employee name/i.test(line));
