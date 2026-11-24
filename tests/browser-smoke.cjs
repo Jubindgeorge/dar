@@ -509,6 +509,32 @@ const assert = require('node:assert/strict');
     assert.equal(legacyLedgerSmoke.remaining,'AED 100.00','Accounts Ledger computes the correct legacy outstanding balance');
     assert.match(legacyLedgerSmoke.rows,/Advance recorded in legacy log/,'Accounts Ledger renders legacy keyed payment rows');
     assert.doesNotMatch(legacyLedgerSmoke.rows,/Advance Payment/,'Accounts Ledger does not display a duplicate advance row');
+    const legacyOverlapSmoke = await page.evaluate(async () => {
+      const oldRef=db.ref;
+      state.documents=[{refCode:'LEGACY-OVERLAP-001',type:'Invoice',clientName:'Legacy Client',companyName:'Legacy Company',totalAmount:200,advanceAmount:100,paymentLogs:[{amount:50,date:'2026-11-01',note:'Old payment'}]}];
+      renderAccountsLedgerMaster();
+      document.getElementById('acc-invoice-select').value='LEGACY-OVERLAP-001';
+      document.getElementById('pay-input-date').value='2026-11-24';
+      document.getElementById('pay-input-amount').value='100';
+      document.getElementById('pay-input-note').value='Final payment';
+      db.ref=path=>({transaction:(update,complete)=>{
+        const current=JSON.parse(JSON.stringify(state.documents.find(doc=>('documents/'+doc.refCode)===path)));
+        const next=update(current);
+        if(next) Object.assign(state.documents.find(doc=>doc.refCode==='LEGACY-OVERLAP-001'),next);
+        complete(null,next!==undefined,{val:()=>JSON.parse(JSON.stringify(next))});
+      }});
+      try {
+        await savePaymentLogData();
+        const saved=state.documents[0];
+        const rowAmounts=[...document.querySelectorAll('#acc-payment-logs-tbody tr')].map(row=>Number(row.cells[1]?.textContent.replace(/[^0-9.]/g,''))||0);
+        return {paid:getDarDocumentPaidAmount(saved),advanceAmount:saved.advanceAmount,paymentAdvanceBalance:saved.paymentAdvanceBalance,marker:saved.advanceIncludedInPaymentLogs,rowTotal:rowAmounts.reduce((sum,value)=>sum+value,0)};
+      } finally {db.ref=oldRef;}
+    });
+    assert.equal(legacyOverlapSmoke.paid,200,'Adding a payment preserves the recognized legacy opening balance');
+    assert.equal(legacyOverlapSmoke.advanceAmount,100,'Legacy invoice advance display amount is not rewritten');
+    assert.equal(legacyOverlapSmoke.paymentAdvanceBalance,50,'Only the unlogged legacy advance portion is carried forward');
+    assert.equal(legacyOverlapSmoke.marker,false,'Legacy balance is explicitly reconciled as a separate opening balance');
+    assert.equal(legacyOverlapSmoke.rowTotal,200,'Visible payment rows add up to the recognized paid amount');
     const zeroTotalLedgerSmoke = await page.evaluate(() => {
       state.documents=[{refCode:'ZERO-TOTAL-LEDGER',type:'Invoice',clientName:'Zero Total Client',companyName:'Zero Total Company',totalAmount:0,totalAmt:350,total:350,amount:350,advanceAmount:0,paymentLogs:[]}];
       document.getElementById('acc-invoice-select').value='';
