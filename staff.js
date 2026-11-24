@@ -358,12 +358,13 @@
             const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
             const isPassport = value => /^[A-Z0-9]{6,12}$/i.test(value) && /[A-Z]/i.test(value) && /\d/.test(value);
             const isNumericPassport = (value,index) => /^\d{6,12}$/.test(value) &&
-                /^\d{12,16}$/.test(flat[index-1] || '');
+                // A labour-card number is followed by its expiry date in this report.
+                // Exclude that pattern, but allow numeric passports with or without
+                // a separate Person Number immediately before them.
+                !datePattern.test(flat[index+1] || '') &&
+                !datePattern.test(flat[index+2] || '');
             const passportIndexes = [];
             flat.forEach((token,index)=>{
-                // Some MOHRE rows use numeric-only passport numbers. Accept those only
-                // when immediately preceded by the 12–16 digit Person Number, so an
-                // 8–10 digit labour-card number elsewhere in the row is not an anchor.
                 if (isPassport(token) || isNumericPassport(token,index)) passportIndexes.push(index);
             });
             const records = [];
