@@ -642,12 +642,10 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
   font-size: 10px !important;
 }
 @media print {
+  /* The wrapper can span multiple sheets; never draw its content-sized frame.
+     The fixed modal frame above is the sole physical-page border in print. */
   #a4-wrapper-element::before {
-    display: block !important;
-    border: 1px solid #b8860b !important;
-    inset: 1px !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    display: none !important;
   }
   #a4-wrapper-element #p-content-container table,
   #a4-wrapper-element #p-content-container table th,
