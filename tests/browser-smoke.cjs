@@ -26,6 +26,7 @@ const assert = require('node:assert/strict');
     });
     assert.equal(await page.locator('#staff-import-file').isDisabled(),false,'Excel/PDF file selection is enabled after choosing a company');
     assert.equal(await page.locator('#staff-import-button').isDisabled(),true,'Import action stays disabled until a file preview is ready');
+    // Mirrors the real MOHRE PDF's x-column positions and page-2 carry-over identifier.
     const mohrePreview = await page.evaluate(async () => {
       const page1Items=[];
       const page2Items=[];
