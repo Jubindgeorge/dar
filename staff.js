@@ -354,6 +354,91 @@
         const combined = allLines.join(' ').toLowerCase();
         const looksMohre = /list\s+of\s+employees|establishment\s*(?:number|no\.? )|passport\s*(?:number|no\.? )|person\s*name|card\s*type|job\s*name|card\s*number|mohre/i.test(combined);
         if (looksMohre) {
+            // Parse MOHRE reports by their most reliable anchors: Labour Card Number
+            // immediately followed by its expiry date. A report record may span many
+            // PDF text lines, and the Person Number may appear before OR after the
+            // passport/name block. Repeated page headers are skipped using the last
+            // "Passport Number" heading before each card anchor.
+            const mohreTokens = allLines.join(' ').split(/\\s+/).map(value=>clean(value)).filter(Boolean);
+            const mohreDate = /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/;
+            const mohreCardType = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
+            const mohreLatin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
+            const mohreCardAnchors = [];
+            mohreTokens.forEach((token,index)=>{
+                if (/^\\d{8,10}$/.test(token) && mohreDate.test(mohreTokens[index+1] || '')) mohreCardAnchors.push(index);
+            });
+            const mohreRecords = [];
+            let previousExpiryIndex = -1;
+            mohreCardAnchors.forEach(cardIndex=>{
+                const segmentStart = previousExpiryIndex + 1;
+                const segment = mohreTokens.slice(segmentStart,cardIndex);
+                const cardExpiry = mohreTokens[cardIndex+1];
+                previousExpiryIndex = cardIndex+1;
+                if (!segment.length) return;
+                const typeOffset = segment.findIndex(token=>mohreCardType.test(token));
+                if (typeOffset < 0) return;
+                // Ignore page/report/establishment headers by starting after the
+                // last repeated Passport Number heading in this employee segment.
+                let passportHeading = -1;
+                for (let i=0;i<typeOffset-1;i++) {
+                    if (segment[i].toLowerCase()==='passport' && segment[i+1].toLowerCase().startsWith('number')) passportHeading=i+1;
+                }
+                const searchStart = passportHeading >= 0 ? passportHeading+1 : 0;
+                const personOffsets = [];
+                segment.forEach((token,index)=>{ if (/^\\d{12,16}$/.test(token)) personOffsets.push(index); });
+                const personOffset = personOffsets.length ? personOffsets[0] : -1;
+                const passportCandidates = [];
+                for (let i=searchStart;i<typeOffset;i++) {
+                    const token=segment[i];
+                    if (/^RP\\d+AE$/i.test(token)) continue;
+                    if (/^[A-Z0-9]{6,12}$/i.test(token) && ((/[A-Z]/i.test(token) && /\\d/.test(token)) || /^\\d{6,12}$/.test(token))) {
+                        if (!/^\\d{12,16}$/.test(token)) passportCandidates.push(i);
+                    }
+                }
+                if (!passportCandidates.length) return;
+                // If the Person Number is before the passport (as on page 2),
+                // choose the first passport after it. Otherwise use the first
+                // passport candidate in the record (including numeric-only IDs).
+                const passportOffset = personOffset >= searchStart
+                    ? (passportCandidates.find(i=>i>personOffset) ?? passportCandidates[0])
+                    : passportCandidates[0];
+                const personNumber = personOffset >= 0 ? segment[personOffset] : '';
+                const nameEnd = personOffset > passportOffset ? personOffset : typeOffset;
+                const fullName = mohreLatin(segment.slice(passportOffset+1,nameEnd)
+                    .filter(token=>!/^(ELECTRONIC|WORK|PERMIT|APPROVAL)$/i.test(token))
+                    .filter(token=>!/^\\d{12,16}$/.test(token)).join(' '));
+                if (!fullName || !/[A-Za-z]/.test(fullName)) return;
+                // Card type descriptions end at the word PERMIT; designation follows.
+                let permitEnd = typeOffset;
+                for (let i=typeOffset+1;i<segment.length;i++) {
+                    if (segment[i].toUpperCase()==='PERMIT') { permitEnd=i; break; }
+                }
+                const nationalityCandidates = [];
+                for (let i=permitEnd+1;i<segment.length;i++) {
+                    if (/[A-Za-z]/.test(segment[i]) && !/^\\d+$/.test(segment[i])) nationalityCandidates.push(i);
+                }
+                if (!nationalityCandidates.length) return;
+                let nationalityStart = nationalityCandidates[nationalityCandidates.length-1];
+                if (segment[nationalityStart].toUpperCase()==='LANKA' &&
+                    nationalityStart>0 && segment[nationalityStart-1].toUpperCase()==='SRI') nationalityStart--;
+                const nationality = mohreLatin(segment.slice(nationalityStart,
+                    nationalityCandidates[nationalityCandidates.length-1]+1).join(' ')).toUpperCase();
+                const designation = mohreLatin(segment.slice(permitEnd+1,nationalityStart).join(' '));
+                mohreRecords.push({
+                    staffCode:'',
+                    personNumber,
+                    fullName,
+                    nationality,
+                    designation,
+                    passportNumber:segment[passportOffset],
+                    labourCardNumber:mohreTokens[cardIndex],
+                    labourCardExpiry:normalizeStaffImportDate(cardExpiry),
+                    // This report is not the separate visa-details import.
+                    visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
+                });
+            });
+            if (mohreRecords.length) return mohreRecords;
+        }
             // First parse each visual PDF row independently. The previous parser flattened
             // every page into one token stream, so wrapped headers/rows and numeric passports
             // could shift the boundaries and make every employee disappear.
