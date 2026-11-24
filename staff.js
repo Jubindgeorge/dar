@@ -392,7 +392,7 @@
                 if (!name) continue;
 
                 const permit = flat.slice(permitStart,permitEnd+1).join(' ');
-                const permitId = flat.slice(Math.max(0,i-3),permitStart).find(value=>/^\\d{14}$/.test(value)) || '';
+                const permitId = flat.slice(Math.max(0,i-3),permitStart).find(value=>/^[0-9]{14}$/.test(value)) || '';
                 let nationalityIndex = -1;
                 for (let j=permitEnd+1;j<Math.min(flat.length,permitEnd+18);j++) {
                     const token=flat[j].toUpperCase();
@@ -514,7 +514,7 @@
             if (key) batchSeen.add(key);
             return true;
         });
-        if (!importable.length) { showCustomModal('Nothing to import','No new complete staff records were found. Existing or duplicate Staff IDs are skipped.'); return; }
+        if (!importable.length) { showCustomModal('Nothing to import','No new complete staff records were found. Existing labour-card numbers or passport numbers are skipped.'); return; }
         const updates = {};
         const created = [];
         const timestamp = new Date().toISOString();
