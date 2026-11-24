@@ -151,7 +151,11 @@ function deleteServiceCatalog(id) {
     document.getElementById('confirm-delete-service')?.addEventListener('click', async () => {
         const button = document.getElementById('confirm-delete-service');
         if (button) button.disabled = true;
-        try { await db.ref('services/' + id).remove(); closeCustomModal(); }
-        catch (error) { showCustomModal('Delete failed', 'Service preset could not be deleted: ' + error.message); }
+        try {
+            await safeDeleteDarRecord('services', id);
+            closeCustomModal();
+        } catch (error) {
+            if (button) button.disabled = false;
+        }
     });
 }
