@@ -346,7 +346,7 @@
                     <div class="staff-page-heading">
                         <div>
                             <h2 style="color:var(--primary);font-size:1.4rem;">Company Staff Data</h2>
-                            <p class="dar-hint">Staff profiles, passport and visa expiries, renewals and linked transactions.</p>
+                            <p class="dar-hint">MOHRE staff records, person numbers, labour cards and passport details.</p>
                             <p id="staff-company-context" class="staff-context">All companies</p>
                         </div>
                         <div class="staff-toolbar">
@@ -355,7 +355,7 @@
                         </div>
                     </div>
                     <div class="staff-import-panel">
-                        <div class="staff-import-heading"><strong>Bulk Import Staff</strong><span class="dar-hint">Select an existing company first. Excel and PDF imports use the same company assignment.</span></div>
+                        <div class="staff-import-heading"><strong>Bulk Import Staff</strong><span class="dar-hint">Select an existing company first. MOHRE employee-list PDFs import person and labour-card details only. Visa details are handled separately.</span></div>
                         <div class="staff-import-controls">
                             <label for="staff-import-company">Company *</label>
                             <select id="staff-import-company" onchange="updateStaffImportAvailability()"><option value="">Select existing company</option></select>
@@ -366,7 +366,7 @@
                         <div id="staff-import-preview" class="staff-import-preview" aria-live="polite" hidden></div>
                     </div>
                     <div class="staff-filter-row">
-                        <input id="staff-search" type="search" placeholder="Search staff ID, name, company or passport..." oninput="renderStaffTable()" aria-label="Search staff">
+                        <input id="staff-search" type="search" placeholder="Search staff ID, person number, name, company, labour card or passport..." oninput="renderStaffTable()" aria-label="Search staff">
                         <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
                         <label class="v2-filter-date">From <input type="date" id="staff-date-from" onchange="renderStaffTable()" aria-label="Staff joined from date"></label><label class="v2-filter-date">To <input type="date" id="staff-date-to" onchange="renderStaffTable()" aria-label="Staff joined through date"></label><select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
                             <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
@@ -374,7 +374,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="data-table staff-table">
-                            <thead><tr><th>Staff ID</th><th>Name</th><th>Company</th><th>Last Work Done</th><th>Joining Date</th><th>Visa Expiry</th><th>Passport Expiry</th><th>Renewal Status</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Staff ID</th><th>Name / Person No.</th><th>Company</th><th>Nationality</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th><th>Renewal Status</th><th>Actions</th></tr></thead>
                             <tbody id="staff-table-body"><tr><td colspan="9">Loading staff records…</td></tr></tbody>
                         </table>
                     </div>
