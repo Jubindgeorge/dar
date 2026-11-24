@@ -566,6 +566,24 @@ const assert = require('node:assert/strict');
     assert.match(serviceCatalogSafety.titleText,/<img/,'Service catalog preserves literal title text safely');
     assert.equal(serviceCatalogSafety.actionCount,2,'Service catalog edit/delete actions render with safe data attributes');
     console.log('PASS: service catalog safe rendering and action wiring');
+    const recoverableDeleteSmoke = await page.evaluate(async () => {
+      const originalSafeDelete=window.safeDeleteDarRecord;
+      const calls=[];
+      window.safeDeleteDarRecord=async (collection,id)=>{calls.push({collection,id});};
+      try {
+        state.monthlyExpenses=[{id:'expense-recovery-test',title:'Recovery test',amount:10}];
+        await deleteMonthlyExpense(0);
+        state.services=[{id:'service-recovery-test',title:'Recovery test',items:[]}];
+        deleteServiceCatalog('service-recovery-test');
+        document.getElementById('confirm-delete-service').click();
+        await Promise.resolve();
+        await Promise.resolve();
+        return {calls,expensesRemaining:state.monthlyExpenses.length};
+      } finally { window.safeDeleteDarRecord=originalSafeDelete; }
+    });
+    assert.deepEqual(recoverableDeleteSmoke.calls,[{collection:'monthlyExpenses',id:'expense-recovery-test'},{collection:'services',id:'service-recovery-test'}],'Expense and service deletions use the recovery/audit path');
+    assert.equal(recoverableDeleteSmoke.expensesRemaining,0,'Expense is removed from the local view only after recovery succeeds');
+    console.log('PASS: service and expense deletions use recoverable data protection');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     console.log('PASS: company staff table and purchase/supplier module rendering');
