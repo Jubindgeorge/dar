@@ -455,7 +455,21 @@ const assert = require('node:assert/strict');
     assert.equal(paymentCompatibilitySmoke.explicitSeparate,150,'Explicitly separate advance and payments are added');
     assert.equal(paymentCompatibilitySmoke.explicitIncluded,100,'Explicitly included advance is not added twice');
     assert.equal(paymentCompatibilitySmoke.status,'partial','Payment status uses the shared legacy-safe amount');
+    const legacyLedgerSmoke = await page.evaluate(() => {
+      state.documents=[{refCode:'LEGACY-PAY-001',type:'Invoice',clientName:'Legacy Client',companyName:'Legacy Company',totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:100,date:'2026-11-01',note:'Advance recorded in legacy log'}}}];
+      renderAccountsLedgerDetail('LEGACY-PAY-001');
+      return {
+        paid:document.getElementById('acc-card-payments').innerText,
+        remaining:document.getElementById('acc-card-remaining').innerText,
+        rows:document.getElementById('acc-payment-logs-tbody').innerText
+      };
+    });
+    assert.equal(legacyLedgerSmoke.paid,'AED 100.00','Accounts Ledger does not double-count legacy advance and payment logs');
+    assert.equal(legacyLedgerSmoke.remaining,'AED 100.00','Accounts Ledger computes the correct legacy outstanding balance');
+    assert.match(legacyLedgerSmoke.rows,/Advance recorded in legacy log/,'Accounts Ledger renders legacy keyed payment rows');
+    assert.doesNotMatch(legacyLedgerSmoke.rows,/Advance Payment/,'Accounts Ledger does not display a duplicate advance row');
     console.log('PASS: shared payment totals, legacy keyed payment history and advance double-count protection');
+    console.log('PASS: Accounts Ledger renders legacy keyed payment history without duplicate advance rows');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     console.log('PASS: company staff table and purchase/supplier module rendering');
