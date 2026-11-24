@@ -441,14 +441,14 @@
             const mohreLatin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
             const mohreCardAnchors = [];
             mohreTokens.forEach((token,index)=>{
-                if (/^\d{8,10}$/.test(token) && (mohreDate.test(mohreTokens[index+1] || '') || (/^(LIMITED|UNLIMITED)$/i.test(mohreTokens[index+1] || '') && mohreDate.test(mohreTokens[index+2] || '')))) mohreCardAnchors.push(index);
+                if (/^\d{8,10}$/.test(token) && /^(LIMITED|UNLIMITED)$/i.test(mohreTokens[index+1] || '') && mohreTokens.slice(index+2,index+27).some(value=>mohreDate.test(value))) mohreCardAnchors.push(index);
             });
             const mohreRecords = [];
             let previousExpiryIndex = -1;
             mohreCardAnchors.forEach(cardIndex=>{
                 const segmentStart = previousExpiryIndex + 1;
                 const segment = mohreTokens.slice(segmentStart,cardIndex);
-                const expiryOffset = mohreDate.test(mohreTokens[cardIndex+1] || '') ? cardIndex+1 : cardIndex+2;
+                const expiryOffset = mohreTokens.findIndex((value,index)=>index>cardIndex && index<cardIndex+27 && mohreDate.test(value));
                 const cardExpiry = mohreTokens[expiryOffset];
                 const contractType = /^(LIMITED|UNLIMITED)$/i.test(mohreTokens[cardIndex+1] || '') ? mohreTokens[cardIndex+1] : '';
                 previousExpiryIndex = expiryOffset;
