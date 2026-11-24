@@ -452,14 +452,14 @@ window.renderMonthlyExpensesTable = function() {
 window.deleteMonthlyExpense = async function(index) {
     const removed = state.monthlyExpenses?.[index];
     if (!removed) return;
+    if (!removed.id) { alert('This expense has no saved record ID and cannot be safely moved to recovery.'); return; }
     try {
-        if (!removed.id) throw new Error('This expense has no saved record ID and cannot be safely moved to recovery.');
         await safeDeleteDarRecord('monthlyExpenses', removed.id);
         state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
         renderMonthlyExpensesTable();
         renderFullLedgerTableBody();
     } catch (error) {
-        alert('Expense was not deleted. Please retry after checking the connection.');
+        // safeDeleteDarRecord already reports the failure and leaves the record intact.
     }
 };
 
