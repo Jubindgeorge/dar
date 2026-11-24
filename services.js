@@ -56,20 +56,18 @@ function renderServicesCatalog() {
 }
 
 function openServiceModal(serviceId) {
-    let srv = null;
-    if (serviceId) {
-        srv = state.services.find(s => s.id === serviceId);
-    }
+    const srv = serviceId ? (state.services || []).find(item => item && item.id === serviceId) : null;
 
     document.getElementById('srv-modal-id').value = serviceId || '';
-    document.getElementById('srv-input-title').value = srv ? srv.title : '';
-    document.getElementById('srv-input-govt').value = srv ? (srv.govtAmt || 0) : 0;
-    
+    document.getElementById('srv-input-title').value = srv ? (srv.title || '') : '';
+    document.getElementById('srv-input-govt').value = srv && Number.isFinite(Number(srv.govtAmt)) ? Number(srv.govtAmt) : 0;
+
     const container = document.getElementById('srv-modal-items-container');
     container.innerHTML = '';
 
-    const items = srv && srv.items ? srv.items : [{ d: '', q: 1, p: 0 }];
-    items.forEach(i => addSrvModalRow(i.d, i.q, i.p));
+    const items = srv && Array.isArray(srv.items) ? srv.items.filter(Boolean) : [];
+    if (items.length) items.forEach(item => addSrvModalRow(item.d || '', item.q, item.p));
+    else addSrvModalRow();
 
     recalculateSrvModalProfit();
     document.getElementById('service-modal').style.display = 'flex';
