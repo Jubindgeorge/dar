@@ -354,6 +354,68 @@
         const combined = allLines.join(' ').toLowerCase();
         const looksMohre = /list\s+of\s+employees|establishment\s*(?:number|no\.? )|passport\s*(?:number|no\.? )|person\s*name|card\s*type|job\s*name|card\s*number|mohre/i.test(combined);
         if (looksMohre) {
+            // Pipe-delimited MOHRE layout: each passport token starts one employee,
+            // regardless of how many visual PDF lines the record wraps across.
+            const ignoredMohreLine = line => /The List Of Employees|Passport Number|رقم جواز السفر|Establishment Number|Scan QR to verify|Total Number of Employees|Printing Date & Time|Page\\s+\\d+\\s*\\/\\s*\\d+/i.test(line);
+            const passportAnchor = /^\\s*([A-Z0-9]{6,10})\\s*\\|/i;
+            const pipeBlocks = [];
+            let activeBlock = null;
+            allLines.forEach(rawLine => {
+                const line = clean(rawLine);
+                if (!line || ignoredMohreLine(line)) {
+                    if (/The List Of Employees|Total Number of Employees|Page\\s+\\d+\\s*\\/\\s*\\d+/i.test(line)) activeBlock = null;
+                    return;
+                }
+                const anchor = line.match(passportAnchor);
+                if (anchor) {
+                    if (activeBlock) pipeBlocks.push(activeBlock);
+                    activeBlock = [line];
+                } else if (activeBlock) {
+                    activeBlock.push(line);
+                }
+            });
+            if (activeBlock) pipeBlocks.push(activeBlock);
+            const pipeRecords = [];
+            const knownCardTypes = [
+                'NEW ELECTRONIC WORK PERMIT',
+                'PRE APPROVAL FOR WORK PERMIT',
+                'RENEW ELECTRONIC WORK PERMIT'
+            ];
+            const knownNationalities = new Set([
+                'INDIA','PAKISTAN','GHANA','NEPAL','SRI LANKA','BANGLADESH','PHILIPPINES',
+                'EGYPT','NIGERIA','ETHIOPIA','KENYA','UGANDA','SUDAN','JORDAN','SYRIA',
+                'LEBANON','YEMEN','INDONESIA','CHINA','IRAN','IRAQ'
+            ]);
+            const pipeLatin = value => clean(value).replace(/[^A-Za-z0-9 .&'()/-]/g,' ').replace(/\\s+/g,' ').trim();
+            pipeBlocks.forEach(blockLines => {
+                const joined = blockLines.join(' ').replace(/\\s*\\|\\s*/g,'|');
+                const fields = joined.split('|').map(value=>clean(value).replace(/\\s+/g,' ')).filter(Boolean);
+                const passportNumber = fields[0]?.match(/^([A-Z0-9]{6,10})$/i)?.[1] || '';
+                if (!passportNumber || fields.length < 5) return;
+                const upperJoined = fields.join(' | ').toUpperCase();
+                const cardType = knownCardTypes.find(type=>upperJoined.includes(type)) || '';
+                const cardTypeIndex = cardType ? fields.findIndex(value=>value.toUpperCase().includes(cardType)) : -1;
+                const cardIndex = fields.findIndex((value,index)=>index>0 && /^\\d{8,10}$/.test(value));
+                const expiryIndex = fields.findIndex((value,index)=>index>0 && /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(value));
+                if (!cardType || cardIndex < 0 || expiryIndex < 0) return;
+                const contract = fields.find(value=>/^(LIMITED|UNLIMITED)$/i.test(value)) || '';
+                const nationalityIndex = fields.findIndex((value,index)=>index>0 && knownNationalities.has(value.toUpperCase()));
+                const nationality = nationalityIndex >= 0 ? fields[nationalityIndex].toUpperCase() : '';
+                const nameFields = fields.slice(1, cardTypeIndex >= 0 ? cardTypeIndex : cardIndex);
+                const englishName = nameFields.find(value=>/[A-Za-z]/.test(value) && !knownNationalities.has(value.toUpperCase()) && !/^\\d+$/.test(value)) || '';
+                const arabicName = nameFields.find(value=>/[\\u0600-\\u06FF]/.test(value)) || '';
+                const jobFields = fields.slice(cardTypeIndex >= 0 ? cardTypeIndex+1 : 1, nationalityIndex >= 0 ? nationalityIndex : cardIndex);
+                const designation = pipeLatin(jobFields.find(value=>/[A-Za-z]/.test(value) && !/ELECTRONIC|WORK PERMIT|PRE APPROVAL|RENEW/i.test(value)) || '');
+                const personNumber = fields.find(value=>/^\\d{12,16}$/.test(value)) || '';
+                pipeRecords.push({
+                    staffCode:'', personNumber, fullName:pipeLatin(englishName), fullNameArabic:arabicName,
+                    nationality, designation, cardType, contractType:contract,
+                    passportNumber, labourCardNumber:fields[cardIndex],
+                    labourCardExpiry:normalizeStaffImportDate(fields[expiryIndex]),
+                    visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
+                });
+            });
+            if (pipeRecords.length) return pipeRecords;
             // Parse MOHRE reports by their most reliable anchors: Labour Card Number
             // immediately followed by its expiry date. A report record may span many
             // PDF text lines, and the Person Number may appear before OR after the
