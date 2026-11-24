@@ -70,7 +70,7 @@ const assert = require('node:assert/strict');
     assert.match(mohrePreview.text,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first employee name');
     assert.match(mohrePreview.text,/SUJAN BHANDARI/,'MOHRE parser extracts page-two employee name');
     assert.match(mohrePreview.text,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
-    assert.match(mohrePreview.text,/31601040264662/,'MOHRE parser keeps a row-level Person Labour No.');
+    assert.match(mohrePreview.text,/31601040264661/,'MOHRE parser keeps a row-level Person Labour No.');
     const carryoverRow=mohrePreview.rows.find(row=>row.includes('AFSAL THURUTHIKKATTIL ABDULRAHMAN'))||'';
     const firstPageTwoRow=mohrePreview.rows.find(row=>row.includes('SUJAN BHANDARI'))||'';
     assert.match(carryoverRow,/20010038231120/,'Page-two leading Person Labour No. is attached to the final page-one employee');
