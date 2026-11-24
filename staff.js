@@ -380,8 +380,10 @@
                 // Ignore page/report/establishment headers by starting after the
                 // last repeated Passport Number heading in this employee segment.
                 let passportHeading = -1;
-                for (let i=0;i<typeOffset-1;i++) {
-                    if (segment[i].toLowerCase()==='passport' && segment[i+1].toLowerCase().startsWith('number')) passportHeading=i+1;
+                for (let i=0;i<typeOffset;i++) {
+                    const heading=segment[i].toLowerCase();
+                    if (heading==='passport number') passportHeading=i;
+                    else if (heading==='passport' && segment[i+1]?.toLowerCase().startsWith('number')) passportHeading=i+1;
                 }
                 const searchStart = passportHeading >= 0 ? passportHeading+1 : 0;
                 const personOffsets = [];
