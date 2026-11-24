@@ -453,12 +453,9 @@ window.deleteMonthlyExpense = async function(index) {
     const removed = state.monthlyExpenses?.[index];
     if (!removed) return;
     try {
-        if (removed.id) {
-            if (!db) throw new Error('Firebase is not connected.');
-            await db.ref('monthlyExpenses/' + removed.id).remove();
-        }
-        if (removed.id) state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
-        else state.monthlyExpenses.splice(index, 1);
+        if (!removed.id) throw new Error('This expense has no saved record ID and cannot be safely moved to recovery.');
+        await safeDeleteDarRecord('monthlyExpenses', removed.id);
+        state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
         renderMonthlyExpensesTable();
         renderFullLedgerTableBody();
     } catch (error) {
