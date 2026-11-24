@@ -353,13 +353,17 @@ function commitDocumentToMemory() {
         return;
     }
     const previousDocumentForValidation = (state.documents || []).find(d => d.refCode === refCode);
-    const recordedPayments = Array.isArray(previousDocumentForValidation?.paymentLogs) ? previousDocumentForValidation.paymentLogs : [];
-    const paidInLogs = recordedPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+    const paidBeforeEdit = previousDocumentForValidation && window.getDarDocumentPaidAmount
+        ? window.getDarDocumentPaidAmount(previousDocumentForValidation)
+        : Math.max(0, Number(previousDocumentForValidation?.advanceAmount ?? previousDocumentForValidation?.advanceAmt ?? previousDocumentForValidation?.advance ?? 0) || 0);
     if (previousDocumentForValidation?.type === 'Quotation' && (Number(previousDocumentForValidation.invoicedAmount) || 0) > totalAmt + 0.005) {
         showCustomModal('Quotation balance protected', 'The quotation total cannot be reduced below the amount already invoiced.');
         return;
     }
-    if (advanceAmt + paidInLogs > totalAmt) {
+    const proposedPaid = previousDocumentForValidation && window.getDarDocumentPaidAmount
+        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt})
+        : advanceAmt;
+    if (Math.max(advanceAmt, proposedPaid) > totalAmt + 0.005) {
         showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
         return;
     }
@@ -418,7 +422,8 @@ function commitDocumentToMemory() {
 
     // Preserve recorded payments when editing an invoice; never silently reset the ledger.
     const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
-    const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
+    // Keep the original stored shape untouched; readers normalize arrays and legacy keyed objects.
+    const preservedPaymentLogs = previousDocument?.paymentLogs ?? [];
 
     const auditUser = window.firebase?.auth?.().currentUser;
     const payload = {
