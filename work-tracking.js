@@ -13,11 +13,10 @@ const safe = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const docs = () => (typeof state !== 'undefined' && Array.isArray(state.documents) ? state.documents : []);
 const money = d => Number(typeof getDarDocumentAmount === 'function' ? getDarDocumentAmount(d) : (d.totalAmount || 0)) || 0;
 const paid = d => {
- const logs = Array.isArray(d.paymentLogs) ? d.paymentLogs : Object.values(d.paymentLogs || {});
- const advance = Number(d.advanceAmount ?? d.advanceAmt ?? d.advance ?? 0) || 0;
- // Do not silently double-count an advance explicitly marked as already included in payment logs.
- const included = d.advanceIncludedInPaymentLogs === true;
- return Math.min(money(d),Math.max(0,(included ? 0 : advance) + logs.reduce((s,p)=>s+(Number(p.amount)||0),0)));
+ const amount = typeof window.getDarDocumentPaidAmount === 'function'
+   ? window.getDarDocumentPaidAmount(d)
+   : Math.max(0, Number(d.advanceAmount ?? d.advanceAmt ?? d.advance ?? 0) || 0);
+ return Math.min(money(d), amount);
 };
 const isPaid = d => money(d)>0 && paid(d)>=money(d)-0.005;
 const packageName = d => String(d.packageName || d.title || d.serviceName || 'Unassigned Package');
