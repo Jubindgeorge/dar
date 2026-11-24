@@ -656,3 +656,17 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
     font-size: 10px !important;
   }
 }
+
+
+/* Company staff bulk import */
+.staff-import-panel { margin: 0 0 18px; padding: 14px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--panel-bg); }
+.staff-import-heading { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-bottom:10px; }
+.staff-import-heading strong { color:var(--primary); }
+.staff-import-controls { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
+.staff-import-controls label { font-size:.82rem; font-weight:600; }
+.staff-import-controls select, .staff-import-controls input[type=file] { min-width:180px; max-width:100%; padding:9px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-dark); color:var(--text-main); }
+.staff-import-controls input[type=file] { flex:1 1 230px; }
+.staff-import-panel > .dar-hint { margin-top:9px; font-size:.78rem; }
+.staff-import-preview { margin-top:12px; }
+.staff-import-summary { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:8px; font-size:.82rem; }
+.staff-import-preview .data-table { min-width:760px; }
