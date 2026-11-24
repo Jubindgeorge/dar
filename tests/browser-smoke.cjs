@@ -509,6 +509,20 @@ const assert = require('node:assert/strict');
     console.log('PASS: zero-value invoice totals are preserved across ledger views');
     console.log('PASS: shared payment totals, legacy keyed payment history and advance double-count protection');
     console.log('PASS: Accounts Ledger renders legacy keyed payment history without duplicate advance rows');
+    const targetedSaveSmoke = await page.evaluate(async () => {
+      const originalRef=db.ref;
+      const writes=[];
+      db.ref=(path)=>({update:async patch=>{writes.push({path,patch});}});
+      let broadSaveRejected=false;
+      try { await saveStateToFirebase(); } catch { broadSaveRejected=true; }
+      try { await saveStateToFirebase('documents','TARGETED-INVOICE',{paymentLogs:[]}); }
+      finally { db.ref=originalRef; }
+      return {writes,broadSaveRejected};
+    });
+    assert.equal(targetedSaveSmoke.broadSaveRejected,true,'A save without an explicit record target is rejected');
+    assert.deepEqual(targetedSaveSmoke.writes.map(write=>write.path),['documents/TARGETED-INVOICE'],'Saving one record writes only that exact Firebase path');
+    assert.deepEqual(targetedSaveSmoke.writes[0].patch,{paymentLogs:[]},'Targeted save sends only the changed fields');
+    console.log('PASS: record-level Firebase writes avoid bulk stale-cache overwrites');
     const serviceCatalogSafety = await page.evaluate(() => {
       state.services=[{id:'<img src=x onerror=window.__serviceIdInjected=true>',title:'<img src=x onerror=window.__serviceTitleInjected=true>',items:[]}];
       renderServicesCatalog();
