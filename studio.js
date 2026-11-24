@@ -556,10 +556,12 @@ function commitDocumentToMemory() {
                 return {...liveDocument,...payload};
             }
             return payload;
-        }, (err, committed) => {
+        }, (err, committed, snapshot) => {
             if (err) { finishSave(err); return; }
             if (!committed) { finishSave(new Error(saveConflict || 'The document changed while saving. Refresh and retry.')); return; }
-            finishSave(null);
+            const committedDocs = Object.fromEntries((state.documents || []).filter(item => item?.refCode).map(item => [item.refCode, item]));
+            committedDocs[refCode] = snapshot.val();
+            finishSave(null, committedDocs);
         }, false);
     }
 }
