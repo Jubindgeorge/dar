@@ -273,7 +273,7 @@
     let staffImportCompanyId = '';
     const staffImportFields = {
         staffCode: ['staff id','staff code','employee id','employee code','id','code'],
-        personNumber: ['person number','person no','person #'],
+        personNumber: ['person labour number','person labour no','person labour #','person number','person no','person #'],
         fullName: ['full name','staff name','employee name','person name','name'],
         nationality: ['nationality','country'],
         designation: ['designation','position','job title','occupation','job name'],
