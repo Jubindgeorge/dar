@@ -584,9 +584,12 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 @media print {
     @page { size:A4 portrait; margin:0; }
     html, body { width:100% !important; height:auto !important; margin:0 !important; padding:0 !important; background:#fff !important; overflow:visible !important; }
-    body * { visibility:hidden !important; }
-    #document-preview-modal, #document-preview-modal * { visibility:visible !important; }
-    #document-preview-modal { position:static !important; display:block !important; inset:auto !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; background:#fff !important; overflow:visible !important; }
+    /* Keep the print modal (a direct body child) and remove the rest of the app
+       from the print tree. Avoid visibility:hidden, which produced blank output
+       in some browser print engines. */
+    body > *:not(#document-preview-modal) { display:none !important; }
+    #document-preview-modal { position:static !important; display:block !important; visibility:visible !important; inset:auto !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; background:#fff !important; overflow:visible !important; }
+    #document-preview-modal * { visibility:visible !important; }
     #document-preview-modal .preview-modal-toolbar { display:none !important; }
     #document-preview-modal .preview-modal-body-canvas { position:static !important; display:block !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; overflow:visible !important; background:#fff !important; }
     /* Fixed paper-edge frame: repeated by the print engine on every A4 sheet. */
