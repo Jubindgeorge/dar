@@ -1,5 +1,53 @@
 // ledger.js - Harmonized with robust fallback mapping for totalAmount and advanceAmount
 
+
+window.renderCompanyStaffLedger = function() {
+    const tbody = document.getElementById('ledger-company-staff-tbody');
+    if (!tbody) return;
+    const companySelect = document.getElementById('ledger-staff-company');
+    const companies = Array.isArray(state.clients) ? state.clients : [];
+    if (companySelect) {
+        const selected = companySelect.value || '';
+        const options = '<option value="">All companies</option>' + companies
+            .slice().sort((a,b)=>String(a.companyName||'').localeCompare(String(b.companyName||'')))
+            .map(company=>'<option value="'+escapeHtml(company.id||'')+'">'+escapeHtml(company.companyName||'Unnamed company')+'</option>').join('');
+        if (companySelect.innerHTML !== options) companySelect.innerHTML = options;
+        companySelect.value = selected;
+    }
+    const selectedCompanyId = companySelect?.value || '';
+    const query = String(document.getElementById('ledger-staff-search')?.value || '').trim().toLowerCase();
+    const allStaff = Array.isArray(state.staff) ? state.staff : [];
+    const rows = allStaff.filter(person => {
+        const company = companies.find(item => item.id === person.companyId);
+        const companyName = person.companyName || company?.companyName || '';
+        const belongsToSelected = !selectedCompanyId ||
+            person.companyId === selectedCompanyId ||
+            (!person.companyId && String(companyName).toLowerCase() === String(companies.find(c=>c.id===selectedCompanyId)?.companyName||'').toLowerCase());
+        const haystack = [person.staffCode,person.staffId,person.fullName,person.personNumber,person.labourCardNumber,person.passportNumber,person.nationality,person.designation,companyName].map(v=>String(v||'').toLowerCase()).join(' ');
+        return belongsToSelected && (!query || haystack.includes(query));
+    }).sort((a,b)=>String(a.fullName||'').localeCompare(String(b.fullName||'')));
+    const count = document.getElementById('ledger-staff-count');
+    if (count) count.textContent = rows.length + (rows.length === 1 ? ' staff' : ' staff');
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No saved staff records found for this company or search.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.map(person => {
+        const company = companies.find(item => item.id === person.companyId);
+        return '<tr>' +
+            '<td><strong>'+escapeHtml(person.staffCode || person.staffId || '-')+'</strong></td>' +
+            '<td>'+escapeHtml(person.fullName || '-')+'</td>' +
+            '<td>'+escapeHtml(person.companyName || company?.companyName || '-')+'</td>' +
+            '<td>'+escapeHtml(person.personNumber || '-')+'</td>' +
+            '<td>'+escapeHtml(person.nationality || '-')+'</td>' +
+            '<td>'+escapeHtml(person.designation || '-')+'</td>' +
+            '<td>'+escapeHtml(person.labourCardNumber || '-')+'</td>' +
+            '<td>'+escapeHtml(person.labourCardExpiry || '-')+'</td>' +
+            '<td>'+escapeHtml(person.passportNumber || '-')+'</td>' +
+        '</tr>';
+    }).join('');
+};
+
 window.renderAccountsLedgerMaster = function() {
     const select = document.getElementById('acc-invoice-select');
     if (!select) return;
@@ -21,6 +69,7 @@ window.renderAccountsLedgerMaster = function() {
     });
 
     renderMonthlyExpensesTable();
+    renderCompanyStaffLedger();
     if (currentSelected) {
         renderAccountsLedgerDetail(currentSelected);
     } else if (docs.length > 0) {

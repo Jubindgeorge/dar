@@ -480,6 +480,29 @@
                         <p style="font-size: 0.85rem; color: var(--text-muted);">Track balances, expense distributions, payments, and invoice profits.</p>
                     </div>
 
+                    <!-- Saved staff register: company-scoped view inside Accounts Ledger -->
+                    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+                            <div>
+                                <h3 style="color:var(--primary);font-size:1.1rem;"><i class="fa-solid fa-users"></i> Company Staff Register</h3>
+                                <p style="font-size:0.8rem;color:var(--text-muted);">Saved staff profiles grouped and filtered by their company.</p>
+                            </div>
+                            <strong id="ledger-staff-count" style="color:var(--primary);">0 staff</strong>
+                        </div>
+                        <div class="v2-filter-toolbar">
+                            <select id="ledger-staff-company" aria-label="Filter staff by company" onchange="renderCompanyStaffLedger()">
+                                <option value="">All companies</option>
+                            </select>
+                            <input id="ledger-staff-search" type="search" placeholder="Search staff name, code or ID" aria-label="Search saved company staff" oninput="renderCompanyStaffLedger()">
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Staff Code</th><th>Staff Name</th><th>Company</th><th>Person Labour No.</th><th>Nationality</th><th>Designation</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th></tr></thead>
+                                <tbody id="ledger-company-staff-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text-muted);">No saved staff records found.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Named Monthly Expenses Management Section -->
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
