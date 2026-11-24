@@ -326,59 +326,74 @@
         if (!window.pdfjsLib) throw new Error('PDF reader could not load. Refresh the page and try again.');
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-        const pages = [];
+        const allLines = [];
         for (let pageNo=1; pageNo<=pdf.numPages; pageNo++) {
             const page = await pdf.getPage(pageNo);
             const content = await page.getTextContent();
             const lines = [];
             content.items.forEach(item => {
-                const value = clean(item.str); if (!value) return;
-                const y = Math.round(item.transform[5]);
-                let line = lines.find(entry => Math.abs(entry.y-y)<=3);
+                const value = clean(item.str);
+                if (!value) return;
+                const x = Number(item.transform?.[4] || 0);
+                const y = Number(item.transform?.[5] || 0);
+                // PDF text fragments on one visual row can have slightly different baselines.
+                let line = lines.find(entry => Math.abs(entry.y-y)<=5.5);
                 if (!line) { line={y,cells:[]}; lines.push(line); }
-                line.cells.push({x:item.transform[4],text:value});
+                line.cells.push({x,text:value});
             });
-            lines.sort((a,b)=>b.y-a.y).forEach(line=>line.cells.sort((a,b)=>a.x-b.x));
-            pages.push(lines.map(line=>line.cells.map(cell=>cell.text).join(' ').replace(/\s+/g,' ').trim()));
+            lines.sort((a,b)=>b.y-a.y).forEach(line=>{
+                line.cells.sort((a,b)=>a.x-b.x);
+                allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\\s+/g,' ').trim());
+            });
         }
-        const allLines = pages.flat();
         const combined = allLines.join(' ').toLowerCase();
-        if (/list of employees|establishment number|passport number|person name|card type|job name|card number/i.test(combined)) {
-            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
-            const passportPattern = /^[A-Z0-9]{7,10}$/i;
-            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            const permitStartPattern = /^(NEW|RENEW|PRE)$/i;
-            const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
-            const isPassport = value => passportPattern.test(value) && /[A-Z]/i.test(value);
-            const records = [];
+        const looksMohre = /list of employees|establishment number|passport number|person name|card type|job name|card number/i.test(combined);
+        if (looksMohre) {
+            // Use passport numbers as record anchors. Do not depend on a fixed nationality
+            // list: MOHRE reports contain many nationalities and that list caused valid rows
+            // to be silently dropped.
+            const flat = allLines.join(' ').split(/\\s+/).map(value=>value.trim()).filter(Boolean);
+            const datePattern = /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/;
+            const cardTypePattern = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
+            const isPassport = value => /^[A-Z0-9]{6,12}$/i.test(value) && /[A-Z]/i.test(value) && /\\d/.test(value);
             const passportIndexes = [];
             flat.forEach((token,index)=>{ if (isPassport(token)) passportIndexes.push(index); });
+            const records = [];
             passportIndexes.forEach((index,recordIndex)=>{
                 const nextIndex = passportIndexes[recordIndex+1] ?? flat.length;
                 const segment = flat.slice(index,nextIndex);
-                const permitIndex = segment.findIndex(token=>permitStartPattern.test(token));
-                let nationalityIndex = segment.findIndex((token,pos)=>pos>0 && nationalities.has(token.toUpperCase()));
-                if (nationalityIndex < 0) return;
-                const nameEnd = permitIndex > 1 ? permitIndex : nationalityIndex;
-                const name = segment.slice(1,nameEnd)
-                    .filter(value=>!/^(\d{14}|PERMIT)$/i.test(value))
-                    .map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\s+/g,' ').trim();
+                if (segment.length < 5) return;
+                const cardNumberIndex = segment.findIndex((token,pos)=>pos>0 && /^\\d{8,10}$/.test(token));
+                if (cardNumberIndex < 0) return;
+                const expiryIndex = segment.findIndex((token,pos)=>pos>cardNumberIndex && datePattern.test(token));
+                if (expiryIndex < 0) return;
+                const typeIndex = segment.findIndex((token,pos)=>pos>0 && pos<cardNumberIndex && cardTypePattern.test(token));
+                // Person number is a separate MOHRE identifier, not a visa/permit field.
+                const beforePassport = flat.slice(Math.max(0,index-4),index);
+                const personNumber = beforePassport.slice().reverse().find(token=>/^\\d{12,16}$/.test(token)) || '';
+                const nameEnd = typeIndex > 1 ? typeIndex : cardNumberIndex;
+                const nameTokens = segment.slice(1,nameEnd);
+                const name = nameTokens
+                    .filter(token=>!/^\\d{12,16}$/.test(token) && !/^PERMIT$/i.test(token))
+                    .map(latin).filter(token=>/[A-Za-z]/.test(token)).join(' ').replace(/\\s+/g,' ').trim();
                 if (!name) return;
-                const nationality = segment[nationalityIndex].toUpperCase()==='SRI' && segment[nationalityIndex+1]?.toUpperCase()==='LANKA' ? 'SRI LANKA' : segment[nationalityIndex].toUpperCase();
-                const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
-                const afterNationality = segment.slice(nationalityEnd+1);
-                const cardNumber = afterNationality.find(value=>/^\d{8,10}$/.test(value)) || '';
-                const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
-                const personNumber = flat.slice(Math.max(0,index-4),index).reverse().find(value=>/^\d{14}$/.test(value)) || '';
-                const designationStart = permitIndex >= 0 ? segment.findIndex((token,pos)=>pos>permitIndex && /^PERMIT$/i.test(token))+1 : nationalityIndex;
-                const designation = permitIndex >= 0 && designationStart > 0
-                    ? segment.slice(designationStart,nationalityIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').trim()
+                // Nationality is the last alphabetic field immediately before the card number;
+                // job titles may contain several words and are not constrained to a whitelist.
+                const nationalityCandidates = segment.slice(1,cardNumberIndex)
+                    .map((token,pos)=>({token,pos:pos+1}))
+                    .filter(item=>/[A-Za-z]/.test(item.token) && !/^\\d+$/.test(item.token));
+                const nationality = nationalityCandidates.length
+                    ? latin(nationalityCandidates[nationalityCandidates.length-1].token).toUpperCase()
                     : '';
+                const expiry = segment[expiryIndex];
                 records.push({
-                    staffCode:'', personNumber, fullName:name, nationality, designation,
-                    passportNumber:segment[0], labourCardNumber:cardNumber,
+                    staffCode:'', personNumber, fullName:name, nationality,
+                    designation:'',
+                    passportNumber:segment[0],
+                    labourCardNumber:segment[cardNumberIndex],
                     labourCardExpiry:normalizeStaffImportDate(expiry),
+                    // MOHRE employee-list PDF is not the visa import. Keep visa fields empty.
                     visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
                 });
             });
@@ -388,13 +403,13 @@
         if (/staff id|employee id|full name|staff name|employee name/.test(combined)) {
             const headerIndex = allLines.findIndex(line=>/staff id|employee id|full name|staff name|employee name/i.test(line));
             if (headerIndex >= 0) {
-                const rows = [allLines[headerIndex].split(/\s{2,}/)];
-                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\s{2,}/)));
+                const rows = [allLines[headerIndex].split(/\\s{2,}/)];
+                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\\s{2,}/)));
                 const parsed = staffImportRowsFromGrid(rows);
                 if (parsed.length) return parsed;
             }
         }
-        throw new Error('No readable staff records found. Please use a text-based employee-list PDF; scanned PDFs require OCR.');
+        throw new Error('No readable staff records found. Use a text-based MOHRE employee-list PDF; scanned/image-only PDFs require OCR.');
     }
     function renderStaffImportPreview() {
         const panel = byId('staff-import-preview');
