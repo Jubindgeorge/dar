@@ -872,14 +872,20 @@ window.duplicateInvoiceDraft = function(refCode) {
 window.viewDocumentHistory = function(refCode) {
     const doc = (state.documents || []).find(item => item.refCode === refCode);
     if (!doc) return;
+    const payments = window.getDarDocumentPaymentLogs(doc).slice();
+    const loggedTotal = payments.reduce((sum, payment) => sum + Math.max(0, Number(payment.amount) || 0), 0);
+    const rawAdvance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
+    const openingAdvance = doc.advanceIncludedInPaymentLogs === true ? 0 :
+        (doc.advanceIncludedInPaymentLogs === false
+            ? Math.max(0, Number(doc.paymentAdvanceBalance ?? doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0)
+            : Math.max(0, rawAdvance - loggedTotal));
     const lines = [
         'Reference: ' + (doc.refCode || '-'),
         'Created: ' + (doc.createdDate || doc.createdAt || 'Not recorded'),
         'Last updated: ' + (doc.updatedAt || 'Not recorded'),
         'Updated by: ' + (doc.updatedBy || 'Not recorded'),
-        'Initial advance: AED ' + (Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0).toFixed(2)
+        'Recognized opening advance: AED ' + openingAdvance.toFixed(2)
     ];
-    const payments = window.getDarDocumentPaymentLogs(doc).slice();
     payments.sort((a, b) => String(a.date || a.transactionDate || a.createdAt || '').localeCompare(String(b.date || b.transactionDate || b.createdAt || '')));
     if (payments.length) {
         lines.push('', 'Additional payments:');
