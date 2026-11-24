@@ -416,6 +416,24 @@ const assert = require('node:assert/strict');
     assert.match(moduleSmoke.purchases,/PO-TEST-001/,'Purchase table renders reference');
     assert.match(moduleSmoke.purchases,/Test Supplier/,'Purchase table resolves supplier');
     assert.equal(moduleSmoke.total,'AED 125.00','Purchase total is calculated');
+    const staffLedgerSmoke = await page.evaluate(() => {
+      state.clients=[{id:'company-test',companyName:'Sample Company'},{id:'company-other',companyName:'Other Company'}];
+      state.staff=[
+        {id:'staff-test',staffCode:'STAFF-0001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',personNumber:'P-100'},
+        {id:'staff-other',staffCode:'STAFF-0001',fullName:'Other Staff',companyId:'company-other',companyName:'Other Company',personNumber:'P-200'}
+      ];
+      renderCompanyStaffLedger();
+      const all=document.getElementById('ledger-company-staff-tbody').innerText;
+      document.getElementById('ledger-staff-company').value='company-test';
+      renderCompanyStaffLedger();
+      const filtered=document.getElementById('ledger-company-staff-tbody').innerText;
+      return {all,filtered,count:document.getElementById('ledger-staff-count').innerText};
+    });
+    assert.match(staffLedgerSmoke.all,/Test Staff/,'Accounts Ledger shows saved staff');
+    assert.match(staffLedgerSmoke.all,/Other Staff/,'Accounts Ledger shows staff from other companies');
+    assert.match(staffLedgerSmoke.filtered,/Test Staff/,'Company filter shows selected company staff');
+    assert.doesNotMatch(staffLedgerSmoke.filtered,/Other Staff/,'Company filter excludes other companies');
+    assert.equal(staffLedgerSmoke.count,'1 staff','Company staff count follows selected company');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     console.log('PASS: company staff table and purchase/supplier module rendering');
