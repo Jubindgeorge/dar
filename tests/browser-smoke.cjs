@@ -95,6 +95,44 @@ const assert = require('node:assert/strict');
     assert.match(pipeMohrePreview,/MARY JONES/,'Second passport anchor starts a separate employee');
     assert.match(pipeMohrePreview,/123456789/,'Pipe parser extracts the labour card number');
     assert.match(pipeMohrePreview,/31\/08\/2028|2028-08-31/,'Pipe parser extracts the labour card expiry');
+    const staffUpsert = await page.evaluate(async () => {
+      const originalRef=db.ref;
+      const originalAuth=window.firebase.auth;
+      const writes=[];
+      state.staff=[
+        {id:'staff-same',staffCode:'ST-100',staffId:'ST-100',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'11111111111111',fullName:'ALPHA STAFF',nationality:'INDIA',passportNumber:'P100',labourCardNumber:'L100',labourCardExpiry:'2028-08-31',linkedInvoiceRef:'INV-KEEP-1',linkedQuotationRef:'QTN-KEEP-1'},
+        {id:'staff-update',staffCode:'ST-101',staffId:'ST-101',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'22222222222222',fullName:'BETA STAFF',nationality:'',passportNumber:'P200',labourCardNumber:'L200',labourCardExpiry:'',linkedInvoiceRef:'INV-KEEP-2',linkedQuotationRef:'QTN-KEEP-2'}
+      ];
+      window.XLSX={read:()=>({SheetNames:['Staff'],Sheets:{Staff:{}}}),utils:{sheet_to_json:()=>[
+        ['Person Labour No','Person Name','Nationality','Passport Number','Card Number','Card Expiry'],
+        ['11111111111111','ALPHA STAFF','INDIA','P100','L100','31/08/2028'],
+        ['22222222222222','BETA STAFF','INDIA','P200','L200','30/09/2028'],
+        ['33333333333333','GAMMA STAFF','NEPAL','P300','L300','30/10/2028']
+      ]}};
+      db.ref=function(path){
+        if(path==='staff')return {push:()=>({key:'staff-new'})};
+        if(!path)return {update:(payload,callback)=>{writes.push(payload);Object.entries(payload).forEach(([key,value])=>{const parts=key.split('/');if(parts.length===2){const id=parts[1];state.staff.push({id,...value});}else if(parts.length===3){const record=state.staff.find(item=>item.id===parts[1]);if(record)record[parts[2]]=value;}});callback(null);}};
+        return originalRef(path);
+      };
+      try {
+        await window.previewStaffImportFile({name:'staff.xlsx',arrayBuffer:async()=>new ArrayBuffer(0)});
+        const preview=document.getElementById('staff-import-preview').innerText;
+        window.commitStaffImport();
+        return {
+          preview,writes:writes[0],staff:state.staff,
+          buttonDisabled:document.getElementById('staff-import-button').disabled
+        };
+      } finally {db.ref=originalRef;window.XLSX=undefined;}
+    });
+    assert.match(staffUpsert.preview,/1 new · 1 updates · 1 unchanged/,'Import preview distinguishes new, changed and identical staff');
+    assert.ok(!Object.keys(staffUpsert.writes||{}).some(path=>path.startsWith('staff/staff-same/')),'Identical staff row is not written');
+    assert.equal(staffUpsert.writes?.['staff/staff-update/nationality'],'INDIA','Missing existing nationality is filled from import');
+    assert.equal(staffUpsert.writes?.['staff/staff-update/labourCardExpiry'],'2028-09-30','Changed/missing labour card expiry is updated');
+    assert.ok(staffUpsert.writes?.['staff/staff-new'],'New employee is created');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.linkedInvoiceRef,'INV-KEEP-1','Identical employee invoice link remains intact');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.linkedQuotationRef,'QTN-KEEP-1','Identical employee quotation link remains intact');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-update')?.linkedInvoiceRef,'INV-KEEP-2','Updated employee invoice link remains intact');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-update')?.linkedQuotationRef,'QTN-KEEP-2','Updated employee quotation link remains intact');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
