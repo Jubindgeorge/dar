@@ -607,6 +607,19 @@ const assert = require('node:assert/strict');
     assert.equal(serviceCatalogSafety.imageCount,0,'Service catalog treats stored titles and IDs as text, not HTML');
     assert.match(serviceCatalogSafety.titleText,/<img/,'Service catalog preserves literal title text safely');
     assert.equal(serviceCatalogSafety.actionCount,2,'Service catalog edit/delete actions render with safe data attributes');
+    const malformedServiceEditor = await page.evaluate(() => {
+      state.services=[null,{id:'malformed-items',title:'Malformed',items:{}}];
+      openServiceModal('malformed-items');
+      const malformedRows=document.querySelectorAll('#srv-modal-items-container > div').length;
+      state.services=[null,{id:'null-item',title:'Null item',items:[null,{d:'Valid service',q:1,p:10}]}];
+      openServiceModal('null-item');
+      const validRows=document.querySelectorAll('#srv-modal-items-container > div').length;
+      const validDescription=document.querySelector('#srv-modal-items-container .srv-row-d')?.value;
+      return {malformedRows,validRows,validDescription};
+    });
+    assert.equal(malformedServiceEditor.malformedRows,1,'Malformed non-array service items fall back to one editable row');
+    assert.equal(malformedServiceEditor.validRows,1,'Null service items are ignored while valid rows remain');
+    assert.equal(malformedServiceEditor.validDescription,'Valid service','Valid service item details still populate the editor');
     console.log('PASS: service catalog safe rendering and action wiring');
     const recoverableDeleteSmoke = await page.evaluate(async () => {
       const originalSafeDelete=window.safeDeleteDarRecord;
