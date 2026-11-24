@@ -101,7 +101,8 @@ const assert = require('node:assert/strict');
       const writes=[];
       state.staff=[
         {id:'staff-same',staffCode:'ST-100',staffId:'ST-100',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'11111111111111',fullName:'ALPHA STAFF',nationality:'INDIA',passportNumber:'P100',labourCardNumber:'L100',labourCardExpiry:'2028-08-31',linkedInvoiceRef:'INV-KEEP-1',linkedQuotationRef:'QTN-KEEP-1'},
-        {id:'staff-update',staffCode:'ST-101',staffId:'ST-101',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'22222222222222',fullName:'BETA STAFF',nationality:'',passportNumber:'P200',labourCardNumber:'L200',labourCardExpiry:'',linkedInvoiceRef:'INV-KEEP-2',linkedQuotationRef:'QTN-KEEP-2'}
+        {id:'staff-update',staffCode:'ST-101',staffId:'ST-101',companyId:'import-company-test',companyName:'Import Test Company',personNumber:'22222222222222',fullName:'BETA STAFF',nationality:'',passportNumber:'P200',labourCardNumber:'L200',labourCardExpiry:'',linkedInvoiceRef:'INV-KEEP-2',linkedQuotationRef:'QTN-KEEP-2'},
+        {id:'other-company-staff',staffCode:'STAFF-0001',staffId:'STAFF-0001',companyId:'another-company',companyName:'Another Company',fullName:'OTHER COMPANY STAFF'}
       ];
       state.documents=[
         {refCode:'INV-ALPHA',type:'Invoice',clientName:'ALPHA STAFF',companyName:'Import Test Company',totalAmount:1250},
@@ -136,7 +137,7 @@ const assert = require('node:assert/strict');
     assert.equal(staffUpsert.writes?.['staff/staff-update/labourCardExpiry'],'2028-09-30','Changed/missing labour card expiry is updated');
     assert.ok(staffUpsert.writes?.['staff/staff-new'],'New employee is created');
     assert.equal(staffUpsert.staff.find(item=>item.id==='staff-same')?.staffCode,'ST-100','Mismatched imported Staff ID does not replace existing canonical code');
-    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-new')?.staffCode,'STAFF-0001','New MOHRE-style row receives the next generated DAR staff code');
+    assert.equal(staffUpsert.staff.find(item=>item.id==='staff-new')?.staffCode,'STAFF-0001','Staff numbering starts independently for each company, even when another company uses the same code');
     assert.equal(staffUpsert.writes?.['documents/INV-ALPHA/staffId'],'staff-same','Existing invoice is linked by company and exact person name');
     assert.equal(staffUpsert.writes?.['documents/INV-ALPHA/staffCode'],'ST-100','Invoice receives the canonical DAR Staff ID');
     assert.equal(staffUpsert.writes?.['documents/QTN-GAMMA/staffId'],'staff-new','Existing quotation is linked to the newly imported person');
