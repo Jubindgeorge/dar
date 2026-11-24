@@ -362,8 +362,12 @@
             let activeBlock = null;
             allLines.forEach(rawLine => {
                 const line = clean(rawLine);
-                if (!line || ignoredMohreLine(line)) {
-                    if (/The List Of Employees|Total Number of Employees|Page\s+\d+\s*\/\s*\d+/i.test(line)) activeBlock = null;
+                if (!line) return;
+                if (ignoredMohreLine(line)) {
+                    if (/The List Of Employees|Total Number of Employees|Page\s+\d+\s*\/\s*\d+/i.test(line)) {
+                        if (activeBlock) pipeBlocks.push(activeBlock);
+                        activeBlock = null;
+                    }
                     return;
                 }
                 const anchor = line.match(passportAnchor);
