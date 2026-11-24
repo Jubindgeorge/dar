@@ -1132,7 +1132,7 @@ window.getDarDocumentPaymentLogs = function(doc) {
 // Legacy records without an explicit marker use the larger figure to avoid
 // double-counting an advance that may already be represented in paymentLogs.
 window.getDarDocumentPaidAmount = function(doc) {
-    const advance = Math.max(0, Number(doc?.advanceAmount ?? doc?.advanceAmt ?? doc?.advance ?? 0) || 0);
+    const advance = Math.max(0, Number(doc?.paymentAdvanceBalance ?? doc?.advanceAmount ?? doc?.advanceAmt ?? doc?.advance ?? 0) || 0);
     const logged = window.getDarDocumentPaymentLogs(doc).reduce((sum, payment) => sum + Math.max(0, Number(payment.amount) || 0), 0);
     if (doc?.advanceIncludedInPaymentLogs === true) return logged;
     if (doc?.advanceIncludedInPaymentLogs === false) return advance + logged;
