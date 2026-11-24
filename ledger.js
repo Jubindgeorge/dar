@@ -235,10 +235,9 @@ window.printPaymentStatusStatement = function() {
     if (!doc) return;
 
     doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
-    doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-    doc.paymentLogs = doc.paymentLogs || [];
-
-    const totalPaid = doc.advanceAmount + doc.paymentLogs.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    doc.totalAmount = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
+    const paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    const totalPaid = window.getDarDocumentPaidAmount(doc);
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
 
     document.getElementById('p-doc-title').innerHTML = `PAYMENT STATUS STATEMENT / <span style="font-family: 'Amiri', serif;">كشف حساب الدفعات</span>`;
@@ -259,7 +258,7 @@ window.printPaymentStatusStatement = function() {
         </tr>
     `;
 
-    doc.paymentLogs.forEach((log, idx) => {
+    paymentLogs.forEach((log, idx) => {
         pTbody.innerHTML += `
             <tr>
                 <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${log.note || 'Direct'}</td>
