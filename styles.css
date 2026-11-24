@@ -471,6 +471,7 @@ label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bott
 .staff-filter-row input { flex: 2 1 250px; min-width: 0; }
 .staff-filter-row select { flex: 1 1 180px; min-width: 0; }
 .staff-table { min-width: 980px; }
+.staff-person-number { display:block; margin-top:3px; color:var(--text-muted); font-size:.72rem; font-weight:600; white-space:nowrap; }
 .staff-empty { text-align: center; color: var(--text-muted); padding: 24px !important; }
 .staff-status-pill { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .staff-actions { white-space: nowrap; }
