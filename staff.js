@@ -92,7 +92,7 @@
             const joined = window.darDates ? window.darDates.normalize(staff.joiningDate) : clean(staff.joiningDate).slice(0,10);
             if (fromDate && (!joined || joined < fromDate)) return false;
             if (toDate && (!joined || joined > toDate)) return false;
-            const searchable = [staff.staffCode,staff.fullName,staff.companyName,staff.lastWorkDone,staff.passportNumber,staff.visaNumber].map(norm).join(' ');
+            const searchable = [staff.staffCode,staff.personNumber,staff.fullName,staff.companyName,staff.lastWorkDone,staff.passportNumber,staff.labourCardNumber].map(norm).join(' ');
             return !search || searchable.includes(search);
         }).sort((a,b)=>clean(b.joiningDate).localeCompare(clean(a.joiningDate)));
         if (!records.length) {
@@ -101,12 +101,12 @@
         }
         body.innerHTML = records.map(staff => '<tr>'+
             '<td><strong>'+html(staff.staffCode || staff.staffId || '-')+'</strong></td>'+
-            '<td>'+html(staff.fullName || '-')+'</td>'+
+            '<td>'+html(staff.fullName || '-')+(staff.personNumber ? '<small class="staff-person-number">Person No: '+html(staff.personNumber)+'</small>' : '')+'</td>'+
             '<td>'+html(staff.companyName || companyNameById(staff.companyId) || '-')+'</td>'+
-            '<td>'+html(staff.lastWorkDone || '-')+'</td>'+
-            '<td>'+html(window.darFormatTableDate(staff.joiningDate))+'</td>'+
+            '<td>'+html(staff.nationality || '-')+'</td>'+
+            '<td>'+html(staff.labourCardNumber || '-')+'</td>'+
             '<td>'+html(staff.labourCardExpiry || '-')+'</td>'+
-            '<td>'+html(staff.passportExpiry || '-')+'</td>'+
+            '<td>'+html(staff.passportNumber || '-')+'</td>'+
             '<td>'+statusPill(dueStatus(staff))+'</td>'+
             '<td class="staff-actions"><button type="button" class="btn btn-secondary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit</button> '+(staff.linkedInvoiceRef ? '<button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+html(staff.linkedInvoiceRef)+'\')">Invoice</button>' : '')+'</td>'+
             '</tr>').join('');
@@ -326,108 +326,75 @@
         if (!window.pdfjsLib) throw new Error('PDF reader could not load. Refresh the page and try again.');
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-        const allLines = [];
+        const pages = [];
         for (let pageNo=1; pageNo<=pdf.numPages; pageNo++) {
             const page = await pdf.getPage(pageNo);
             const content = await page.getTextContent();
             const lines = [];
             content.items.forEach(item => {
-                const text = clean(item.str); if (!text) return;
+                const value = clean(item.str); if (!value) return;
                 const y = Math.round(item.transform[5]);
                 let line = lines.find(entry => Math.abs(entry.y-y)<=3);
                 if (!line) { line={y,cells:[]}; lines.push(line); }
-                line.cells.push({x:item.transform[4],text});
+                line.cells.push({x:item.transform[4],text:value});
             });
             lines.sort((a,b)=>b.y-a.y).forEach(line=>line.cells.sort((a,b)=>a.x-b.x));
-            lines.forEach(line=>allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\s+/g,' ').trim()));
+            pages.push(lines.map(line=>line.cells.map(cell=>cell.text).join(' ').replace(/\s+/g,' ').trim()));
         }
+        const allLines = pages.flat();
         const combined = allLines.join(' ').toLowerCase();
-        // Standard tabular PDFs continue through the generic column-header parser.
+        if (/list of employees|establishment number|passport number|person name|card type|job name|card number/i.test(combined)) {
+            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
+            const passportPattern = /^[A-Z0-9]{7,10}$/i;
+            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
+            const permitStartPattern = /^(NEW|RENEW|PRE)$/i;
+            const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
+            const isPassport = value => passportPattern.test(value) && (/[A-Z]/i.test(value) || value.length === 8);
+            const records = [];
+            const passportIndexes = [];
+            flat.forEach((token,index)=>{ if (isPassport(token)) passportIndexes.push(index); });
+            passportIndexes.forEach((index,recordIndex)=>{
+                const nextIndex = passportIndexes[recordIndex+1] ?? flat.length;
+                const segment = flat.slice(index,nextIndex);
+                const permitIndex = segment.findIndex(token=>permitStartPattern.test(token));
+                let nationalityIndex = segment.findIndex((token,pos)=>pos>0 && nationalities.has(token.toUpperCase()));
+                if (nationalityIndex < 0) return;
+                const nameEnd = permitIndex > 1 ? permitIndex : nationalityIndex;
+                const name = segment.slice(1,nameEnd)
+                    .filter(value=>!/^(\d{14}|PERMIT)$/i.test(value))
+                    .map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\s+/g,' ').trim();
+                if (!name) return;
+                const nationality = segment[nationalityIndex].toUpperCase()==='SRI' && segment[nationalityIndex+1]?.toUpperCase()==='LANKA' ? 'SRI LANKA' : segment[nationalityIndex].toUpperCase();
+                const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
+                const afterNationality = segment.slice(nationalityEnd+1);
+                const cardNumber = afterNationality.find(value=>/^\d{8,10}$/.test(value)) || '';
+                const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
+                const personNumber = flat.slice(Math.max(0,index-4),index).reverse().find(value=>/^\d{14}$/.test(value)) || '';
+                const designationStart = permitIndex >= 0 ? segment.findIndex((token,pos)=>pos>permitIndex && /^PERMIT$/i.test(token))+1 : nationalityIndex;
+                const designation = permitIndex >= 0 && designationStart > 0
+                    ? segment.slice(designationStart,nationalityIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').trim()
+                    : '';
+                records.push({
+                    staffCode:'', personNumber, fullName:name, nationality, designation,
+                    passportNumber:segment[0], labourCardNumber:cardNumber,
+                    labourCardExpiry:normalizeStaffImportDate(expiry),
+                    visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
+                });
+            });
+            if (records.length) return records;
+        }
+        // Generic employee-list PDFs remain supported when they have explicit staff/name headings.
         if (/staff id|employee id|full name|staff name|employee name/.test(combined)) {
-            const grids = [];
-            // Header cells can be split across PDF text runs; use the first matching line as the header.
-            const headerIndex = allLines.findIndex(line => /staff id|employee id|full name|staff name|employee name/i.test(line));
+            const headerIndex = allLines.findIndex(line=>/staff id|employee id|full name|staff name|employee name/i.test(line));
             if (headerIndex >= 0) {
                 const rows = [allLines[headerIndex].split(/\s{2,}/)];
                 allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\s{2,}/)));
-                try { grids.push(...staffImportRowsFromGrid(rows)); } catch (_) {}
+                const parsed = staffImportRowsFromGrid(rows);
+                if (parsed.length) return parsed;
             }
-            if (grids.length) return grids;
         }
-
-        // UAE MOHRE "List of Employees" report: employee fields are stacked vertically.
-        // Do not require the 14-digit permit ID: it may appear before the passport
-        // (page 2) or be absent from an extracted row (as in some MOHRE reports).
-        const isMohre = /list of employees|establishment number|passport number|person name|card type|job name|card number/i.test(combined);
-        if (isMohre) {
-            const records = [];
-            const passportPattern = /^[A-Z0-9]{7,10}$/i;
-            const permitStartPattern = /^(NEW|RENEW|PRE)$/i;
-            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
-            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
-            const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
-            const isPassport = value => passportPattern.test(value) && (/[A-Z]/i.test(value) || value.length === 8);
-            for (let i=0;i<flat.length;i++) {
-                const passport = flat[i];
-                if (!isPassport(passport)) continue;
-
-                // Find this employee's permit block first. It is a more reliable
-                // boundary than the optional 14-digit permit ID.
-                let permitStart = -1, permitEnd = -1;
-                for (let j=i+1;j<Math.min(flat.length,i+55);j++) {
-                    if (!permitStartPattern.test(flat[j])) continue;
-                    const endIndex = flat.slice(j,Math.min(flat.length,j+10)).findIndex(value=>/^PERMIT$/i.test(value));
-                    if (endIndex >= 0) { permitStart=j; permitEnd=j+endIndex; break; }
-                    if (j > i+1 && isPassport(flat[j])) break;
-                }
-                if (permitStart < 0) continue;
-
-                // Name is between passport and permit; discard a permit ID if
-                // it occurs in that span. This also handles a missing permit ID.
-                const name = flat.slice(i+1,permitStart)
-                    .filter(value=>!/^\d{14}$/.test(value))
-                    .map(latin).filter(value=>/[A-Za-z]/.test(value))
-                    .join(' ').replace(/\s+/g,' ').trim();
-                if (!name) continue;
-
-                const permit = flat.slice(permitStart,permitEnd+1).join(' ');
-                const permitId = flat.slice(Math.max(0,i-3),permitStart).find(value=>/^[0-9]{14}$/.test(value)) || '';
-                let nationalityIndex = -1;
-                for (let j=permitEnd+1;j<Math.min(flat.length,permitEnd+18);j++) {
-                    const token=flat[j].toUpperCase();
-                    if (nationalities.has(token)) { nationalityIndex=j; break; }
-                    if (isPassport(flat[j])) break;
-                }
-                if (nationalityIndex < 0) continue;
-
-                const designation = flat.slice(permitEnd+1,nationalityIndex)
-                    .map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').trim();
-                const nationality = flat[nationalityIndex].toUpperCase()==='SRI' && flat[nationalityIndex+1]?.toUpperCase()==='LANKA'
-                    ? 'SRI LANKA' : flat[nationalityIndex].toUpperCase();
-                const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
-                const afterNationality = flat.slice(nationalityEnd+1,nationalityEnd+10);
-                const cardNumber = afterNationality.find(value=>/^\d{8,10}$/.test(value)) || '';
-                const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
-
-                records.push({
-                    staffCode:'',
-                    labourCardNumber:cardNumber,
-                    labourCardExpiry:normalizeStaffImportDate(expiry),
-                    fullName:name,
-                    passportNumber:passport,
-                    nationality,
-                    designation,
-                    visaNumber:permitId,
-                    visaExpiry:'',
-                    visaStatus:permit,
-                    renewalStatus:/RENEW/i.test(permit)?'Renewal':'Pending'
-                });
-                i = nationalityEnd;
-            }
-            if (records.length) return records;
-        }
-        throw new Error('No readable staff records found. For UAE MOHRE reports, use a text-based “List of Employees” PDF; scanned PDFs still require OCR.');
+        throw new Error('No readable staff records found. Please use a text-based employee-list PDF; scanned PDFs require OCR.');
     }
     function renderStaffImportPreview() {
         const panel = byId('staff-import-preview');
@@ -449,7 +416,7 @@
         }).length;
         const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'Auto')+'</td><td>'+html(row.fullName||'—')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardExpiry||row.visaExpiry||'—')+'</td><td>'+html(!row.fullName?'Missing full name':(row.labourCardNumber&&existingCards.has(norm(row.labourCardNumber)))||(row.passportNumber&&existingPassports.has(norm(row.passportNumber)))?'Already exists':'Ready')+'</td></tr>').join('');
         panel.hidden = false;
-        panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+valid.length+' complete · '+invalid+' incomplete · '+duplicates+' duplicate(s)</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Full Name</th><th>Nationality</th><th>Passport</th><th>Visa Expiry</th><th>Check</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
+        panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+valid.length+' complete · '+invalid+' incomplete · '+duplicates+' duplicate(s)</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Name / Person No.</th><th>Nationality</th><th>Passport</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Check</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
         button.disabled = !valid.length || !staffImportCompanyId;
     }
     window.updateStaffImportAvailability = function () {
@@ -500,7 +467,7 @@
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. No staff were imported.'); return; }
         const company = companyById(staffImportCompanyId);
         if (!company || !staffImportRows.length) { showCustomModal('Select company first','Choose an existing company and preview a file before importing.'); return; }
-        const valid = staffImportRows.filter(row=>row.staffCode && row.fullName);
+        const valid = staffImportRows.filter(row=>row.fullName);
         const companyStaff = (state.staff||[]).filter(row=>row.companyId===company.id || norm(row.companyName)===norm(company.companyName));
         const existing = new Set(companyStaff.map(row=>norm(row.staffCode||row.staffId)));
         const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
@@ -525,7 +492,7 @@
             const record={
                 id, staffCode:generatedStaffCode, staffId:generatedStaffCode, fullName:row.fullName,
                 companyId:company.id, companyName:company.companyName,
-                nationality:row.nationality||'', designation:row.designation||'',
+                personNumber:row.personNumber||'', nationality:row.nationality||'', designation:row.designation||'',
                 labourCardNumber:row.labourCardNumber||'', labourCardExpiry:row.labourCardExpiry||'',
                 lastWorkDone:row.lastWorkDone||'', passportNumber:row.passportNumber||'',
                 passportExpiry:row.passportExpiry||'', visaNumber:row.visaNumber||'',
