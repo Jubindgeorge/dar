@@ -360,8 +360,13 @@ function commitDocumentToMemory() {
         showCustomModal('Quotation balance protected', 'The quotation total cannot be reduced below the amount already invoiced.');
         return;
     }
+    const previousAdvanceValue = Number(previousDocumentForValidation?.advanceAmount ?? previousDocumentForValidation?.advanceAmt ?? previousDocumentForValidation?.advance ?? 0) || 0;
+    const advanceWasChanged = !!previousDocumentForValidation && Math.abs(previousAdvanceValue - advanceAmt) > 0.005;
+    const proposedPaymentAdvanceBalance = previousDocumentForValidation?.advanceIncludedInPaymentLogs === false
+        ? (advanceWasChanged ? advanceAmt : Number(previousDocumentForValidation.paymentAdvanceBalance ?? previousAdvanceValue) || 0)
+        : undefined;
     const proposedPaid = previousDocumentForValidation && window.getDarDocumentPaidAmount
-        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt, ...(previousDocumentForValidation.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:advanceAmt} : {})})
+        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt, ...(previousDocumentForValidation.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:proposedPaymentAdvanceBalance} : {})})
         : advanceAmt;
     if (Math.max(advanceAmt, proposedPaid) > totalAmt + 0.005) {
         showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
@@ -452,7 +457,7 @@ function commitDocumentToMemory() {
         legacyDiscountAmount,
         advanceAmt,
         advanceAmount: advanceAmt,
-        ...(previousDocument?.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:advanceAmt} : {}),
+        ...(previousDocument?.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:advanceWasChanged ? advanceAmt : (previousDocument.paymentAdvanceBalance ?? previousAdvanceValue)} : {}),
         totalAmount: totalAmt,
         totalAmt,
         total: totalAmt,
@@ -508,7 +513,7 @@ function commitDocumentToMemory() {
                 saveConflict = 'This invoice was changed by another user. Refresh it before editing again.';
                 return;
             }
-            const latestPaid = window.getDarDocumentPaidAmount({...liveInvoice,advanceAmount:advanceAmt,...(liveInvoice.advanceIncludedInPaymentLogs===false?{paymentAdvanceBalance:advanceAmt}:{})});
+            const latestPaid = window.getDarDocumentPaidAmount({...liveInvoice,advanceAmount:advanceAmt,...(liveInvoice.advanceIncludedInPaymentLogs===false && advanceWasChanged?{paymentAdvanceBalance:advanceAmt}:{})});
             if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
                 saveConflict = 'The latest recorded payments exceed the new invoice total.';
                 return;
@@ -552,7 +557,7 @@ function commitDocumentToMemory() {
                     saveConflict = 'This document was changed by another user. Refresh before editing again.';
                     return;
                 }
-                const latestPaid = window.getDarDocumentPaidAmount({...liveDocument,advanceAmount:advanceAmt,...(liveDocument.advanceIncludedInPaymentLogs===false?{paymentAdvanceBalance:advanceAmt}:{})});
+                const latestPaid = window.getDarDocumentPaidAmount({...liveDocument,advanceAmount:advanceAmt,...(liveDocument.advanceIncludedInPaymentLogs===false && advanceWasChanged?{paymentAdvanceBalance:advanceAmt}:{})});
                 if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
                     saveConflict = 'The latest recorded payments exceed the new document total.';
                     return;
