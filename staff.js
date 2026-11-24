@@ -510,9 +510,9 @@
     function buildStaffImportPlan(rows, companyStaff) {
         const claimedIds=new Set(), seenIdentifiers=new Set();
         return rows.map(row=>{
-            const identifiers=staffImportIdentityFields.map(field=>norm(row[field])).filter(Boolean);
-            if (identifiers.some(value=>seenIdentifiers.has(value))) return {row,status:'duplicate',reason:'Duplicate identifier in this import'};
-            identifiers.forEach(value=>seenIdentifiers.add(value));
+            const identifiers=staffImportIdentityFields.map(field=>({field,value:norm(row[field])})).filter(item=>item.value);
+            if (identifiers.some(item=>seenIdentifiers.has(item.field+'|'+item.value))) return {row,status:'duplicate',reason:'Duplicate identifier in this import'};
+            identifiers.forEach(item=>seenIdentifiers.add(item.field+'|'+item.value));
             const result=resolveStaffImportRow(row,companyStaff,claimedIds);
             if (result.existing) claimedIds.add(result.existing.id);
             return {row,...result};
