@@ -484,14 +484,14 @@ window.promptEditAdvance = async function() {
     const value = Number(newAdvance);
     if (value < 0) { alert('Advance payment cannot be negative.'); return; }
     const total = Number(getDarDocumentAmount(doc)) || 0;
-    const proposedPaid = window.getDarDocumentPaidAmount({...doc,advanceAmount:value});
+    const proposedPaid = window.getDarDocumentPaidAmount({...doc,advanceAmount:value,...(doc.advanceIncludedInPaymentLogs===false?{paymentAdvanceBalance:value}:{})});
     if (Math.max(value,proposedPaid) > total + 0.005) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
     let validationError = '';
     try {
         const result = await transactDarDocument(doc.refCode, current => {
             if (!current) return;
             const totalNow = Number(getDarDocumentAmount(current)) || 0;
-            const paidNow = window.getDarDocumentPaidAmount({...current,advanceAmount:value});
+            const paidNow = window.getDarDocumentPaidAmount({...current,advanceAmount:value,...(current.advanceIncludedInPaymentLogs===false?{paymentAdvanceBalance:value}:{})});
             if (Math.max(value,paidNow) > totalNow + 0.005) {
                 validationError = 'Advance and recorded payments cannot exceed the latest invoice total.';
                 return;
