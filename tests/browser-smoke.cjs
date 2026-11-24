@@ -80,7 +80,7 @@ const assert = require('node:assert/strict');
     assert.match(pipeMohrePreview,/JOHN SMITH/,'Wrapped English name is retained in the first pipe record');
     assert.match(pipeMohrePreview,/MARY JONES/,'Second passport anchor starts a separate employee');
     assert.match(pipeMohrePreview,/123456789/,'Pipe parser extracts the labour card number');
-    assert.match(pipeMohrePreview,/31\\/08\\/2028|2028-08-31/,'Pipe parser extracts the labour card expiry');
+    assert.match(pipeMohrePreview,/31\/08\/2028|2028-08-31/,'Pipe parser extracts the labour card expiry');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
