@@ -26,6 +26,28 @@ const assert = require('node:assert/strict');
     });
     assert.equal(await page.locator('#staff-import-file').isDisabled(),false,'Excel/PDF file selection is enabled after choosing a company');
     assert.equal(await page.locator('#staff-import-button').isDisabled(),true,'Import action stays disabled until a file preview is ready');
+    const mohrePreview = await page.evaluate(async () => {
+      const rows = [
+        'The List Of Employees',
+        'Passport Number Person Number Card Type Job Name',
+        '10010029093353 W3410928 MOHAMMAD IDRIS MOHAMMAD MUNSHI NEW WORK PERMIT LABOURER INDIA 142607518 14/09/2028',
+        '20010038231120 12040746 SUJAN BHANDARI NEW WORK PERMIT LABOURER NEPAL 153447450 31/08/2028'
+      ];
+      const items = rows.map((str,index) => ({str,transform:[1,0,0,1,40,1000-index*20]}));
+      window.pdfjsLib = {
+        GlobalWorkerOptions:{},
+        getDocument:() => ({promise:Promise.resolve({
+          numPages:1,
+          getPage:async () => ({getTextContent:async () => ({items})})
+        })})
+      };
+      await window.previewStaffImportFile({name:'mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
+      return document.getElementById('staff-import-preview').innerText;
+    });
+    assert.match(mohrePreview,/2 rows detected/,'MOHRE PDF parser detects employee records');
+    assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts full employee name');
+    assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts a second employee');
+    assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
