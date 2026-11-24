@@ -277,7 +277,15 @@ const assert = require('node:assert/strict');
         document.getElementById('st-client-name').value='Test Staff';
         document.getElementById('st-company-name').value='Test Company';
         previewStudioCompanyMatches();
-        db.ref=path=>({update:(payload,callback)=>{calls.push({path,payload});callback(null);}});
+        db.ref=path=>({
+          update:(payload,callback)=>{calls.push({path,payload});callback(null);},
+          transaction:(updater,callback)=>{
+            const current=path==='documents' ? Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc])) : state.documents.find(doc=>('documents/'+doc.refCode)===path) || null;
+            const next=updater(current);
+            calls.push({path,payload:next});
+            callback(null,next!==undefined,{val:()=>next});
+          }
+        });
         window.showCustomModal=(title,message,actions)=>calls.push({title,message,actions});
         commitDocumentToMemory();
         const saved=state.documents.find(d=>d.refCode==='CI-SAVE-001');
