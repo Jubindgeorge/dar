@@ -356,14 +356,14 @@
         if (looksMohre) {
             // Pipe-delimited MOHRE layout: each passport token starts one employee,
             // regardless of how many visual PDF lines the record wraps across.
-            const ignoredMohreLine = line => /The List Of Employees|Passport Number|رقم جواز السفر|Establishment Number|Scan QR to verify|Total Number of Employees|Printing Date & Time|Page\\s+\\d+\\s*\\/\\s*\\d+/i.test(line);
-            const passportAnchor = /^\\s*([A-Z0-9]{6,10})\\s*\\|/i;
+            const ignoredMohreLine = line => /The List Of Employees|Passport Number|رقم جواز السفر|Establishment Number|Scan QR to verify|Total Number of Employees|Printing Date & Time|Page\s+\d+\s*\/\s*\d+/i.test(line);
+            const passportAnchor = /^\s*([A-Z0-9]{6,10})\s*\|/i;
             const pipeBlocks = [];
             let activeBlock = null;
             allLines.forEach(rawLine => {
                 const line = clean(rawLine);
                 if (!line || ignoredMohreLine(line)) {
-                    if (/The List Of Employees|Total Number of Employees|Page\\s+\\d+\\s*\\/\\s*\\d+/i.test(line)) activeBlock = null;
+                    if (/The List Of Employees|Total Number of Employees|Page\s+\d+\s*\/\s*\d+/i.test(line)) activeBlock = null;
                     return;
                 }
                 const anchor = line.match(passportAnchor);
@@ -376,39 +376,34 @@
             });
             if (activeBlock) pipeBlocks.push(activeBlock);
             const pipeRecords = [];
-            const knownCardTypes = [
-                'NEW ELECTRONIC WORK PERMIT',
-                'PRE APPROVAL FOR WORK PERMIT',
-                'RENEW ELECTRONIC WORK PERMIT'
-            ];
-            const knownNationalities = new Set([
-                'INDIA','PAKISTAN','GHANA','NEPAL','SRI LANKA','BANGLADESH','PHILIPPINES',
-                'EGYPT','NIGERIA','ETHIOPIA','KENYA','UGANDA','SUDAN','JORDAN','SYRIA',
-                'LEBANON','YEMEN','INDONESIA','CHINA','IRAN','IRAQ'
-            ]);
-            const pipeLatin = value => clean(value).replace(/[^A-Za-z0-9 .&'()/-]/g,' ').replace(/\\s+/g,' ').trim();
+            const knownCardTypes = ['NEW ELECTRONIC WORK PERMIT','PRE APPROVAL FOR WORK PERMIT','RENEW ELECTRONIC WORK PERMIT'];
+            const knownNationalities = new Set(['INDIA','PAKISTAN','GHANA','NEPAL','SRI LANKA','BANGLADESH','PHILIPPINES','EGYPT','NIGERIA','ETHIOPIA','KENYA','UGANDA','SUDAN','JORDAN','SYRIA','LEBANON','YEMEN','INDONESIA','CHINA','IRAN','IRAQ']);
+            const arabicNationalityMap = {'الهند':'INDIA','باكستان':'PAKISTAN','غانا':'GHANA','نيبال':'NEPAL','سريلانكا':'SRI LANKA','بنغلاديش':'BANGLADESH','الفلبين':'PHILIPPINES'};
+            const pipeLatin = value => clean(value).replace(/[^A-Za-z0-9 .&'()/-]/g,' ').replace(/\s+/g,' ').trim();
             pipeBlocks.forEach(blockLines => {
-                const joined = blockLines.join(' ').replace(/\\s*\\|\\s*/g,'|');
-                const fields = joined.split('|').map(value=>clean(value).replace(/\\s+/g,' ')).filter(Boolean);
+                const joined = blockLines.join(' ').replace(/\s*\|\s*/g,'|');
+                const fields = joined.split('|').map(value=>clean(value).replace(/\s+/g,' ')).filter(Boolean);
                 const passportNumber = fields[0]?.match(/^([A-Z0-9]{6,10})$/i)?.[1] || '';
                 if (!passportNumber || fields.length < 5) return;
                 const upperJoined = fields.join(' | ').toUpperCase();
                 const cardType = knownCardTypes.find(type=>upperJoined.includes(type)) || '';
-                const cardTypeIndex = cardType ? fields.findIndex(value=>value.toUpperCase().includes(cardType)) : -1;
-                const cardIndex = fields.findIndex((value,index)=>index>0 && /^\\d{8,10}$/.test(value));
-                const expiryIndex = fields.findIndex((value,index)=>index>0 && /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(value));
-                if (!cardType || cardIndex < 0 || expiryIndex < 0) return;
+                const arabicCardTypePattern = /(?:تصريح|موافقة).*(?:عمل|إلكتروني|الكتروني)|(?:تجديد|جديد).*(?:تصريح|عمل)/;
+                const cardTypeIndex = cardType ? fields.findIndex(value=>value.toUpperCase().includes(cardType)) : fields.findIndex(value=>arabicCardTypePattern.test(value));
+                const cardTypeLabel = cardType || (cardTypeIndex >= 0 ? fields[cardTypeIndex] : '');
+                const cardIndex = fields.findIndex((value,index)=>index>0 && /^\d{8,10}$/.test(value));
+                const expiryIndex = fields.findIndex((value,index)=>index>0 && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value));
+                if (!cardTypeLabel || cardIndex < 0 || expiryIndex < 0) return;
                 const contract = fields.find(value=>/^(LIMITED|UNLIMITED)$/i.test(value)) || '';
                 const nationalityIndex = fields.findIndex((value,index)=>index>0 && knownNationalities.has(value.toUpperCase()));
-                const arabicNationalityMap = {'الهند':'INDIA','باكستان':'PAKISTAN','غانا':'GHANA','نيبال':'NEPAL','سريلانكا':'SRI LANKA','بنغلاديش':'BANGLADESH','الفلبين':'PHILIPPINES'};
-            const nationality = nationalityIndex >= 0 ? fields[nationalityIndex].toUpperCase() : (fields.find(value=>arabicNationalityMap[value]) ? arabicNationalityMap[fields.find(value=>arabicNationalityMap[value])] : '');
+                const arabicNationality = fields.find(value=>arabicNationalityMap[value]) || '';
+                const nationality = nationalityIndex >= 0 ? fields[nationalityIndex].toUpperCase() : (arabicNationality ? arabicNationalityMap[arabicNationality] : '');
                 const nameFields = fields.slice(1, cardTypeIndex >= 0 ? cardTypeIndex : cardIndex);
-                const englishName = nameFields.find(value=>/[A-Za-z]/.test(value) && !knownNationalities.has(value.toUpperCase()) && !/^\\d+$/.test(value)) || '';
-                const arabicName = nameFields.find(value=>/[\\u0600-\\u06FF]/.test(value)) || '';
+                const englishName = nameFields.find(value=>/[A-Za-z]/.test(value) && !knownNationalities.has(value.toUpperCase()) && !/^\d+$/.test(value)) || '';
+                const arabicName = nameFields.find(value=>/[\u0600-\u06FF]/.test(value)) || '';
                 const jobFields = fields.slice(cardTypeIndex >= 0 ? cardTypeIndex+1 : 1, nationalityIndex >= 0 ? nationalityIndex : cardIndex);
-                const designationRaw = jobFields.find(value=>/[A-Za-z\\u0600-\\u06FF]/.test(value) && !/ELECTRONIC|WORK PERMIT|PRE APPROVAL|RENEW/i.test(value)) || '';
+                const designationRaw = jobFields.find(value=>/[A-Za-z\u0600-\u06FF]/.test(value) && !/ELECTRONIC|WORK PERMIT|PRE APPROVAL|RENEW/i.test(value)) || '';
                 const designation = pipeLatin(designationRaw) || designationRaw;
-                const personNumber = fields.find(value=>/^\\d{12,16}$/.test(value)) || '';
+                const personNumber = fields.find(value=>/^\d{12,16}$/.test(value)) || '';
                 pipeRecords.push({
                     staffCode:'', personNumber, fullName:pipeLatin(englishName), fullNameArabic:arabicName,
                     nationality, designation, designationArabic:jobFields.find(value=>/[\\u0600-\\u06FF]/.test(value)) || '', cardType:cardTypeLabel, contractType:contract,
