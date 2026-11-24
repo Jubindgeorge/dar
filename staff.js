@@ -311,7 +311,7 @@
         if (!window.pdfjsLib) throw new Error('PDF reader could not load. Refresh the page and try again.');
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-        const grids = [];
+        const allLines = [];
         for (let pageNo=1; pageNo<=pdf.numPages; pageNo++) {
             const page = await pdf.getPage(pageNo);
             const content = await page.getTextContent();
@@ -324,20 +324,63 @@
                 line.cells.push({x:item.transform[4],text});
             });
             lines.sort((a,b)=>b.y-a.y).forEach(line=>line.cells.sort((a,b)=>a.x-b.x));
-            const headerIndex = lines.findIndex(line => {
-                const joined = line.cells.map(cell=>staffImportHeader(cell.text)).join(' ');
-                return /staff id|employee id|full name|staff name|employee name/.test(joined);
-            });
-            if (headerIndex < 0) continue;
-            const header = lines[headerIndex].cells;
-            const rows = [header.map(cell=>cell.text)];
-            lines.slice(headerIndex+1).forEach(line => {
-                if (line.cells.length >= 2) rows.push(line.cells.map(cell=>cell.text));
-            });
-            grids.push(...staffImportRowsFromGrid(rows));
+            lines.forEach(line=>allLines.push(line.cells.map(cell=>cell.text).join(' ').replace(/\\s+/g,' ').trim()));
         }
-        if (!grids.length) throw new Error('No readable staff table found in this PDF. Please use a text-based PDF with column headings and staff rows, or import an Excel file.');
-        return grids;
+        const combined = allLines.join(' ').toLowerCase();
+        // Standard tabular PDFs continue through the generic column-header parser.
+        if (/staff id|employee id|full name|staff name|employee name/.test(combined)) {
+            const grids = [];
+            // Header cells can be split across PDF text runs; use the first matching line as the header.
+            const headerIndex = allLines.findIndex(line => /staff id|employee id|full name|staff name|employee name/i.test(line));
+            if (headerIndex >= 0) {
+                const rows = [allLines[headerIndex].split(/\\s{2,}/)];
+                allLines.slice(headerIndex+1).forEach(line=>rows.push(line.split(/\\s{2,}/)));
+                try { grids.push(...staffImportRowsFromGrid(rows)); } catch (_) {}
+            }
+            if (grids.length) return grids;
+        }
+
+        // UAE MOHRE "List of Employees" report: each employee is a vertical block,
+        // not a row under Staff ID / Full Name headings.
+        const isMohre = /list of employees|establishment number|passport number|person name|card type|job name|card number/i.test(combined);
+        if (isMohre) {
+            const records = [];
+            const passportPattern = /^[A-Z0-9]{7,10}$/i;
+            const idPattern = /^\\d{14}$/;
+            const datePattern = /^\\d{2}\\/\\d{2}\\/\\d{4}$/;
+            const permitPattern = /(?:NEW|RENEW|PRE APPROVAL).*WORK PERMIT/i;
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
+            const flat = allLines.flatMap(line => line.split(/\\s{2,}|\\s+(?=(?:NEW|RENEW|PRE APPROVAL)\\b)/i).map(v=>v.trim()).filter(Boolean));
+            for (let i=0;i<flat.length;i++) {
+                const passport = flat[i].match(/^([A-Z0-9]{7,10})$/i);
+                if (!passportPattern.test(flat[i]) || !passport) continue;
+                const block = [];
+                for (let j=i+1;j<flat.length && !passportPattern.test(flat[j]);j++) block.push(flat[j]);
+                const idIndex = block.findIndex(value=>idPattern.test(value));
+                if (idIndex < 0) continue;
+                const name = block.slice(0,idIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\\s+/g,' ').trim();
+                const tail = block.slice(idIndex+1);
+                const permitIndex = tail.findIndex(value=>permitPattern.test(value));
+                if (!name || permitIndex < 0) continue;
+                const permit = tail[permitIndex];
+                const afterPermit = tail.slice(permitIndex+1);
+                const nationalityIndex = afterPermit.findIndex(value=>/^(INDIA|PAKISTAN|NEPAL|GHANA|BANGLADESH|SRI LANKA|PHILIPPINES|EGYPT|UNITED KINGDOM|KENYA|UGANDA)$/i.test(value));
+                if (nationalityIndex < 1) continue;
+                const designation = latin(afterPermit[nationalityIndex-1]);
+                const nationality = clean(afterPermit[nationalityIndex]).toUpperCase();
+                const cardNumber = afterPermit.slice(nationalityIndex+1).find(value=>/^\\d{8,10}$/.test(value)) || '';
+                const expiry = afterPermit.slice(nationalityIndex+1).find(value=>datePattern.test(value)) || '';
+                records.push({
+                    staffCode:cardNumber || flat[i], fullName:name, passportNumber:flat[i],
+                    nationality, designation, visaNumber:block[idIndex],
+                    visaExpiry:normalizeStaffImportDate(expiry), visaStatus:permit,
+                    renewalStatus:/RENEW/i.test(permit)?'Renewal':'Pending'
+                });
+                i += block.length;
+            }
+            if (records.length) return records;
+        }
+        throw new Error('No readable staff records found. For UAE MOHRE reports, use a text-based “List of Employees” PDF; scanned PDFs still require OCR.');
     }
     function renderStaffImportPreview() {
         const panel = byId('staff-import-preview');
