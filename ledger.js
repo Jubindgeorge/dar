@@ -121,12 +121,14 @@ window.renderAccountsLedgerDetail = function(refCode) {
         tbody.innerHTML = '';
         
         let allPayments = [];
-        const advanceIsSeparate = doc.advanceIncludedInPaymentLogs === false ||
-            (doc.advanceIncludedInPaymentLogs == null && logsTotal < doc.advanceAmount);
-        if (doc.advanceAmount > 0 && advanceIsSeparate) {
+        const displayedAdvanceAmount = doc.advanceIncludedInPaymentLogs === true ? 0 :
+            (doc.advanceIncludedInPaymentLogs === false
+                ? Math.max(0, Number(doc.paymentAdvanceBalance ?? doc.advanceAmount) || 0)
+                : Math.max(0, doc.advanceAmount - logsTotal));
+        if (displayedAdvanceAmount > 0) {
             allPayments.push({
                 date: doc.transactionDate || doc.createdDate || 'Initial',
-                amount: doc.advanceAmount,
+                amount: displayedAdvanceAmount,
                 note: 'Advance Payment',
                 isAdvance: true
             });
@@ -242,8 +244,10 @@ window.printPaymentStatusStatement = function() {
     const logsTotal = paymentLogs.reduce((sum, payment) => sum + Math.max(0, Number(payment.amount) || 0), 0);
     const totalPaid = window.getDarDocumentPaidAmount(doc);
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
-    const advanceIsSeparate = doc.advanceIncludedInPaymentLogs === false ||
-        (doc.advanceIncludedInPaymentLogs == null && logsTotal < doc.advanceAmount);
+    const displayedAdvanceAmount = doc.advanceIncludedInPaymentLogs === true ? 0 :
+        (doc.advanceIncludedInPaymentLogs === false
+            ? Math.max(0, Number(doc.paymentAdvanceBalance ?? doc.advanceAmount) || 0)
+            : Math.max(0, doc.advanceAmount - logsTotal));
 
     document.getElementById('p-doc-title').innerHTML = `PAYMENT STATUS STATEMENT / <span style="font-family: 'Amiri', serif;">كشف حساب الدفعات</span>`;
     document.getElementById('p-client-name').innerText = doc.clientName || doc.companyName || '-';
@@ -252,8 +256,8 @@ window.printPaymentStatusStatement = function() {
     document.getElementById('p-created-date').innerText = `Date: ${new Date().toISOString().substring(0, 10)}`;
 
     const pTbody = document.getElementById('p-table-body');
-    const advanceRow = advanceIsSeparate && doc.advanceAmount > 0
-        ? '<tr><td colspan="2" style="padding:12px;border-bottom:1px solid #cbd5e1;">Advance Payment (' + escapeHtml(doc.createdDate || 'Initial') + ')</td><td colspan="2" style="padding:12px;text-align:right;color:#22c55e;font-weight:bold;border-bottom:1px solid #cbd5e1;">AED ' + doc.advanceAmount.toFixed(2) + '</td></tr>'
+    const advanceRow = displayedAdvanceAmount > 0
+        ? '<tr><td colspan="2" style="padding:12px;border-bottom:1px solid #cbd5e1;">Advance Payment (' + escapeHtml(doc.createdDate || 'Initial') + ')</td><td colspan="2" style="padding:12px;text-align:right;color:#22c55e;font-weight:bold;border-bottom:1px solid #cbd5e1;">AED ' + displayedAdvanceAmount.toFixed(2) + '</td></tr>'
         : '';
     pTbody.innerHTML = `
         <tr>
@@ -336,8 +340,10 @@ window.savePaymentLogData = async function() {
             let advanceIncluded = current.advanceIncludedInPaymentLogs;
             if (advanceIncluded == null) {
                 const logged = logs.reduce((sum, entry) => sum + Math.max(0, Number(entry.amount) || 0), 0);
-                const advance = Math.max(0, Number(current.advanceAmount ?? current.advanceAmt ?? current.advance ?? 0) || 0);
-                advanceIncluded = logged >= advance;
+                // Keep the recognized legacy paid amount while separating only the
+                // advance portion not already represented by historical log entries.
+                current.paymentAdvanceBalance = Math.max(0, paid - logged);
+                advanceIncluded = false;
             }
             logs.push(payment);
             current.paymentLogs = logs;
@@ -492,6 +498,7 @@ window.promptEditAdvance = async function() {
             }
             current.advanceAmount = value;
             current.advanceAmt = value;
+            if (current.advanceIncludedInPaymentLogs === false) current.paymentAdvanceBalance = value;
             current.updatedAt = new Date().toISOString();
             current.updatedBy = firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown';
             return current;
