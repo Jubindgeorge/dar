@@ -434,6 +434,28 @@ const assert = require('node:assert/strict');
     assert.match(staffLedgerSmoke.filtered,/Test Staff/,'Company filter shows selected company staff');
     assert.doesNotMatch(staffLedgerSmoke.filtered,/Other Staff/,'Company filter excludes other companies');
     assert.equal(staffLedgerSmoke.count,'1 staff','Company staff count follows selected company');
+    const paymentCompatibilitySmoke = await page.evaluate(() => {
+      const legacyObjectLogs={ '0':{amount:100,date:'2026-11-01'}, '1':{amount:20,date:'2026-11-02'} };
+      const legacyIncluded={totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:100}}};
+      const legacySeparate={totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:50}}};
+      const explicitSeparate={totalAmount:200,advanceAmount:50,advanceIncludedInPaymentLogs:false,paymentLogs:[{amount:100}]};
+      const explicitIncluded={totalAmount:200,advanceAmount:50,advanceIncludedInPaymentLogs:true,paymentLogs:[{amount:100}]};
+      return {
+        normalizedCount:getDarDocumentPaymentLogs({paymentLogs:legacyObjectLogs}).length,
+        legacyIncluded:getDarDocumentPaidAmount(legacyIncluded),
+        legacySeparate:getDarDocumentPaidAmount(legacySeparate),
+        explicitSeparate:getDarDocumentPaidAmount(explicitSeparate),
+        explicitIncluded:getDarDocumentPaidAmount(explicitIncluded),
+        status:getDarDocumentPaymentStatus(legacyIncluded)
+      };
+    });
+    assert.equal(paymentCompatibilitySmoke.normalizedCount,2,'Legacy keyed payment objects normalize without losing entries');
+    assert.equal(paymentCompatibilitySmoke.legacyIncluded,100,'Legacy advance already present in payment logs is not double-counted');
+    assert.equal(paymentCompatibilitySmoke.legacySeparate,100,'Ambiguous legacy records use the higher confirmed amount');
+    assert.equal(paymentCompatibilitySmoke.explicitSeparate,150,'Explicitly separate advance and payments are added');
+    assert.equal(paymentCompatibilitySmoke.explicitIncluded,100,'Explicitly included advance is not added twice');
+    assert.equal(paymentCompatibilitySmoke.status,'partial','Payment status uses the shared legacy-safe amount');
+    console.log('PASS: shared payment totals, legacy keyed payment history and advance double-count protection');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     console.log('PASS: company staff table and purchase/supplier module rendering');
