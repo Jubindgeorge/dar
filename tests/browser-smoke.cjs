@@ -13,6 +13,90 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
     assert.equal(await page.locator('#tab-staff').count(),1,'Company staff page exists');
     assert.equal(await page.locator('#tab-purchases').count(),1,'Purchases page exists');
+    assert.equal(await page.locator('#staff-import-company').count(),1,'Staff import company selector exists');
+    assert.equal(await page.locator('#staff-import-file').count(),1,'Staff import file input exists');
+    assert.equal(await page.locator('#staff-import-file').isDisabled(),true,'Staff import stays disabled until an existing company is selected');
+    const staffRendererType = await page.evaluate(() => typeof window.renderStaffTable);
+    if (staffRendererType !== 'function') throw new Error('Staff module did not initialize. Browser errors: '+errors.join(' | '));
+    await page.evaluate(() => {
+      state.clients=[{id:'import-company-test',companyName:'Import Test Company'}];
+      window.renderStaffTable();
+      document.getElementById('staff-import-company').value='import-company-test';
+      updateStaffImportAvailability();
+    });
+    assert.equal(await page.locator('#staff-import-file').isDisabled(),false,'Excel/PDF file selection is enabled after choosing a company');
+    assert.equal(await page.locator('#staff-import-button').isDisabled(),true,'Import action stays disabled until a file preview is ready');
+    const mohrePreview = await page.evaluate(async () => {
+      const page1Items = [
+        'The List Of Employees',
+        'Passport Number Person Name Card Type Job Name Nationality Card Number Contract Type'
+      ];
+      const page2Items = [
+        'The List Of Employees',
+        'Passport Number Person Name Card Type Job Name Nationality Card Number Contract Type'
+      ];
+      const employeeLine = index => {
+        const passport = index===16 ? '12040746' : 'P'+String(1000000+index);
+        const name = index===0 ? 'MOHAMMAD IDRIS MOHAMMAD MUNSHI' : index===16 ? 'SUJAN BHANDARI' : 'TEST EMPLOYEE '+String(index+1).padStart(2,'0');
+        const nationality = index===16 ? 'NEPAL' : 'INDIA';
+        const card = String(153447450+index);
+        return passport+' '+name+' RENEW ELECTRONIC WORK PERMIT BUILDING LABOURER '+nationality+' '+card+' LIMITED';
+      };
+      const personNumber = index => '316010402646'+String(47+index).padStart(2,'0');
+      for (let index=0; index<16; index++) {
+        page1Items.push(employeeLine(index));
+        page1Items.push(index===0 ? '14/09/2028' : '14/09/2028');
+        if (index<15) page1Items.push(personNumber(index));
+      }
+      // The page starts with the previous page's trailing Person Labour No.
+      page2Items.push(personNumber(15));
+      for (let index=16; index<22; index++) {
+        page2Items.push(employeeLine(index));
+        page2Items.push(index===16 ? '31/08/2028' : '14/09/2028');
+        page2Items.push(personNumber(index));
+      }
+      const makeItems = rows => rows.map((str,index) => ({str,transform:[1,0,0,1,40,1000-index*20]}));
+      const pageItems = [makeItems(page1Items),makeItems(page2Items)];
+      window.pdfjsLib = {
+        GlobalWorkerOptions:{},
+        getDocument:() => ({promise:Promise.resolve({
+          numPages:2,
+          getPage:async pageNo => ({getTextContent:async () => ({items:pageItems[pageNo-1]})})
+        })})
+      };
+      await window.previewStaffImportFile({name:'mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
+      return document.getElementById('staff-import-preview').innerText;
+    });
+    assert.match(mohrePreview,/22 rows detected/,'MOHRE PDF parser detects all 22 employee rows across two pages');
+    assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first full employee name');
+    assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts the page-two employee');
+    assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
+    assert.match(mohrePreview,/31601040264663/,'MOHRE parser assigns the page-two Person Labour No. to the correct employee');
+    const pipeMohrePreview = await page.evaluate(async () => {
+      const rows = [
+        'The List Of Employees',
+        'Passport Number | Person Name | Card Type | Job Name | Nationality | Card Number | Contract Type',
+        'AB123456 | JOHN SMITH',
+        'جون سميث | NEW ELECTRONIC WORK PERMIT | Building Labourer | INDIA | 123456789 | 31/08/2028 | Limited',
+        'Scan QR to verify RP248266473AE',
+        'CD987654 | MARY JONES | PRE APPROVAL FOR WORK PERMIT | Civil Engineer | GHANA | 987654321 | 12/09/2027 | Limited',
+        'Total Number of Employees: 2',
+        'Page 1/1'
+      ];
+      window.pdfjsLib = {
+        GlobalWorkerOptions:{},
+        getDocument:()=>({promise:Promise.resolve({numPages:1,getPage:async()=>({
+          getTextContent:async()=>({items:rows.map((str,index)=>({str,transform:[1,0,0,1,10,800-index*20]}))})
+        })})})
+      };
+      await window.previewStaffImportFile({name:'pipe-mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
+      return document.getElementById('staff-import-preview').innerText;
+    });
+    assert.match(pipeMohrePreview,/2 rows detected/,'Pipe-delimited MOHRE records are grouped by passport anchors, not line count');
+    assert.match(pipeMohrePreview,/JOHN SMITH/,'Wrapped English name is retained in the first pipe record');
+    assert.match(pipeMohrePreview,/MARY JONES/,'Second passport anchor starts a separate employee');
+    assert.match(pipeMohrePreview,/123456789/,'Pipe parser extracts the labour card number');
+    assert.match(pipeMohrePreview,/31\/08\/2028|2028-08-31/,'Pipe parser extracts the labour card expiry');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
@@ -278,7 +362,8 @@ const assert = require('node:assert/strict');
       };
     });
     assert.match(moduleSmoke.staff,/ST-001/,'Staff table renders staff ID');
-    assert.match(moduleSmoke.staff,/Visa renewal/,'Staff table renders last work done');
+    assert.match(moduleSmoke.staff,/Sample Company/,'Staff table renders company');
+    assert.match(moduleSmoke.staff,/Pending/,'Staff table renders renewal status');
     assert.match(moduleSmoke.purchases,/PO-TEST-001/,'Purchase table renders reference');
     assert.match(moduleSmoke.purchases,/Test Supplier/,'Purchase table resolves supplier');
     assert.equal(moduleSmoke.total,'AED 125.00','Purchase total is calculated');

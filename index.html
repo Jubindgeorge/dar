@@ -17,15 +17,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- html2pdf.js, jsPDF and html2canvas for Document Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Firebase App (Compat) & Realtime Database SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
@@ -345,7 +346,7 @@
                     <div class="staff-page-heading">
                         <div>
                             <h2 style="color:var(--primary);font-size:1.4rem;">Company Staff Data</h2>
-                            <p class="dar-hint">Staff profiles, passport and visa expiries, renewals and linked transactions.</p>
+                            <p class="dar-hint">MOHRE staff records, Person Labour No., labour cards and passport details.</p>
                             <p id="staff-company-context" class="staff-context">All companies</p>
                         </div>
                         <div class="staff-toolbar">
@@ -353,8 +354,19 @@
                             <button type="button" class="btn btn-primary" onclick="openStaffModal()">+ Add Staff</button>
                         </div>
                     </div>
+                    <div class="staff-import-panel">
+                        <div class="staff-import-heading"><strong>Bulk Import Staff</strong><span class="dar-hint">Select an existing company first. MOHRE employee-list PDFs import Person Labour No., passport, job, card type, contract and labour-card details. Visa details are handled separately.</span></div>
+                        <div class="staff-import-controls">
+                            <label for="staff-import-company">Company *</label>
+                            <select id="staff-import-company" onchange="updateStaffImportAvailability()"><option value="">Select existing company</option></select>
+                            <input id="staff-import-file" type="file" accept=".xlsx,.xls,.pdf" disabled onchange="previewStaffImportFile(this.files && this.files[0])" aria-label="Choose staff Excel or PDF file">
+                            <button id="staff-import-button" type="button" class="btn btn-secondary" disabled onclick="commitStaffImport()">Import Staff</button>
+                        </div>
+                        <p id="staff-import-help" class="dar-hint">Choose a company to enable Excel (.xlsx/.xls) or table-based PDF import.</p>
+                        <div id="staff-import-preview" class="staff-import-preview" aria-live="polite" hidden></div>
+                    </div>
                     <div class="staff-filter-row">
-                        <input id="staff-search" type="search" placeholder="Search staff ID, name, company or passport..." oninput="renderStaffTable()" aria-label="Search staff">
+                        <input id="staff-search" type="search" placeholder="Search staff ID, Person Labour No., name, company, labour card or passport..." oninput="renderStaffTable()" aria-label="Search staff">
                         <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
                         <label class="v2-filter-date">From <input type="date" id="staff-date-from" onchange="renderStaffTable()" aria-label="Staff joined from date"></label><label class="v2-filter-date">To <input type="date" id="staff-date-to" onchange="renderStaffTable()" aria-label="Staff joined through date"></label><select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
                             <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
@@ -362,7 +374,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="data-table staff-table">
-                            <thead><tr><th>Staff ID</th><th>Name</th><th>Company</th><th>Last Work Done</th><th>Joining Date</th><th>Visa Expiry</th><th>Passport Expiry</th><th>Renewal Status</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Staff ID</th><th>Name / Person Labour No.</th><th>Company</th><th>Nationality</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th><th>Renewal Status</th><th>Actions</th></tr></thead>
                             <tbody id="staff-table-body"><tr><td colspan="9">Loading staff records…</td></tr></tbody>
                         </table>
                     </div>
@@ -752,14 +764,17 @@
             <input id="sf-record-id" type="hidden">
             <input id="sf-linked-invoice" type="hidden">
             <div class="staff-form-grid">
-                <div class="form-group"><label for="sf-staff-code">Staff ID *</label><input id="sf-staff-code" type="text" required placeholder="e.g. DAS-STAFF-001"></div>
+                <div class="form-group"><label for="sf-staff-code">Staff ID (Auto-generated)</label><input id="sf-staff-code" type="text" readonly required placeholder="Generated automatically"></div>
                 <div class="form-group"><label for="sf-full-name">Full Name *</label><input id="sf-full-name" type="text" required></div>
+                <div class="form-group"><label for="sf-person-number">Person Labour No.</label><input id="sf-person-number" type="text" inputmode="numeric" autocomplete="off"></div>
                 <div class="form-group"><label for="sf-company">Company *</label><select id="sf-company" required onchange="refreshStaffCompanyClients()"></select></div>
                 <div class="form-group"><label for="sf-nationality">Nationality</label><input id="sf-nationality" type="text"></div>
                 <div class="form-group"><label for="sf-designation">Designation / Position</label><input id="sf-designation" type="text"></div>
                 <div class="form-group"><label for="sf-last-work">Last Work Done</label><input id="sf-last-work" type="text"></div>
                 <div class="form-group"><label for="sf-passport">Passport Number</label><input id="sf-passport" type="text"></div>
                 <div class="form-group"><label for="sf-passport-expiry">Passport Expiry</label><input id="sf-passport-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-labour-card-number">Labour Card Number</label><input id="sf-labour-card-number" type="text"></div>
+                <div class="form-group"><label for="sf-labour-card-expiry">Labour Card Expiry</label><input id="sf-labour-card-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-number">Visa Number</label><input id="sf-visa-number" type="text"></div>
                 <div class="form-group"><label for="sf-visa-expiry">Visa Expiry</label><input id="sf-visa-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-status">Visa Status</label><select id="sf-visa-status"><option value="">Select status</option><option>Valid</option><option>Expired</option><option>Under Renewal</option><option>Cancelled</option><option>Pending</option></select></div>
