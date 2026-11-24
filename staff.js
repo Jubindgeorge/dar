@@ -138,6 +138,9 @@
         companySelect.innerHTML = '<option value="">Select company</option>' + (state.clients || []).map(c => '<option value="'+html(c.id)+'">'+html(c.companyName)+'</option>').join('');
         const companyId = record.companyId || defaults.companyId || companyIdByName(record.companyName || defaults.companyName || '');
         companySelect.value = companyId;
+        companySelect.onchange = () => {
+            if (!recordId) byId('sf-staff-code').value = nextStaffCode(companySelect.value);
+        };
         byId('sf-staff-code').value = record.staffCode || record.staffId || defaults.staffCode || nextStaffCode(companyId);
         byId('sf-staff-code').readOnly = true;
         byId('sf-full-name').value = record.fullName || defaults.fullName || '';
