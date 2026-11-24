@@ -406,11 +406,12 @@
                 const englishName = nameFields.find(value=>/[A-Za-z]/.test(value) && !knownNationalities.has(value.toUpperCase()) && !/^\\d+$/.test(value)) || '';
                 const arabicName = nameFields.find(value=>/[\\u0600-\\u06FF]/.test(value)) || '';
                 const jobFields = fields.slice(cardTypeIndex >= 0 ? cardTypeIndex+1 : 1, nationalityIndex >= 0 ? nationalityIndex : cardIndex);
-                const designation = pipeLatin(jobFields.find(value=>/[A-Za-z]/.test(value) && !/ELECTRONIC|WORK PERMIT|PRE APPROVAL|RENEW/i.test(value)) || '');
+                const designationRaw = jobFields.find(value=>/[A-Za-z\\u0600-\\u06FF]/.test(value) && !/ELECTRONIC|WORK PERMIT|PRE APPROVAL|RENEW/i.test(value)) || '';
+                const designation = pipeLatin(designationRaw) || designationRaw;
                 const personNumber = fields.find(value=>/^\\d{12,16}$/.test(value)) || '';
                 pipeRecords.push({
                     staffCode:'', personNumber, fullName:pipeLatin(englishName), fullNameArabic:arabicName,
-                    nationality, designation, cardType:cardTypeLabel, contractType:contract,
+                    nationality, designation, designationArabic:jobFields.find(value=>/[\\u0600-\\u06FF]/.test(value)) || '', cardType:cardTypeLabel, contractType:contract,
                     passportNumber, labourCardNumber:fields[cardIndex],
                     labourCardExpiry:normalizeStaffImportDate(fields[expiryIndex]),
                     visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
@@ -726,7 +727,7 @@
                 id, staffCode:generatedStaffCode, staffId:generatedStaffCode, fullName:row.fullName,
                 companyId:company.id, companyName:company.companyName,
                 personNumber:row.personNumber||'', fullNameArabic:row.fullNameArabic||'', nationality:row.nationality||'', designation:row.designation||'',
-                cardType:row.cardType||'', contractType:row.contractType||'',
+                cardType:row.cardType||'', contractType:row.contractType||'', designationArabic:row.designationArabic||'',
                 labourCardNumber:row.labourCardNumber||'', labourCardExpiry:row.labourCardExpiry||'',
                 lastWorkDone:row.lastWorkDone||'', passportNumber:row.passportNumber||'',
                 passportExpiry:row.passportExpiry||'', visaNumber:row.visaNumber||'',
