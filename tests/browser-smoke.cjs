@@ -470,6 +470,19 @@ const assert = require('node:assert/strict');
     assert.doesNotMatch(legacyLedgerSmoke.rows,/Advance Payment/,'Accounts Ledger does not display a duplicate advance row');
     console.log('PASS: shared payment totals, legacy keyed payment history and advance double-count protection');
     console.log('PASS: Accounts Ledger renders legacy keyed payment history without duplicate advance rows');
+    const serviceCatalogSafety = await page.evaluate(() => {
+      state.services=[{id:'<img src=x onerror=window.__serviceIdInjected=true>',title:'<img src=x onerror=window.__serviceTitleInjected=true>',items:[]}];
+      renderServicesCatalog();
+      return {
+        imageCount:document.querySelectorAll('#services-cards-wrapper img').length,
+        titleText:document.querySelector('#services-cards-wrapper .service-card h4 span')?.textContent,
+        actionCount:document.querySelectorAll('#services-cards-wrapper [data-service-action]').length
+      };
+    });
+    assert.equal(serviceCatalogSafety.imageCount,0,'Service catalog treats stored titles and IDs as text, not HTML');
+    assert.match(serviceCatalogSafety.titleText,/<img/,'Service catalog preserves literal title text safely');
+    assert.equal(serviceCatalogSafety.actionCount,2,'Service catalog edit/delete actions render with safe data attributes');
+    console.log('PASS: service catalog safe rendering and action wiring');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     console.log('PASS: company staff table and purchase/supplier module rendering');
