@@ -320,7 +320,7 @@
                                     <th>Reference ID</th>
                                     <th>Record Date</th>
                                     <th>Specific Work Details</th>
-                                    <th>Visa Expiry</th>
+                                    <th>Labour Card Expiry</th>
                                     <th>Total Amount</th>
                                     <th style="text-align: center;">Actions</th>
                                 </tr>
@@ -764,7 +764,7 @@
             <input id="sf-record-id" type="hidden">
             <input id="sf-linked-invoice" type="hidden">
             <div class="staff-form-grid">
-                <div class="form-group"><label for="sf-staff-code">Staff ID *</label><input id="sf-staff-code" type="text" required placeholder="e.g. DAS-STAFF-001"></div>
+                <div class="form-group"><label for="sf-staff-code">Staff ID (Auto-generated)</label><input id="sf-staff-code" type="text" readonly required placeholder="Generated automatically"></div>
                 <div class="form-group"><label for="sf-full-name">Full Name *</label><input id="sf-full-name" type="text" required></div>
                 <div class="form-group"><label for="sf-company">Company *</label><select id="sf-company" required onchange="refreshStaffCompanyClients()"></select></div>
                 <div class="form-group"><label for="sf-nationality">Nationality</label><input id="sf-nationality" type="text"></div>
@@ -772,6 +772,8 @@
                 <div class="form-group"><label for="sf-last-work">Last Work Done</label><input id="sf-last-work" type="text"></div>
                 <div class="form-group"><label for="sf-passport">Passport Number</label><input id="sf-passport" type="text"></div>
                 <div class="form-group"><label for="sf-passport-expiry">Passport Expiry</label><input id="sf-passport-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-labour-card-number">Labour Card Number</label><input id="sf-labour-card-number" type="text"></div>
+                <div class="form-group"><label for="sf-labour-card-expiry">Labour Card Expiry</label><input id="sf-labour-card-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-number">Visa Number</label><input id="sf-visa-number" type="text"></div>
                 <div class="form-group"><label for="sf-visa-expiry">Visa Expiry</label><input id="sf-visa-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-status">Visa Status</label><select id="sf-visa-status"><option value="">Select status</option><option>Valid</option><option>Expired</option><option>Under Renewal</option><option>Cancelled</option><option>Pending</option></select></div>
