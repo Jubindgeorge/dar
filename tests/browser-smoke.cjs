@@ -13,6 +13,17 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
     assert.equal(await page.locator('#tab-staff').count(),1,'Company staff page exists');
     assert.equal(await page.locator('#tab-purchases').count(),1,'Purchases page exists');
+    assert.equal(await page.locator('#staff-import-company').count(),1,'Staff import company selector exists');
+    assert.equal(await page.locator('#staff-import-file').count(),1,'Staff import file input exists');
+    assert.equal(await page.locator('#staff-import-file').isDisabled(),true,'Staff import stays disabled until an existing company is selected');
+    await page.evaluate(() => {
+      state.clients=[{id:'import-company-test',companyName:'Import Test Company'}];
+      renderStaffTable();
+      document.getElementById('staff-import-company').value='import-company-test';
+      updateStaffImportAvailability();
+    });
+    assert.equal(await page.locator('#staff-import-file').isDisabled(),false,'Excel/PDF file selection is enabled after choosing a company');
+    assert.equal(await page.locator('#staff-import-button').isDisabled(),true,'Import action stays disabled until a file preview is ready');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
