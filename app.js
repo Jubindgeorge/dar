@@ -188,7 +188,8 @@ function initializeFirebaseLogin() {
             return;
         }
         try {
-            await user.getIdToken(true);
+            // Firebase Auth has already restored/authenticated this user. A forced token
+            // refresh is unnecessary for the local UID check and can stall the approval flow.
             if (version !== darAuthVersion) return;
             if (DAR_ALLOWED_UIDS.has(user.uid)) {
                 setDarAccess(true);
