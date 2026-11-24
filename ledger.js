@@ -430,7 +430,8 @@ window.deleteMonthlyExpense = async function(index) {
             if (!db) throw new Error('Firebase is not connected.');
             await db.ref('monthlyExpenses/' + removed.id).remove();
         }
-        state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
+        if (removed.id) state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
+        else state.monthlyExpenses.splice(index, 1);
         renderMonthlyExpensesTable();
         renderFullLedgerTableBody();
     } catch (error) {
