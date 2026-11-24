@@ -342,6 +342,8 @@ window.savePaymentLogData = async function() {
             logs.push(payment);
             current.paymentLogs = logs;
             current.advanceIncludedInPaymentLogs = advanceIncluded;
+            current.updatedAt = new Date().toISOString();
+            current.updatedBy = firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown';
             return current;
         });
         if (!result.committed) { alert(validationError || 'The invoice changed while saving. Refresh and retry.'); return; }
@@ -368,6 +370,8 @@ window.deletePaymentLog = async function(refCode, index) {
             if (currentIndex < 0) return;
             logs.splice(currentIndex, 1);
             current.paymentLogs = logs;
+            current.updatedAt = new Date().toISOString();
+            current.updatedBy = firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown';
             return current;
         });
         if (!result.committed) { alert('That payment entry changed or was removed by another user. Refresh the invoice.'); return; }
@@ -488,6 +492,8 @@ window.promptEditAdvance = async function() {
             }
             current.advanceAmount = value;
             current.advanceAmt = value;
+            current.updatedAt = new Date().toISOString();
+            current.updatedBy = firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown';
             return current;
         });
         if (!result.committed) { alert(validationError || 'The invoice changed while saving. Refresh and retry.'); return; }
