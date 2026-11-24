@@ -441,15 +441,17 @@
             const mohreLatin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
             const mohreCardAnchors = [];
             mohreTokens.forEach((token,index)=>{
-                if (/^\d{8,10}$/.test(token) && mohreDate.test(mohreTokens[index+1] || '')) mohreCardAnchors.push(index);
+                if (/^\d{8,10}$/.test(token) && (mohreDate.test(mohreTokens[index+1] || '') || (/^(LIMITED|UNLIMITED)$/i.test(mohreTokens[index+1] || '') && mohreDate.test(mohreTokens[index+2] || '')))) mohreCardAnchors.push(index);
             });
             const mohreRecords = [];
             let previousExpiryIndex = -1;
             mohreCardAnchors.forEach(cardIndex=>{
                 const segmentStart = previousExpiryIndex + 1;
                 const segment = mohreTokens.slice(segmentStart,cardIndex);
-                const cardExpiry = mohreTokens[cardIndex+1];
-                previousExpiryIndex = cardIndex+1;
+                const expiryOffset = mohreDate.test(mohreTokens[cardIndex+1] || '') ? cardIndex+1 : cardIndex+2;
+                const cardExpiry = mohreTokens[expiryOffset];
+                const contractType = /^(LIMITED|UNLIMITED)$/i.test(mohreTokens[cardIndex+1] || '') ? mohreTokens[cardIndex+1] : '';
+                previousExpiryIndex = expiryOffset;
                 if (!segment.length) return;
                 const typeOffset = segment.findIndex(token=>mohreCardType.test(token));
                 if (typeOffset < 0) return;
@@ -514,7 +516,7 @@
                     labourCardExpiry:normalizeStaffImportDate(cardExpiry),
                     // This report is not the separate visa-details import.
                     cardType:mohreLatin(segment.slice(typeOffset,permitEnd+1).join(' ')),
-                    contractType:segment.find(token=>/^(LIMITED|UNLIMITED)$/i.test(token)) || '',
+                    contractType,
                     visaNumber:'', visaExpiry:'', visaStatus:'', renewalStatus:'Pending'
                 });
                 if (carryoverPersonNumber && mohreRecords.length > 1) {
@@ -522,7 +524,15 @@
                     if (!previousRecord.personNumber) previousRecord.personNumber = carryoverPersonNumber;
                 }
             });
-            if (mohreRecords.length) return mohreRecords;
+            if (mohreRecords.length) {
+                // The final employee's Person Labour No. appears after their expiry and has no following row to trigger carry-back.
+                const lastCardIndex = mohreCardAnchors[mohreCardAnchors.length-1];
+                const lastExpiryOffset = mohreDate.test(mohreTokens[lastCardIndex+1] || '') ? lastCardIndex+1 : lastCardIndex+2;
+                const trailingPersonNumber = mohreTokens.slice(lastExpiryOffset+1).find(token=>/^\d{12,16}$/.test(token)) || '';
+                const lastRecord = mohreRecords[mohreRecords.length-1];
+                if (trailingPersonNumber && !lastRecord.personNumber) lastRecord.personNumber = trailingPersonNumber;
+                return mohreRecords;
+            }
             // First parse each visual PDF row independently. The previous parser flattened
             // every page into one token stream, so wrapped headers/rows and numeric passports
             // could shift the boundaries and make every employee disappear.
