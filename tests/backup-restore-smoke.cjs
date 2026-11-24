@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
   const page=await browser.newPage();
   await page.goto('http://127.0.0.1:8765/index.html',{waitUntil:'domcontentloaded'});
   const result=await page.evaluate(async()=>{
-   const storage={clients:{'test-client':{name:'Test Client'}},documents:{'test-doc':{total:250}},services:{'test-service':{name:'Repair'}},monthlyExpenses:{'test-expense':{amount:20}},deletedRecords:{},activityLog:{}};
+   const storage={clients:{'test-client':{name:'Test Client'}},documents:{'test-doc':{total:250}},services:{'test-service':{name:'Repair'}},monthlyExpenses:{'test-expense':{amount:20}},staff:{'test-staff':{fullName:'Test Staff'}},companyClients:{'test-company-client':{name:'Account Holder'}},suppliers:{'test-supplier':{name:'Supplier'}},purchases:{'test-purchase':{amount:75}},deletedRecords:{},activityLog:{}};
    let counter=0, exported=null;const messages=[];
    const original={ref:db.ref,alert:window.alert,createObjectURL:URL.createObjectURL,click:HTMLAnchorElement.prototype.click,auth:firebase.auth};
    firebase.auth=()=>({currentUser:{uid:'test-admin',emailVerified:true}});
@@ -25,13 +25,18 @@ const assert = require('node:assert/strict');
     const trashIds=Object.keys(storage.deletedRecords);
     const auditedDelete=Object.values(storage.activityLog).some(x=>x.action==='delete');
     await window.restoreDarRecord(trashIds[0]);
-    return {exported:!!exported,format:exported?.payload.format,collections:Object.keys(exported?.payload.data||{}).sort(),deleted,trashCount:trashIds.length,auditedDelete,restored:JSON.stringify(storage.documents['test-doc'])===before,trashEmpty:Object.keys(storage.deletedRecords).length===0,auditedRestore:Object.values(storage.activityLog).some(x=>x.action==='restore'),messages};
+    const beforeStaff=JSON.stringify(storage.staff['test-staff']);
+    await window.safeDeleteDarRecord('staff','test-staff');
+    const staffDeleted=storage.staff['test-staff']===undefined;
+    const staffTrashId=Object.entries(storage.deletedRecords).find(([,record])=>record.collection==='staff')?.[0];
+    await window.restoreDarRecord(staffTrashId);
+    return {exported:!!exported,format:exported?.payload.format,collections:Object.keys(exported?.payload.data||{}).sort(),deleted,trashCount:trashIds.length,auditedDelete,restored:JSON.stringify(storage.documents['test-doc'])===before,staffDeleted,staffRestored:JSON.stringify(storage.staff['test-staff'])===beforeStaff,trashEmpty:Object.keys(storage.deletedRecords).length===0,auditedRestore:Object.values(storage.activityLog).some(x=>x.action==='restore'),messages};
    } finally {db.ref=original.ref;window.alert=original.alert;URL.createObjectURL=original.createObjectURL;HTMLAnchorElement.prototype.click=original.click;firebase.auth=original.auth}
   });
   assert.equal(result.exported,true);
   assert.equal(result.format,'dar-al-shams-backup-v1');
-  assert.deepEqual(result.collections,['clients','documents','monthlyExpenses','services']);
-  for(const k of ['deleted','auditedDelete','restored','trashEmpty','auditedRestore'])assert.equal(result[k],true,k);
+  assert.deepEqual(result.collections,['clients','companyClients','documents','monthlyExpenses','purchases','services','staff','suppliers']);
+  for(const k of ['deleted','auditedDelete','restored','staffDeleted','staffRestored','trashEmpty','auditedRestore'])assert.equal(result[k],true,k);
   console.log('PASS: backup export, atomic soft-delete, audit, restore (isolated browser database mock)');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
