@@ -25,8 +25,10 @@
     function companyClientsFor(name) {
         return (state.companyClients || []).filter(client => norm(client.companyName) === norm(name));
     }
-    function nextStaffCode(reserved) {
-        const used = new Set([...(state.staff || []).map(item => clean(item.staffCode || item.staffId)), ...(reserved || [])].map(norm));
+    function nextStaffCode(companyId, reserved) {
+        const company = companyById(companyId);
+        const companyName = company?.companyName || '';
+        const used = new Set([...(state.staff || []).filter(item => item.companyId === companyId || (companyName && norm(item.companyName) === norm(companyName))).map(item => clean(item.staffCode || item.staffId)), ...(reserved || [])].map(norm));
         let sequence = 1;
         let candidate = '';
         do {
@@ -136,7 +138,7 @@
         companySelect.innerHTML = '<option value="">Select company</option>' + (state.clients || []).map(c => '<option value="'+html(c.id)+'">'+html(c.companyName)+'</option>').join('');
         const companyId = record.companyId || defaults.companyId || companyIdByName(record.companyName || defaults.companyName || '');
         companySelect.value = companyId;
-        byId('sf-staff-code').value = record.staffCode || record.staffId || defaults.staffCode || nextStaffCode();
+        byId('sf-staff-code').value = record.staffCode || record.staffId || defaults.staffCode || nextStaffCode(companyId);
         byId('sf-staff-code').readOnly = true;
         byId('sf-full-name').value = record.fullName || defaults.fullName || '';
         byId('sf-person-number').value = record.personNumber || '';
@@ -165,7 +167,9 @@
         const id = clean(byId('sf-record-id').value) || db.ref('staff').push().key;
         const companyId = clean(byId('sf-company').value);
         const companyName = companyNameById(companyId);
-        const staffCode = clean(byId('sf-staff-code').value) || nextStaffCode();
+        const staffCode = clean(byId('sf-staff-code').value) || nextStaffCode(companyId);
+        const duplicateCode = (state.staff || []).some(item => item.id !== id && (item.companyId === companyId || norm(item.companyName) === norm(companyName)) && norm(item.staffCode || item.staffId) === norm(staffCode));
+        if (duplicateCode) { showCustomModal('Duplicate Staff ID','This Staff ID is already used by another employee in the selected company. Please use a unique company Staff ID.'); return; }
         const fullName = clean(byId('sf-full-name').value);
         if (!staffCode || !fullName || !companyId || !companyName) {
             showCustomModal('Required fields','Staff ID, Full Name and Company are required.'); return;
@@ -600,7 +604,9 @@
                 changed.push({id:item.existing.id,record:{...item.existing,...patch}});return;
             }
             const id=db.ref('staff').push().key;
-            const staffCode=clean(item.row.staffCode)||nextStaffCode(created.map(record=>record.staffCode));
+            const requestedCode=clean(item.row.staffCode);
+            const codeAlreadyUsed=code=>companyStaff.some(person=>norm(person.staffCode||person.staffId)===norm(code))||created.some(person=>norm(person.staffCode||person.staffId)===norm(code));
+            const staffCode=requestedCode&&!codeAlreadyUsed(requestedCode)?requestedCode:nextStaffCode(company.id,created.map(record=>record.staffCode));
             const record={...item.row,id,staffCode,staffId:staffCode,companyId:company.id,companyName:company.companyName,
                 createdDate:window.darDates?window.darDates.todayISO():timestamp.slice(0,10),updatedAt:timestamp,updatedBy:actor};
             const copy={...record};delete copy.id;updates['staff/'+id]=copy;created.push(record);
