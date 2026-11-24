@@ -16,6 +16,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#staff-import-company').count(),1,'Staff import company selector exists');
     assert.equal(await page.locator('#staff-import-file').count(),1,'Staff import file input exists');
     assert.equal(await page.locator('#staff-import-file').isDisabled(),true,'Staff import stays disabled until an existing company is selected');
+    if (typeof window.renderStaffTable !== 'function') throw new Error('Staff module did not initialize. Browser errors: '+errors.join(' | '));
     await page.evaluate(() => {
       state.clients=[{id:'import-company-test',companyName:'Import Test Company'}];
       window.renderStaffTable();
