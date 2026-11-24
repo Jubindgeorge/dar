@@ -359,13 +359,13 @@
             // PDF text lines, and the Person Number may appear before OR after the
             // passport/name block. Repeated page headers are skipped using the last
             // "Passport Number" heading before each card anchor.
-            const mohreTokens = allLines.join(' ').split(/\\s+/).map(value=>clean(value)).filter(Boolean);
-            const mohreDate = /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/;
+            const mohreTokens = allLines.join(' ').split(/\s+/).map(value=>clean(value)).filter(Boolean);
+            const mohreDate = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
             const mohreCardType = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
-            const mohreLatin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
+            const mohreLatin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
             const mohreCardAnchors = [];
             mohreTokens.forEach((token,index)=>{
-                if (/^\\d{8,10}$/.test(token) && mohreDate.test(mohreTokens[index+1] || '')) mohreCardAnchors.push(index);
+                if (/^\d{8,10}$/.test(token) && mohreDate.test(mohreTokens[index+1] || '')) mohreCardAnchors.push(index);
             });
             const mohreRecords = [];
             let previousExpiryIndex = -1;
@@ -387,14 +387,14 @@
                 }
                 const searchStart = passportHeading >= 0 ? passportHeading+1 : 0;
                 const personOffsets = [];
-                segment.forEach((token,index)=>{ if (/^\\d{12,16}$/.test(token)) personOffsets.push(index); });
+                segment.forEach((token,index)=>{ if (/^\d{12,16}$/.test(token)) personOffsets.push(index); });
                 const personOffset = personOffsets.length ? personOffsets[0] : -1;
                 const passportCandidates = [];
                 for (let i=searchStart;i<typeOffset;i++) {
                     const token=segment[i];
-                    if (/^RP\\d+AE$/i.test(token)) continue;
-                    if (/^[A-Z0-9]{6,12}$/i.test(token) && ((/[A-Z]/i.test(token) && /\\d/.test(token)) || /^\\d{6,12}$/.test(token))) {
-                        if (!/^\\d{12,16}$/.test(token)) passportCandidates.push(i);
+                    if (/^RP\d+AE$/i.test(token)) continue;
+                    if (/^[A-Z0-9]{6,12}$/i.test(token) && ((/[A-Z]/i.test(token) && /\d/.test(token)) || /^\d{6,12}$/.test(token))) {
+                        if (!/^\d{12,16}$/.test(token)) passportCandidates.push(i);
                     }
                 }
                 if (!passportCandidates.length) return;
@@ -408,7 +408,7 @@
                 const nameEnd = personOffset > passportOffset ? personOffset : typeOffset;
                 const fullName = mohreLatin(segment.slice(passportOffset+1,nameEnd)
                     .filter(token=>!/^(ELECTRONIC|WORK|PERMIT|APPROVAL)$/i.test(token))
-                    .filter(token=>!/^\\d{12,16}$/.test(token)).join(' '));
+                    .filter(token=>!/^\d{12,16}$/.test(token)).join(' '));
                 if (!fullName || !/[A-Za-z]/.test(fullName)) return;
                 // Card type descriptions end at the word PERMIT; designation follows.
                 let permitEnd = typeOffset;
@@ -417,7 +417,7 @@
                 }
                 const nationalityCandidates = [];
                 for (let i=permitEnd+1;i<segment.length;i++) {
-                    if (/[A-Za-z]/.test(segment[i]) && !/^\\d+$/.test(segment[i])) nationalityCandidates.push(i);
+                    if (/[A-Za-z]/.test(segment[i]) && !/^\d+$/.test(segment[i])) nationalityCandidates.push(i);
                 }
                 if (!nationalityCandidates.length) return;
                 let nationalityStart = nationalityCandidates[nationalityCandidates.length-1];
