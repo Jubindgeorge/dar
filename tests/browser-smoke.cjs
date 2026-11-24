@@ -56,6 +56,31 @@ const assert = require('node:assert/strict');
     assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts the page-two employee');
     assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
     assert.match(mohrePreview,/31601040264663/,'MOHRE parser keeps the person number separate from the numeric passport');
+    const pipeMohrePreview = await page.evaluate(async () => {
+      const rows = [
+        'The List Of Employees',
+        'Passport Number | Person Name | Card Type | Job Name | Nationality | Card Number | Contract Type',
+        'AB123456 | JOHN SMITH',
+        'جون سميث | NEW ELECTRONIC WORK PERMIT | Building Labourer | INDIA | 123456789 | 31/08/2028 | Limited',
+        'Scan QR to verify RP248266473AE',
+        'CD987654 | MARY JONES | PRE APPROVAL FOR WORK PERMIT | Civil Engineer | GHANA | 987654321 | 12/09/2027 | Limited',
+        'Total Number of Employees: 2',
+        'Page 1/1'
+      ];
+      window.pdfjsLib = {
+        GlobalWorkerOptions:{},
+        getDocument:()=>({promise:Promise.resolve({numPages:1,getPage:async()=>({
+          getTextContent:async()=>({items:rows.map((str,index)=>({str,transform:[1,0,0,1,10,800-index*20]}))})
+        })})})
+      };
+      await window.previewStaffImportFile({name:'pipe-mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
+      return document.getElementById('staff-import-preview').innerText;
+    });
+    assert.match(pipeMohrePreview,/2 rows detected/,'Pipe-delimited MOHRE records are grouped by passport anchors, not line count');
+    assert.match(pipeMohrePreview,/JOHN SMITH/,'Wrapped English name is retained in the first pipe record');
+    assert.match(pipeMohrePreview,/MARY JONES/,'Second passport anchor starts a separate employee');
+    assert.match(pipeMohrePreview,/123456789/,'Pipe parser extracts the labour card number');
+    assert.match(pipeMohrePreview,/31\\/08\\/2028|2028-08-31/,'Pipe parser extracts the labour card expiry');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
