@@ -29,25 +29,33 @@ const assert = require('node:assert/strict');
     const mohrePreview = await page.evaluate(async () => {
       const rows = [
         'The List Of Employees',
-        'Passport Number Person Number Card Type Job Name',
-        '10010029093353 W3410928 MOHAMMAD IDRIS MOHAMMAD MUNSHI NEW WORK PERMIT LABOURER INDIA 142607518 14/09/2028',
-        '20010038231120 12040746 SUJAN BHANDARI NEW WORK PERMIT LABOURER NEPAL 153447450 31/08/2028'
+        'Passport Number Person Name Card Type Job Name Nationality Card Number Contract Type'
       ];
+      for (let index=0; index<22; index++) {
+        const passport = index===16 ? '12040746' : 'P'+String(1000000+index);
+        const person = String(31601040264647+index);
+        const name = index===0 ? 'MOHAMMAD IDRIS MOHAMMAD MUNSHI' : index===16 ? 'SUJAN BHANDARI' : 'TEST EMPLOYEE '+String(index+1).padStart(2,'0');
+        const nationality = index===16 ? 'NEPAL' : 'INDIA';
+        const card = String(153447450+index);
+        const expiry = index===16 ? '31/08/2028' : '14/09/2028';
+        rows.push(passport+' '+name+' '+person+' NEW ELECTRONIC WORK PERMIT BUILDING LABOURER '+nationality+' '+card+' '+expiry+' LIMITED');
+      }
       const items = rows.map((str,index) => ({str,transform:[1,0,0,1,40,1000-index*20]}));
       window.pdfjsLib = {
         GlobalWorkerOptions:{},
         getDocument:() => ({promise:Promise.resolve({
-          numPages:1,
-          getPage:async () => ({getTextContent:async () => ({items})})
+          numPages:2,
+          getPage:async pageNo => ({getTextContent:async () => ({items:pageNo===1?items.slice(0,18):items.slice(18)})})
         })})
       };
       await window.previewStaffImportFile({name:'mohre-test.pdf',arrayBuffer:async()=>new ArrayBuffer(0)});
       return document.getElementById('staff-import-preview').innerText;
     });
-    assert.match(mohrePreview,/2 rows detected/,'MOHRE PDF parser detects employee records');
-    assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts full employee name');
-    assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts a second employee');
+    assert.match(mohrePreview,/22 rows detected/,'MOHRE PDF parser detects all 22 employee rows across two pages');
+    assert.match(mohrePreview,/MOHAMMAD IDRIS MOHAMMAD MUNSHI/,'MOHRE parser extracts the first full employee name');
+    assert.match(mohrePreview,/SUJAN BHANDARI/,'MOHRE parser extracts the page-two employee');
     assert.match(mohrePreview,/12040746/,'MOHRE parser preserves numeric-only passport numbers');
+    assert.match(mohrePreview,/31601040264663/,'MOHRE parser keeps the person number separate from the numeric passport');
     assert.equal(await page.evaluate(() => normalizeStudioCompanyName('Sample   Company')), 'sample company', 'Company matching normalizes repeated whitespace');
     assert.equal(await page.locator('[data-group-toggle]').count(),8,'Sidebar has grouped navigation controls including Website Info');
     await page.evaluate(() => {
