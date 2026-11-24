@@ -547,8 +547,7 @@
                 const expiry = tokens[cardIndex+1];
                 const beforeCard = tokens.slice(0,cardIndex);
                 const personIndex = beforeCard.findIndex(token=>/^\d{12,16}$/.test(token));
-                const passportStart = personIndex >= 0 ? personIndex+1 : 0;
-                const passportIndex = beforeCard.findIndex((token,index)=>index>=passportStart &&
+                const passportIndex = beforeCard.findIndex((token,index)=>
                     (/^[A-Z0-9]{6,12}$/i.test(token) && (/[A-Z]/i.test(token) && /\d/.test(token) || /^\d{6,12}$/.test(token))) &&
                     !/^\d{12,16}$/.test(token));
                 if (passportIndex < 0 || passportIndex >= cardIndex) return;
