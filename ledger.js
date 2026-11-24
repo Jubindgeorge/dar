@@ -86,10 +86,9 @@ window.renderAccountsLedgerDetail = function(refCode) {
 
     doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
     doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-    doc.paymentLogs = doc.paymentLogs || [];
-
-    const logsTotal = doc.paymentLogs.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    const totalPaid = doc.advanceAmount + logsTotal;
+    const paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    const logsTotal = paymentLogs.reduce((sum, p) => sum + Math.max(0, Number(p.amount) || 0), 0);
+    const totalPaid = window.getDarDocumentPaidAmount(doc);
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
 
     const invoiceDate = doc.transactionDate || doc.createdDate || doc.date || '';
@@ -131,7 +130,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
             });
         }
         
-        doc.paymentLogs.forEach((log, originalIndex) => {
+        paymentLogs.forEach((log, originalIndex) => {
             allPayments.push({
                 date: log.date || '-',
                 amount: Number(log.amount || 0),
@@ -204,9 +203,7 @@ window.renderFullLedgerTableBody = function() {
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
         const totalAmt = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-        const advance = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
-        const logsTotal = (doc.paymentLogs || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
-        const totalPaid = advance + logsTotal;
+        const totalPaid = window.getDarDocumentPaidAmount(doc);
         const balance = Math.max(0, totalAmt - totalPaid);
         const profit = totalAmt - govtFee - expenseShare;
         const clientLabel = escapeHtml(doc.clientName || doc.companyName || '-');
@@ -317,13 +314,20 @@ window.savePaymentLogData = function() {
         return;
     }
     const invoiceTotal = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
-    const alreadyPaid = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) + (doc.paymentLogs || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const alreadyPaid = window.getDarDocumentPaidAmount(doc);
     if (amount > Math.max(0, invoiceTotal - alreadyPaid)) {
         alert('This payment is greater than the remaining balance. Please check the amount.');
         return;
     }
 
-    doc.paymentLogs = doc.paymentLogs || [];
+    doc.paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    // Resolve ambiguous legacy history once a new payment is explicitly recorded:
+    // if old log total already covers the advance, treat the advance as included.
+    if (doc.advanceIncludedInPaymentLogs == null) {
+        const oldLogged = doc.paymentLogs.reduce((sum, entry) => sum + Math.max(0, Number(entry.amount) || 0), 0);
+        const oldAdvance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
+        doc.advanceIncludedInPaymentLogs = oldLogged >= oldAdvance;
+    }
     doc.paymentLogs.push({ date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
 
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
@@ -334,8 +338,10 @@ window.savePaymentLogData = function() {
 
 window.deletePaymentLog = function(refCode, index) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
-    if (!doc || !doc.paymentLogs) return;
+    if (!doc) return;
 
+    doc.paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    if (!Number.isInteger(index) || index < 0 || index >= doc.paymentLogs.length) return;
     doc.paymentLogs.splice(index, 1);
     if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
     renderAccountsLedgerDetail(refCode);
@@ -432,8 +438,8 @@ window.promptEditAdvance = function() {
     if (newAdvance !== null && newAdvance.trim() !== '' && Number.isFinite(Number(newAdvance))) {
         if (Number(newAdvance) < 0) { alert('Advance payment cannot be negative.'); return; }
         const total = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
-        const logged = (doc.paymentLogs || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
-        if (Number(newAdvance) + logged > total) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
+        const proposed = {...doc, advanceAmount:Number(newAdvance)};
+        if (window.getDarDocumentPaidAmount(proposed) > total) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
         doc.advanceAmount = Number(newAdvance);
         doc.advanceAmt = Number(newAdvance);
         if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
