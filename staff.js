@@ -357,8 +357,15 @@
             const cardTypePattern = /^(NEW|RENEW|RENEWAL|PRE|REPLACEMENT)$/i;
             const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
             const isPassport = value => /^[A-Z0-9]{6,12}$/i.test(value) && /[A-Z]/i.test(value) && /\d/.test(value);
+            const isNumericPassport = (value,index) => /^\d{6,12}$/.test(value) &&
+                /^\d{12,16}$/.test(flat[index-1] || '');
             const passportIndexes = [];
-            flat.forEach((token,index)=>{ if (isPassport(token)) passportIndexes.push(index); });
+            flat.forEach((token,index)=>{
+                // Some MOHRE rows use numeric-only passport numbers. Accept those only
+                // when immediately preceded by the 12–16 digit Person Number, so an
+                // 8–10 digit labour-card number elsewhere in the row is not an anchor.
+                if (isPassport(token) || isNumericPassport(token,index)) passportIndexes.push(index);
+            });
             const records = [];
             passportIndexes.forEach((index,recordIndex)=>{
                 const nextIndex = passportIndexes[recordIndex+1] ?? flat.length;
