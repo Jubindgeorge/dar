@@ -131,7 +131,7 @@ const assert = require('node:assert/strict');
       } finally {db.ref=originalRef;window.XLSX=undefined;}
     });
     assert.match(staffUpsert.preview,/1 new · 1 updates · 1 unchanged/,'Import preview distinguishes new, changed and identical staff');
-    assert.ok(!Object.keys(staffUpsert.writes||{}).some(path=>path.startsWith('staff/staff-same/')),'Identical staff row is not written');
+    assert.ok(!Object.keys(staffUpsert.writes||{}).some(path=>path.startsWith('staff/staff-same/')&&!['staff/staff-same/linkedDocumentRefs'].includes(path)),'Identical staff identity fields stay unchanged while missing document links may be added');
     assert.equal(staffUpsert.writes?.['staff/staff-update/nationality'],'INDIA','Missing existing nationality is filled from import');
     assert.equal(staffUpsert.writes?.['staff/staff-update/labourCardExpiry'],'2028-09-30','Changed/missing labour card expiry is updated');
     assert.ok(staffUpsert.writes?.['staff/staff-new'],'New employee is created');
