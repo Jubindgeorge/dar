@@ -121,7 +121,9 @@ window.renderAccountsLedgerDetail = function(refCode) {
         tbody.innerHTML = '';
         
         let allPayments = [];
-        if (doc.advanceAmount > 0) {
+        const advanceIsSeparate = doc.advanceIncludedInPaymentLogs === false ||
+            (doc.advanceIncludedInPaymentLogs == null && logsTotal < doc.advanceAmount);
+        if (doc.advanceAmount > 0 && advanceIsSeparate) {
             allPayments.push({
                 date: doc.transactionDate || doc.createdDate || 'Initial',
                 amount: doc.advanceAmount,
@@ -237,8 +239,11 @@ window.printPaymentStatusStatement = function() {
     doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
     doc.totalAmount = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
     const paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    const logsTotal = paymentLogs.reduce((sum, payment) => sum + Math.max(0, Number(payment.amount) || 0), 0);
     const totalPaid = window.getDarDocumentPaidAmount(doc);
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
+    const advanceIsSeparate = doc.advanceIncludedInPaymentLogs === false ||
+        (doc.advanceIncludedInPaymentLogs == null && logsTotal < doc.advanceAmount);
 
     document.getElementById('p-doc-title').innerHTML = `PAYMENT STATUS STATEMENT / <span style="font-family: 'Amiri', serif;">كشف حساب الدفعات</span>`;
     document.getElementById('p-client-name').innerText = doc.clientName || doc.companyName || '-';
@@ -247,15 +252,15 @@ window.printPaymentStatusStatement = function() {
     document.getElementById('p-created-date').innerText = `Date: ${new Date().toISOString().substring(0, 10)}`;
 
     const pTbody = document.getElementById('p-table-body');
+    const advanceRow = advanceIsSeparate && doc.advanceAmount > 0
+        ? '<tr><td colspan="2" style="padding:12px;border-bottom:1px solid #cbd5e1;">Advance Payment (' + escapeHtml(doc.createdDate || 'Initial') + ')</td><td colspan="2" style="padding:12px;text-align:right;color:#22c55e;font-weight:bold;border-bottom:1px solid #cbd5e1;">AED ' + doc.advanceAmount.toFixed(2) + '</td></tr>'
+        : '';
     pTbody.innerHTML = `
         <tr>
             <td colspan="2" style="padding: 12px; font-weight: bold; border-bottom: 1px solid #cbd5e1;">Invoice Total Amount</td>
             <td colspan="2" style="padding: 12px; text-align: right; font-weight: bold; color: #1c365d; border-bottom: 1px solid #cbd5e1;">AED ${doc.totalAmount.toFixed(2)}</td>
         </tr>
-        <tr>
-            <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Advance Payment (${doc.createdDate || 'Initial'})</td>
-            <td colspan="2" style="padding: 12px; text-align: right; color: #22c55e; font-weight: bold; border-bottom: 1px solid #cbd5e1;">AED ${doc.advanceAmount.toFixed(2)}</td>
-        </tr>
+        ${advanceRow}
     `;
 
     paymentLogs.forEach((log, idx) => {
