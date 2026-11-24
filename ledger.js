@@ -379,7 +379,9 @@ window.saveMonthlyExpenseData = async function() {
     try {
         await saveStateToFirebase('monthlyExpenses', recordId, patch);
         state.monthlyExpenses = state.monthlyExpenses || [];
-        state.monthlyExpenses.push(expense);
+        const existingIndex = state.monthlyExpenses.findIndex(item => item.id === expense.id);
+        if (existingIndex >= 0) state.monthlyExpenses[existingIndex] = expense;
+        else state.monthlyExpenses.push(expense);
         closeMonthlyExpenseModal();
         renderMonthlyExpensesTable();
         renderFullLedgerTableBody();
@@ -428,7 +430,7 @@ window.deleteMonthlyExpense = async function(index) {
             if (!db) throw new Error('Firebase is not connected.');
             await db.ref('monthlyExpenses/' + removed.id).remove();
         }
-        state.monthlyExpenses.splice(index, 1);
+        state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
         renderMonthlyExpensesTable();
         renderFullLedgerTableBody();
     } catch (error) {
