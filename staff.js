@@ -611,12 +611,12 @@
         const linkedByStaff=new Map();
         (state.documents||[]).forEach(doc=>{
             if(!doc||!clean(doc.refCode)||norm(doc.companyName)!==norm(company.companyName))return;
-            const matches=importedRecords.filter(person=>norm(person.fullName)===norm(doc.clientName||doc.staffName));
+            const documentNames=[doc.clientName,doc.staffName,doc.employeeName,doc.personName].map(norm).filter(Boolean);
+            const matches=importedRecords.filter(person=>documentNames.includes(norm(person.fullName)));
             if(matches.length!==1)return;
             const person=matches[0];
             if(companyPeople.filter(candidate=>norm(candidate.fullName)===norm(person.fullName)).length!==1)return;
             if(doc.staffId&&doc.staffId!==person.id)return;
-            if(doc.staffCode&&norm(doc.staffCode)!==norm(person.staffCode||person.staffId))return;
             const ref=clean(doc.refCode),metadata={staffId:person.id,staffCode:person.staffCode||person.staffId,staffName:person.fullName};
             if(doc.staffId===metadata.staffId&&doc.staffCode===metadata.staffCode&&doc.staffName===metadata.staffName)return;
             Object.entries(metadata).forEach(([field,value])=>{updates['documents/'+ref+'/'+field]=value;});
