@@ -14,6 +14,7 @@ assert.equal(minusMonth('2028-03-31'), '2028-02-29');
 assert.equal(utcDate('2027-02-30'), null);
 assert.equal(amount({totalAmount:200}), 200);
 assert.equal(paid({advanceAmount:50,paymentLogs:[{amount:150}]}),150);
+assert.equal(paid({advance:50,paymentLogs:[]}),50);
 assert.equal(paid({advanceAmount:50,advanceIncludedInPaymentLogs:false,paymentLogs:[{amount:150}]}),200);
 assert.equal(paid({advanceAmount:100,paymentLogs:[{amount:100}]}),100);
 assert.equal(paid({advanceAmount:50,advanceIncludedInPaymentLogs:true,paymentLogs:[{amount:200}]}),200);

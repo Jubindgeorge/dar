@@ -26,7 +26,7 @@ const amount=d=>{for(const n of [d.totalAmount,d.totalAmt,d.total,d.amount]){if(
 // Without an explicit marker, treat the higher of the two as confirmed (never sum ambiguously).
 const paid=d=>{
  const logs=Array.isArray(d.paymentLogs)?d.paymentLogs:Object.values(d.paymentLogs||{});
- const advance=Number(d.advanceAmount??d.advanceAmt??0)||0;
+ const advance=Number(d.advanceAmount??d.advanceAmt??d.advance??0)||0;
  const logged=logs.reduce((sum,p)=>sum+(Number(p?.amount)||0),0);
  return Math.max(0,d.advanceIncludedInPaymentLogs===true?logged:d.advanceIncludedInPaymentLogs===false?advance+logged:Math.max(advance,logged));
 };

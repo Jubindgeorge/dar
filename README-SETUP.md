@@ -9,7 +9,12 @@
 - `ledger.html`: forwards to the full Accounts Ledger tab in `index.html`.
 
 ## Run
-Serve this folder from a local/web server (not by opening `index.html` as a `file://` URL). Ensure Firebase Realtime Database rules allow only authenticated, authorized users to read/write production data. The current login form in the original project is a visual gate, not real authentication; it must not be treated as security.
+Serve this folder from a local/web server (not by opening `index.html` as a `file://` URL). Sign-in uses Firebase Authentication (email/password), requires a verified email address, and checks an administrator approval record before loading business data. Firebase Realtime Database rules independently enforce authenticated and approved access; the browser UI is not the security boundary.
+
+### Current access model
+- Two fixed administrator UIDs can approve accounts and manage administrator-only controls.
+- A verified account with `approvals/{uid} = true` currently receives read/write access to all ERP business collections, including invoices, payments, staff identity data, suppliers and purchases.
+- Approval is **not** a role system: do not approve an account unless it is trusted to access and edit all business records. If operators need restricted access (for example, staff may create work records but must not edit invoices or payroll/identity data), implement and test a role matrix in Firebase Rules before approving them. The Data Protection screen currently exports a plain JSON snapshot and can restore individual soft-deleted records; it does not import a full backup file or encrypt the export.
 
 ## Arabic translation endpoint
 The browser requests `POST /api/translate-company-name` with `{ "companyName": "..." }`. Deploy `translation-route.example.js` in an authenticated Express server, install `express` and `@google/genai`, set `GEMINI_API_KEY` in the server environment, and mount the route. Add your normal authentication, rate limiting, HTTPS, and CORS policy as appropriate. Until the endpoint is deployed, a basic local phonetic fallback is used and must be reviewed before official/legal use.

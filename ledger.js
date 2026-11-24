@@ -61,7 +61,7 @@ window.renderAccountsLedgerMaster = function() {
         opt.value = doc.refCode;
         
         // Robust fallback mapping for totals
-        const totalVal = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
+        const totalVal = Number(getDarDocumentAmount(doc)) || 0;
         opt.textContent = `${doc.refCode} - ${doc.clientName || doc.companyName || 'Client'} [AED ${totalVal.toFixed(2)}] (${doc.companyName || 'General'})`;
         
         if (doc.refCode === currentSelected) opt.selected = true;
@@ -85,11 +85,10 @@ window.renderAccountsLedgerDetail = function(refCode) {
     if (!doc) return;
 
     doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
-    doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-    doc.paymentLogs = doc.paymentLogs || [];
-
-    const logsTotal = doc.paymentLogs.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    const totalPaid = doc.advanceAmount + logsTotal;
+    doc.totalAmount = Number(getDarDocumentAmount(doc)) || 0;
+    const paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    const logsTotal = paymentLogs.reduce((sum, p) => sum + Math.max(0, Number(p.amount) || 0), 0);
+    const totalPaid = window.getDarDocumentPaidAmount(doc);
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
 
     const invoiceDate = doc.transactionDate || doc.createdDate || doc.date || '';
@@ -122,7 +121,9 @@ window.renderAccountsLedgerDetail = function(refCode) {
         tbody.innerHTML = '';
         
         let allPayments = [];
-        if (doc.advanceAmount > 0) {
+        const advanceIsSeparate = doc.advanceIncludedInPaymentLogs === false ||
+            (doc.advanceIncludedInPaymentLogs == null && logsTotal < doc.advanceAmount);
+        if (doc.advanceAmount > 0 && advanceIsSeparate) {
             allPayments.push({
                 date: doc.transactionDate || doc.createdDate || 'Initial',
                 amount: doc.advanceAmount,
@@ -131,7 +132,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
             });
         }
         
-        doc.paymentLogs.forEach((log, originalIndex) => {
+        paymentLogs.forEach((log, originalIndex) => {
             allPayments.push({
                 date: log.date || '-',
                 amount: Number(log.amount || 0),
@@ -203,10 +204,8 @@ window.renderFullLedgerTableBody = function() {
         const expenseShare = totalMonthExp / totalInvoicesInMonth;
 
         const govtFee = Number(doc.govtFee ?? doc.govtAmt ?? 0);
-        const totalAmt = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-        const advance = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
-        const logsTotal = (doc.paymentLogs || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
-        const totalPaid = advance + logsTotal;
+        const totalAmt = Number(getDarDocumentAmount(doc)) || 0;
+        const totalPaid = window.getDarDocumentPaidAmount(doc);
         const balance = Math.max(0, totalAmt - totalPaid);
         const profit = totalAmt - govtFee - expenseShare;
         const clientLabel = escapeHtml(doc.clientName || doc.companyName || '-');
@@ -238,11 +237,13 @@ window.printPaymentStatusStatement = function() {
     if (!doc) return;
 
     doc.advanceAmount = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0);
-    doc.totalAmount = Number(doc.totalAmount || doc.totalAmt || doc.total || doc.amount || 0);
-    doc.paymentLogs = doc.paymentLogs || [];
-
-    const totalPaid = doc.advanceAmount + doc.paymentLogs.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    doc.totalAmount = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
+    const paymentLogs = window.getDarDocumentPaymentLogs(doc);
+    const logsTotal = paymentLogs.reduce((sum, payment) => sum + Math.max(0, Number(payment.amount) || 0), 0);
+    const totalPaid = window.getDarDocumentPaidAmount(doc);
     const remaining = Math.max(0, doc.totalAmount - totalPaid);
+    const advanceIsSeparate = doc.advanceIncludedInPaymentLogs === false ||
+        (doc.advanceIncludedInPaymentLogs == null && logsTotal < doc.advanceAmount);
 
     document.getElementById('p-doc-title').innerHTML = `PAYMENT STATUS STATEMENT / <span style="font-family: 'Amiri', serif;">كشف حساب الدفعات</span>`;
     document.getElementById('p-client-name').innerText = doc.clientName || doc.companyName || '-';
@@ -251,18 +252,18 @@ window.printPaymentStatusStatement = function() {
     document.getElementById('p-created-date').innerText = `Date: ${new Date().toISOString().substring(0, 10)}`;
 
     const pTbody = document.getElementById('p-table-body');
+    const advanceRow = advanceIsSeparate && doc.advanceAmount > 0
+        ? '<tr><td colspan="2" style="padding:12px;border-bottom:1px solid #cbd5e1;">Advance Payment (' + escapeHtml(doc.createdDate || 'Initial') + ')</td><td colspan="2" style="padding:12px;text-align:right;color:#22c55e;font-weight:bold;border-bottom:1px solid #cbd5e1;">AED ' + doc.advanceAmount.toFixed(2) + '</td></tr>'
+        : '';
     pTbody.innerHTML = `
         <tr>
             <td colspan="2" style="padding: 12px; font-weight: bold; border-bottom: 1px solid #cbd5e1;">Invoice Total Amount</td>
             <td colspan="2" style="padding: 12px; text-align: right; font-weight: bold; color: #1c365d; border-bottom: 1px solid #cbd5e1;">AED ${doc.totalAmount.toFixed(2)}</td>
         </tr>
-        <tr>
-            <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Advance Payment (${doc.createdDate || 'Initial'})</td>
-            <td colspan="2" style="padding: 12px; text-align: right; color: #22c55e; font-weight: bold; border-bottom: 1px solid #cbd5e1;">AED ${doc.advanceAmount.toFixed(2)}</td>
-        </tr>
+        ${advanceRow}
     `;
 
-    doc.paymentLogs.forEach((log, idx) => {
+    paymentLogs.forEach((log, idx) => {
         pTbody.innerHTML += `
             <tr>
                 <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${log.note || 'Direct'}</td>
@@ -301,45 +302,54 @@ window.closeAddPaymentModal = function() {
     document.getElementById('payment-modal').style.display = 'none';
 };
 
-window.savePaymentLogData = function() {
+window.savePaymentLogData = async function() {
     const select = document.getElementById('acc-invoice-select');
     if (!select || !select.value) return;
-
     const doc = (state.documents || []).find(d => d.refCode === select.value);
     if (!doc) return;
-
     const date = document.getElementById('pay-input-date').value;
     const amount = Number(document.getElementById('pay-input-amount').value);
     const note = document.getElementById('pay-input-note').value;
+    if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter a valid payment amount.'); return; }
+    const invoiceTotal = Number(getDarDocumentAmount(doc)) || 0;
+    const alreadyPaid = window.getDarDocumentPaidAmount(doc);
+    if (amount > Math.max(0, invoiceTotal - alreadyPaid)) { alert('This payment is greater than the remaining balance. Please check the amount.'); return; }
 
-    if (!Number.isFinite(amount) || amount <= 0) {
-        alert("Please enter a valid payment amount.");
-        return;
+    const nextLogs = window.getDarDocumentPaymentLogs(doc);
+    let advanceIncluded = doc.advanceIncludedInPaymentLogs;
+    if (advanceIncluded == null) {
+        const oldLogged = nextLogs.reduce((sum, entry) => sum + Math.max(0, Number(entry.amount) || 0), 0);
+        const oldAdvance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
+        advanceIncluded = oldLogged >= oldAdvance;
     }
-    const invoiceTotal = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
-    const alreadyPaid = Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) + (doc.paymentLogs || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    if (amount > Math.max(0, invoiceTotal - alreadyPaid)) {
-        alert('This payment is greater than the remaining balance. Please check the amount.');
-        return;
+    nextLogs.push({date,transactionDate:date,amount,note,createdAt:new Date().toISOString(),createdBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'});
+    const patch = {paymentLogs:nextLogs,advanceIncludedInPaymentLogs:advanceIncluded};
+    try {
+        await saveStateToFirebase('documents', doc.refCode, patch);
+        doc.paymentLogs = nextLogs;
+        doc.advanceIncludedInPaymentLogs = advanceIncluded;
+        closeAddPaymentModal();
+        renderAccountsLedgerDetail(doc.refCode);
+        renderFullLedgerTableBody();
+    } catch (error) {
+        alert('Payment was not saved. Please retry after checking the connection.');
     }
-
-    doc.paymentLogs = doc.paymentLogs || [];
-    doc.paymentLogs.push({ date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
-
-    if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
-    closeAddPaymentModal();
-    renderAccountsLedgerDetail(doc.refCode);
-    renderFullLedgerTableBody();
 };
 
-window.deletePaymentLog = function(refCode, index) {
+window.deletePaymentLog = async function(refCode, index) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
-    if (!doc || !doc.paymentLogs) return;
-
-    doc.paymentLogs.splice(index, 1);
-    if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
-    renderAccountsLedgerDetail(refCode);
-    renderFullLedgerTableBody();
+    if (!doc) return;
+    const nextLogs = window.getDarDocumentPaymentLogs(doc);
+    if (!Number.isInteger(index) || index < 0 || index >= nextLogs.length) return;
+    nextLogs.splice(index, 1);
+    try {
+        await saveStateToFirebase('documents', doc.refCode, {paymentLogs:nextLogs});
+        doc.paymentLogs = nextLogs;
+        renderAccountsLedgerDetail(refCode);
+        renderFullLedgerTableBody();
+    } catch (error) {
+        alert('Payment history was not changed because the update failed.');
+    }
 };
 
 window.openMonthlyExpenseModal = function() {
@@ -354,27 +364,30 @@ window.closeMonthlyExpenseModal = function() {
     document.getElementById('monthly-expense-modal').style.display = 'none';
 };
 
-window.saveMonthlyExpenseData = function() {
+window.saveMonthlyExpenseData = async function() {
     const month = document.getElementById('exp-input-month').value;
     const expenseDate = document.getElementById('exp-input-date')?.value || (window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10));
-    const title = document.getElementById('exp-input-title').value;
+    const title = document.getElementById('exp-input-title').value.trim();
     const amount = Number(document.getElementById('exp-input-amount').value);
-
-    if (!title || !amount) {
-        alert("Please fill in all expense fields.");
-        return;
-    }
-
-    state.monthlyExpenses = state.monthlyExpenses || [];
+    if (!title) { alert('Please enter an expense description.'); return; }
     if (!month) { alert('Please select the expense month.'); return; }
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter an expense amount greater than zero.'); return; }
-    const id = db && db.ref('monthlyExpenses').push().key;
-    state.monthlyExpenses.push({ id, month, date: expenseDate, transactionDate: expenseDate, title: title.trim(), amount, createdDate: expenseDate, updatedAt: new Date().toISOString(), updatedBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown' });
-
-    if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
-    closeMonthlyExpenseModal();
-    renderMonthlyExpensesTable();
-    renderFullLedgerTableBody();
+    if (!db) { alert('Firebase is not connected. The expense was not saved.'); return; }
+    const id = db.ref('monthlyExpenses').push().key;
+    const expense = {id,month,date:expenseDate,transactionDate:expenseDate,title,amount,createdDate:expenseDate,updatedAt:new Date().toISOString(),updatedBy:firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
+    const {id:recordId,...patch} = expense;
+    try {
+        await saveStateToFirebase('monthlyExpenses', recordId, patch);
+        state.monthlyExpenses = state.monthlyExpenses || [];
+        const existingIndex = state.monthlyExpenses.findIndex(item => item.id === expense.id);
+        if (existingIndex >= 0) state.monthlyExpenses[existingIndex] = expense;
+        else state.monthlyExpenses.push(expense);
+        closeMonthlyExpenseModal();
+        renderMonthlyExpensesTable();
+        renderFullLedgerTableBody();
+    } catch (error) {
+        alert('Expense was not saved. Please retry after checking the connection.');
+    }
 };
 
 window.renderMonthlyExpensesTable = function() {
@@ -409,36 +422,44 @@ window.renderMonthlyExpensesTable = function() {
     });
 };
 
-window.deleteMonthlyExpense = function(index) {
-    if (state.monthlyExpenses) {
-        const removed = state.monthlyExpenses[index];
-        if (removed && removed.id && db) db.ref(`monthlyExpenses/${removed.id}`).remove();
-        state.monthlyExpenses.splice(index, 1);
-        if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
+window.deleteMonthlyExpense = async function(index) {
+    const removed = state.monthlyExpenses?.[index];
+    if (!removed) return;
+    try {
+        if (removed.id) {
+            if (!db) throw new Error('Firebase is not connected.');
+            await db.ref('monthlyExpenses/' + removed.id).remove();
+        }
+        if (removed.id) state.monthlyExpenses = state.monthlyExpenses.filter(item => item.id !== removed.id);
+        else state.monthlyExpenses.splice(index, 1);
         renderMonthlyExpensesTable();
         renderFullLedgerTableBody();
+    } catch (error) {
+        alert('Expense was not deleted. Please retry after checking the connection.');
     }
 };
 
-window.promptEditAdvance = function() {
+window.promptEditAdvance = async function() {
     const select = document.getElementById('acc-invoice-select');
     if (!select || !select.value) return;
-
     const doc = (state.documents || []).find(d => d.refCode === select.value);
     if (!doc) return;
-
     const currentAdv = doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0;
-    const newAdvance = prompt("Enter new Advance Payment amount (AED):", currentAdv);
-    if (newAdvance !== null && newAdvance.trim() !== '' && Number.isFinite(Number(newAdvance))) {
-        if (Number(newAdvance) < 0) { alert('Advance payment cannot be negative.'); return; }
-        const total = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount ?? 0);
-        const logged = (doc.paymentLogs || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
-        if (Number(newAdvance) + logged > total) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
-        doc.advanceAmount = Number(newAdvance);
-        doc.advanceAmt = Number(newAdvance);
-        if (typeof saveStateToFirebase === 'function') saveStateToFirebase();
+    const newAdvance = prompt('Enter new Advance Payment amount (AED):', currentAdv);
+    if (newAdvance === null || newAdvance.trim() === '' || !Number.isFinite(Number(newAdvance))) return;
+    const value = Number(newAdvance);
+    if (value < 0) { alert('Advance payment cannot be negative.'); return; }
+    const total = Number(getDarDocumentAmount(doc)) || 0;
+    const proposedPaid = window.getDarDocumentPaidAmount({...doc,advanceAmount:value});
+    if (Math.max(value,proposedPaid) > total + 0.005) { alert('Advance and recorded payments cannot exceed the invoice total.'); return; }
+    try {
+        await saveStateToFirebase('documents', doc.refCode, {advanceAmount:value,advanceAmt:value});
+        doc.advanceAmount = value;
+        doc.advanceAmt = value;
         renderAccountsLedgerDetail(doc.refCode);
         renderFullLedgerTableBody();
+    } catch (error) {
+        alert('Advance payment was not updated. Please retry after checking the connection.');
     }
 };
 

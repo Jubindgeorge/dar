@@ -146,7 +146,7 @@ function populateStudioInjectorSelect() {
     const sel = document.getElementById('st-service-injector');
     if (!sel) return;
     sel.innerHTML = `<option value="">-- Choose Preset Catalog --</option>` +
-        (state.services || []).map(s => `<option value="${s.id}">${s.title} (Govt: AED ${s.govtAmt || 0})</option>`).join('');
+        (state.services || []).filter(Boolean).map(s => `<option value="${escapeHtml(s.id || '')}">${escapeHtml(s.title || 'Untitled Service')} (Govt: AED ${Number.isFinite(Number(s.govtAmt)) ? Number(s.govtAmt) : 0})</option>`).join('');
 }
 
 function normalizeStudioCompanyName(value) {
@@ -354,13 +354,14 @@ function commitDocumentToMemory() {
         return;
     }
     const previousDocumentForValidation = (state.documents || []).find(d => d.refCode === refCode);
-    const recordedPayments = Array.isArray(previousDocumentForValidation?.paymentLogs) ? previousDocumentForValidation.paymentLogs : [];
-    const paidInLogs = recordedPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
     if (previousDocumentForValidation?.type === 'Quotation' && (Number(previousDocumentForValidation.invoicedAmount) || 0) > totalAmt + 0.005) {
         showCustomModal('Quotation balance protected', 'The quotation total cannot be reduced below the amount already invoiced.');
         return;
     }
-    if (advanceAmt + paidInLogs > totalAmt) {
+    const proposedPaid = previousDocumentForValidation && window.getDarDocumentPaidAmount
+        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt})
+        : advanceAmt;
+    if (Math.max(advanceAmt, proposedPaid) > totalAmt + 0.005) {
         showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
         return;
     }
@@ -419,8 +420,6 @@ function commitDocumentToMemory() {
 
     // Preserve recorded payments when editing an invoice; never silently reset the ledger.
     const previousDocument = (state.documents || []).find(d => d.refCode === refCode);
-    const preservedPaymentLogs = Array.isArray(previousDocument?.paymentLogs) ? previousDocument.paymentLogs : [];
-
     const auditUser = window.firebase?.auth?.().currentUser;
     const payload = {
         refCode,

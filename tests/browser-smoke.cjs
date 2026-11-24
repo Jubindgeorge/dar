@@ -459,7 +459,83 @@ const assert = require('node:assert/strict');
     assert.equal(companyClientSmoke.linkedId,'saved-client-1','Explicit saved-client selection stores the linked ID');
     assert.equal(companyClientSmoke.linkedValue,'saved-client-1','Explicit saved-client selection remains selected after refresh');
     assert.equal(companyClientSmoke.changedCompanyValue,'','Changing company clears the previous company client selection');
-    console.log('PASS: company-scoped client selector and saved-client link consistency');
+    const paymentCompatibilitySmoke = await page.evaluate(() => {
+      const legacyObjectLogs={ '0':{amount:100,date:'2026-11-01'}, '1':{amount:20,date:'2026-11-02'} };
+      const legacyIncluded={totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:100}}};
+      const legacySeparate={totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:50}}};
+      const explicitSeparate={totalAmount:200,advanceAmount:50,advanceIncludedInPaymentLogs:false,paymentLogs:[{amount:100}]};
+      const explicitIncluded={totalAmount:200,advanceAmount:50,advanceIncludedInPaymentLogs:true,paymentLogs:[{amount:100}]};
+      return {
+        normalizedCount:getDarDocumentPaymentLogs({paymentLogs:legacyObjectLogs}).length,
+        legacyIncluded:getDarDocumentPaidAmount(legacyIncluded),
+        legacySeparate:getDarDocumentPaidAmount(legacySeparate),
+        explicitSeparate:getDarDocumentPaidAmount(explicitSeparate),
+        explicitIncluded:getDarDocumentPaidAmount(explicitIncluded),
+        status:getDarDocumentPaymentStatus(legacyIncluded)
+      };
+    });
+    assert.equal(paymentCompatibilitySmoke.normalizedCount,2,'Legacy keyed payment objects normalize without losing entries');
+    assert.equal(paymentCompatibilitySmoke.legacyIncluded,100,'Legacy advance already present in payment logs is not double-counted');
+    assert.equal(paymentCompatibilitySmoke.legacySeparate,100,'Ambiguous legacy records use the higher confirmed amount');
+    assert.equal(paymentCompatibilitySmoke.explicitSeparate,150,'Explicitly separate advance and payments are added');
+    assert.equal(paymentCompatibilitySmoke.explicitIncluded,100,'Explicitly included advance is not added twice');
+    assert.equal(paymentCompatibilitySmoke.status,'partial','Payment status uses the shared legacy-safe amount');
+    const legacyLedgerSmoke = await page.evaluate(() => {
+      state.documents=[{refCode:'LEGACY-PAY-001',type:'Invoice',clientName:'Legacy Client',companyName:'Legacy Company',totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:100,date:'2026-11-01',note:'Advance recorded in legacy log'}}}];
+      renderAccountsLedgerDetail('LEGACY-PAY-001');
+      return {
+        paid:document.getElementById('acc-card-payments').innerText,
+        remaining:document.getElementById('acc-card-remaining').innerText,
+        rows:document.getElementById('acc-payment-logs-tbody').innerText
+      };
+    });
+    assert.equal(legacyLedgerSmoke.paid,'AED 100.00','Accounts Ledger does not double-count legacy advance and payment logs');
+    assert.equal(legacyLedgerSmoke.remaining,'AED 100.00','Accounts Ledger computes the correct legacy outstanding balance');
+    assert.match(legacyLedgerSmoke.rows,/Advance recorded in legacy log/,'Accounts Ledger renders legacy keyed payment rows');
+    assert.doesNotMatch(legacyLedgerSmoke.rows,/Advance Payment/,'Accounts Ledger does not display a duplicate advance row');
+    const zeroTotalLedgerSmoke = await page.evaluate(() => {
+      state.documents=[{refCode:'ZERO-TOTAL-LEDGER',type:'Invoice',clientName:'Zero Total Client',companyName:'Zero Total Company',totalAmount:0,totalAmt:350,total:350,amount:350,advanceAmount:0,paymentLogs:[]}];
+      document.getElementById('acc-invoice-select').value='';
+      renderAccountsLedgerMaster();
+      return {
+        option:document.getElementById('acc-invoice-select').options[1]?.textContent || '',
+        total:document.getElementById('acc-card-total').innerText,
+        remaining:document.getElementById('acc-card-remaining').innerText
+      };
+    });
+    assert.match(zeroTotalLedgerSmoke.option,/AED 0\.00/,'Invoice selector respects an explicit zero total over stale legacy aliases');
+    assert.equal(zeroTotalLedgerSmoke.total,'AED 0.00','Accounts Ledger total respects explicit zero');
+    assert.equal(zeroTotalLedgerSmoke.remaining,'AED 0.00','Accounts Ledger balance respects explicit zero');
+    console.log('PASS: zero-value invoice totals are preserved across ledger views');
+    console.log('PASS: shared payment totals, legacy keyed payment history and advance double-count protection');
+    console.log('PASS: Accounts Ledger renders legacy keyed payment history without duplicate advance rows');
+    const targetedSaveSmoke = await page.evaluate(async () => {
+      const originalRef=db.ref;
+      const writes=[];
+      db.ref=(path)=>({update:async patch=>{writes.push({path,patch});}});
+      let broadSaveRejected=false;
+      try { await saveStateToFirebase(); } catch { broadSaveRejected=true; }
+      try { await saveStateToFirebase('documents','TARGETED-INVOICE',{paymentLogs:[]}); }
+      finally { db.ref=originalRef; }
+      return {writes,broadSaveRejected};
+    });
+    assert.equal(targetedSaveSmoke.broadSaveRejected,true,'A save without an explicit record target is rejected');
+    assert.deepEqual(targetedSaveSmoke.writes.map(write=>write.path),['documents/TARGETED-INVOICE'],'Saving one record writes only that exact Firebase path');
+    assert.deepEqual(targetedSaveSmoke.writes[0].patch,{paymentLogs:[]},'Targeted save sends only the changed fields');
+    console.log('PASS: record-level Firebase writes avoid bulk stale-cache overwrites');
+    const serviceCatalogSafety = await page.evaluate(() => {
+      state.services=[{id:'<img src=x onerror=window.__serviceIdInjected=true>',title:'<img src=x onerror=window.__serviceTitleInjected=true>',items:[]}];
+      renderServicesCatalog();
+      return {
+        imageCount:document.querySelectorAll('#services-cards-wrapper img').length,
+        titleText:document.querySelector('#services-cards-wrapper .service-card h4 span')?.textContent,
+        actionCount:document.querySelectorAll('#services-cards-wrapper [data-service-action]').length
+      };
+    });
+    assert.equal(serviceCatalogSafety.imageCount,0,'Service catalog treats stored titles and IDs as text, not HTML');
+    assert.match(serviceCatalogSafety.titleText,/<img/,'Service catalog preserves literal title text safely');
+    assert.equal(serviceCatalogSafety.actionCount,2,'Service catalog edit/delete actions render with safe data attributes');
+    console.log('PASS: service catalog safe rendering and action wiring');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
     console.log('PASS: company staff table and purchase/supplier module rendering');
