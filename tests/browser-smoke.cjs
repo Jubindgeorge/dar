@@ -18,7 +18,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#staff-import-file').isDisabled(),true,'Staff import stays disabled until an existing company is selected');
     await page.evaluate(() => {
       state.clients=[{id:'import-company-test',companyName:'Import Test Company'}];
-      renderStaffTable();
+      window.renderStaffTable();
       document.getElementById('staff-import-company').value='import-company-test';
       updateStaffImportAvailability();
     });
