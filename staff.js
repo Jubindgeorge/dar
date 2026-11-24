@@ -469,33 +469,69 @@
         if(looksMohre)throw new Error('MOHRE headings were found, but the employee table could not be reliably read from its PDF column positions. No records were imported.');
         throw new Error('PDF text was found, but this file does not match a supported staff-import layout. Please use the MOHRE employee-list PDF or an Excel staff list.');
     }
+    const staffImportMergeFields = [
+        'staffCode','staffId','personNumber','fullName','fullNameArabic','nationality','designation',
+        'cardType','contractType','designationArabic','labourCardNumber','labourCardExpiry',
+        'lastWorkDone','passportNumber','passportExpiry','visaNumber','visaExpiry','visaStatus',
+        'renewalStatus','joiningDate','phone','email','documentReference','notes'
+    ];
+    const staffImportIdentityFields = ['staffCode','personNumber','labourCardNumber','passportNumber'];
+    function resolveStaffImportRow(row, companyStaff, claimedIds) {
+        if (!row.fullName) return {status:'invalid',reason:'Missing full name'};
+        const matches = new Set();
+        staffImportIdentityFields.forEach(field=>{
+            const value=norm(row[field]);
+            if (!value) return;
+            companyStaff.forEach(existing=>{
+                const existingValue=norm(field==='staffCode'?(existing.staffCode||existing.staffId):existing[field]);
+                if (existingValue && existingValue===value) matches.add(existing.id);
+            });
+        });
+        if (matches.size>1) return {status:'conflict',reason:'Identifiers point to different staff records'};
+        if (matches.size===1) {
+            const id=[...matches][0];
+            if (claimedIds.has(id)) return {status:'duplicate',reason:'Duplicate row in this import'};
+            const existing=companyStaff.find(item=>item.id===id);
+            const changes={};
+            staffImportMergeFields.forEach(field=>{
+                const incoming=clean(row[field]);
+                if (!incoming) return; // Never erase an existing value with an empty import cell.
+                const current=clean(field==='staffCode'?(existing.staffCode||existing.staffId):existing[field]);
+                if (norm(current)!==norm(incoming)) changes[field]=incoming;
+            });
+            return {status:Object.keys(changes).length?'update':'same',existing,changes};
+        }
+        const incomingCode=norm(row.staffCode);
+        if (incomingCode && companyStaff.some(item=>norm(item.staffCode||item.staffId)===incomingCode))
+            return {status:'conflict',reason:'Staff ID conflicts with an existing record'};
+        return {status:'new'};
+    }
+    function buildStaffImportPlan(rows, companyStaff) {
+        const claimedIds=new Set(), seenKeys=new Set();
+        return rows.map(row=>{
+            const key=staffImportIdentityFields.map(field=>norm(row[field])).filter(Boolean).join('|');
+            if (key && seenKeys.has(key)) return {row,status:'duplicate',reason:'Duplicate row in this import'};
+            if (key) seenKeys.add(key);
+            const result=resolveStaffImportRow(row,companyStaff,claimedIds);
+            if (result.existing) claimedIds.add(result.existing.id);
+            return {row,...result};
+        });
+    }
     function renderStaffImportPreview() {
         const panel = byId('staff-import-preview');
         const button = byId('staff-import-button');
         if (!panel) return;
-        const valid = staffImportRows.filter(row=>row.fullName);
-        const invalid = staffImportRows.length-valid.length;
         const companyStaff = (state.staff||[]).filter(row=>row.companyId===staffImportCompanyId || norm(row.companyName)===norm(companyNameById(staffImportCompanyId)));
-        const existingCodes = new Set(companyStaff.map(row=>norm(row.staffCode||row.staffId)));
-        const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
-        const existingPassports = new Set(companyStaff.map(row=>norm(row.passportNumber)).filter(Boolean));
-        const existingPersons = new Set(companyStaff.map(row=>norm(row.personNumber)).filter(Boolean));
-        const seenCards = new Set(), seenPassports = new Set(), seenPersons = new Set(), duplicateRows = new Set();
-        const duplicates = valid.filter(row=>{
-            const card=norm(row.labourCardNumber), passport=norm(row.passportNumber), person=norm(row.personNumber);
-            const duplicate = (card && (existingCards.has(card) || seenCards.has(card))) ||
-                (passport && (existingPassports.has(passport) || seenPassports.has(passport))) ||
-                (person && (existingPersons.has(person) || seenPersons.has(person)));
-            if (card) seenCards.add(card);
-            if (passport) seenPassports.add(passport);
-            if (person) seenPersons.add(person);
-            if (duplicate) duplicateRows.add(row);
-            return !!duplicate;
-        }).length;
-        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'Auto')+'</td><td>'+html(row.fullName||'—')+(row.personNumber?'<small class="staff-person-number">Person Labour No: '+html(row.personNumber)+'</small>':'')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardNumber||'—')+'</td><td>'+html(row.labourCardExpiry||'—')+'</td><td>'+html(!row.fullName?'Missing full name':duplicateRows.has(row)?'Duplicate identifier':'Ready')+'</td></tr>').join('');
+        const plan=buildStaffImportPlan(staffImportRows,companyStaff);
+        const counts=plan.reduce((acc,item)=>{acc[item.status]=(acc[item.status]||0)+1;return acc;},{});
+        const labels={new:'New',update:'Update existing',same:'Already up to date',duplicate:'Duplicate in file',conflict:'Identifier conflict',invalid:'Missing full name'};
+        const preview = plan.slice(0,30).map((item,index)=>{
+            const row=item.row;
+            return '<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||item.existing?.staffCode||'Auto')+'</td><td>'+html(row.fullName||'—')+(row.personNumber?'<small class="staff-person-number">Person Labour No: '+html(row.personNumber)+'</small>':'')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardNumber||'—')+'</td><td>'+html(row.labourCardExpiry||'—')+'</td><td>'+html(labels[item.status]||item.status)+(item.reason?' — '+html(item.reason):'')+'</td></tr>';
+        }).join('');
         panel.hidden = false;
-        panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+valid.length+' complete · '+invalid+' incomplete · '+duplicates+' duplicate(s)</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Name / Person Labour No.</th><th>Nationality</th><th>Passport</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Check</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
-        button.disabled = !valid.length || !staffImportCompanyId;
+        panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+ (counts.new||0)+' new · '+(counts.update||0)+' updates · '+(counts.same||0)+' unchanged · '+((counts.duplicate||0)+(counts.conflict||0)+(counts.invalid||0))+' skipped</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Name / Person Labour No.</th><th>Nationality</th><th>Passport</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Import action</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
+        button.disabled = !plan.some(item=>item.status==='new'||item.status==='update') || !staffImportCompanyId;
     }
     window.updateStaffImportAvailability = function () {
         const companyId = clean(byId('staff-import-company')?.value);
@@ -534,7 +570,7 @@
             }));
             staffImportCompanyId = companyId;
             renderStaffImportPreview();
-            help.textContent = 'Review the preview. All imported records will be assigned to '+companyNameById(companyId)+'.';
+            help.textContent = 'Review the preview. Matching employees will be updated in place; unchanged rows will be skipped. Invoices and quotations will remain linked.';
         } catch (error) {
             staffImportRows=[]; byId('staff-import-preview').hidden=true;
             help.textContent = error.message || 'Could not read this file.';
@@ -545,56 +581,47 @@
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. No staff were imported.'); return; }
         const company = companyById(staffImportCompanyId);
         if (!company || !staffImportRows.length) { showCustomModal('Select company first','Choose an existing company and preview a file before importing.'); return; }
-        const valid = staffImportRows.filter(row=>row.fullName);
         const companyStaff = (state.staff||[]).filter(row=>row.companyId===company.id || norm(row.companyName)===norm(company.companyName));
-        const existing = new Set(companyStaff.map(row=>norm(row.staffCode||row.staffId)));
-        const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
-        const existingPassports = new Set(companyStaff.map(row=>norm(row.passportNumber)).filter(Boolean));
-        const existingPersons = new Set(companyStaff.map(row=>norm(row.personNumber)).filter(Boolean));
-        const batchCards = new Set(), batchPassports = new Set(), batchPersons = new Set();
-        const generatedCodes = [];
-        const importable = valid.filter(row=>{
-            const card=norm(row.labourCardNumber), passport=norm(row.passportNumber), person=norm(row.personNumber);
-            const duplicate = (card && (existingCards.has(card) || batchCards.has(card))) ||
-                (passport && (existingPassports.has(passport) || batchPassports.has(passport))) ||
-                (person && (existingPersons.has(person) || batchPersons.has(person)));
-            if (card) batchCards.add(card);
-            if (passport) batchPassports.add(passport);
-            if (person) batchPersons.add(person);
-            return !duplicate;
-        });
-        if (!importable.length) { showCustomModal('Nothing to import','No new complete staff records were found. Existing labour-card numbers or passport numbers are skipped.'); return; }
-        const updates = {};
-        const created = [];
-        const timestamp = new Date().toISOString();
-        importable.forEach(row=>{
+        const plan=buildStaffImportPlan(staffImportRows,companyStaff);
+        const updates={}, created=[], changed=[];
+        const timestamp=new Date().toISOString();
+        plan.forEach(item=>{
+            if(item.status==='same'||item.status==='duplicate'||item.status==='conflict'||item.status==='invalid') return;
+            if(item.status==='update') {
+                const patch={...item.changes,updatedAt:timestamp,updatedBy:firebase.auth().currentUser?.email||firebase.auth().currentUser?.uid||'Unknown'};
+                // Keep the canonical staff ID and all existing document/link metadata untouched.
+                delete patch.id; delete patch.staffId;
+                Object.entries(patch).forEach(([field,value])=>{updates['staff/'+item.existing.id+'/'+field]=value;});
+                changed.push({id:item.existing.id,patch});
+                return;
+            }
             const id=db.ref('staff').push().key;
-            const generatedStaffCode=nextStaffCode(generatedCodes);
-            generatedCodes.push(generatedStaffCode);
+            const staffCode=clean(item.row.staffCode)||nextStaffCode(created.map(record=>record.staffCode));
             const record={
-                id, staffCode:generatedStaffCode, staffId:generatedStaffCode, fullName:row.fullName,
-                companyId:company.id, companyName:company.companyName,
-                personNumber:row.personNumber||'', fullNameArabic:row.fullNameArabic||'', nationality:row.nationality||'', designation:row.designation||'',
-                cardType:row.cardType||'', contractType:row.contractType||'', designationArabic:row.designationArabic||'',
-                labourCardNumber:row.labourCardNumber||'', labourCardExpiry:row.labourCardExpiry||'',
-                lastWorkDone:row.lastWorkDone||'', passportNumber:row.passportNumber||'',
-                passportExpiry:row.passportExpiry||'', visaNumber:row.visaNumber||'',
-                visaExpiry:row.visaExpiry||'', visaStatus:row.visaStatus||'',
-                renewalStatus:row.renewalStatus||'Pending', joiningDate:row.joiningDate||'',
-                phone:row.phone||'', email:row.email||'', documentReference:row.documentReference||'',
-                notes:row.notes||'', linkedInvoiceRef:'', createdDate:window.darDates?window.darDates.todayISO():timestamp.slice(0,10),
-                updatedAt:timestamp, updatedBy:firebase.auth().currentUser?.email||firebase.auth().currentUser?.uid||'Unknown'
+                ...item.row,id,staffCode,staffId:staffCode,
+                companyId:company.id,companyName:company.companyName,
+                createdDate:window.darDates?window.darDates.todayISO():timestamp.slice(0,10),
+                updatedAt:timestamp,updatedBy:firebase.auth().currentUser?.email||firebase.auth().currentUser?.uid||'Unknown'
             };
-            const copy={...record}; delete copy.id; updates['staff/'+id]=copy; created.push(record);
+            const copy={...record};delete copy.id;
+            updates['staff/'+id]=copy;created.push(record);
         });
+        const unchanged=plan.filter(item=>item.status==='same').length;
+        const skipped=plan.filter(item=>['duplicate','conflict','invalid'].includes(item.status)).length;
+        if(!Object.keys(updates).length) {
+            showCustomModal('Import completed',unchanged+' unchanged staff row(s) skipped; '+skipped+' duplicate, conflicting or incomplete row(s) skipped. No database changes were needed.');
+            return;
+        }
         byId('staff-import-button').disabled=true;
         db.ref().update(updates,error=>{
-            if(error){byId('staff-import-button').disabled=false;showCustomModal('Import failed','Firebase could not save the staff records. No import confirmation was received.');return;}
-            state.staff=state.staff||[]; state.staff.push(...created);
+            if(error){byId('staff-import-button').disabled=false;showCustomModal('Import failed','Firebase could not save the staff changes. Existing staff records and linked documents were not intentionally deleted.');return;}
+            state.staff=state.staff||[];
+            changed.forEach(({id,patch})=>{const record=state.staff.find(item=>item.id===id);if(record)Object.assign(record,patch);});
+            state.staff.push(...created);
             renderStaffTable();
             staffImportRows=[]; byId('staff-import-preview').hidden=true; byId('staff-import-file').value='';
-            byId('staff-import-help').textContent='Imported '+created.length+' staff record(s) for '+company.companyName+'.';
-            showCustomModal('Import completed',created.length+' staff record(s) imported for '+company.companyName+'. Incomplete rows and duplicate Staff IDs were skipped.');
+            byId('staff-import-help').textContent='Imported '+created.length+' new and updated '+changed.length+' existing staff record(s) for '+company.companyName+'.';
+            showCustomModal('Import completed',created.length+' new · '+changed.length+' updated · '+unchanged+' unchanged/skipped · '+skipped+' duplicate/conflicting/incomplete skipped. Invoices and quotations were preserved.');
         });
     };
     function populateStaffImportCompanies() {
