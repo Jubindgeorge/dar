@@ -23,7 +23,29 @@
         return company?.id || '';
     }
     function companyClientsFor(name) {
-        return (state.companyClients || []).filter(client => norm(client.companyName) === norm(name));
+        const companyKey = norm(name);
+        if (!companyKey) return [];
+        const saved = (state.companyClients || [])
+            .filter(client => norm(client.companyName) === companyKey)
+            .map(client => ({...client, source: 'saved'}));
+        const seen = new Set(saved.map(client => norm(client.name)));
+        const fromDocuments = (state.documents || [])
+            .filter(doc => norm(doc.companyName) === companyKey && clean(doc.clientName))
+            .map(doc => ({
+                id: 'document-client:' + norm(doc.clientName),
+                name: clean(doc.clientName),
+                companyName: clean(doc.companyName),
+                phone: clean(doc.contactPerson),
+                email: clean(doc.email),
+                source: 'document'
+            }))
+            .filter(client => {
+                const key = norm(client.name);
+                if (!key || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        return [...saved, ...fromDocuments].sort((a, b) => clean(a.name).localeCompare(clean(b.name)));
     }
     function nextStaffCode(companyId, reserved) {
         const company = companyById(companyId);
@@ -226,11 +248,14 @@
         const clients = companyClientsFor(companyName);
         const options = '<option value="">-- Select existing company client --</option>' + clients.map(client => '<option value="'+html(client.id)+'">'+html(client.name)+'</option>').join('');
         select.innerHTML = options;
-        select.value = (state.selectedCompanyClientId && clients.some(client => client.id === state.selectedCompanyClientId)) ? state.selectedCompanyClientId : '';
+        // Only a persisted company-client ID represents an actual link. A matching
+        // display name (for example, from an old invoice) must not imply a saved link.
+        const selected = clients.find(client => client.source === 'saved' && client.id === state.selectedCompanyClientId);
+        select.value = selected ? selected.id : '';
     };
     window.selectCompanyClient = function (clientId) {
-        const client = (state.companyClients || []).find(item => item.id === clientId);
-        state.selectedCompanyClientId = client ? client.id : '';
+        const client = companyClientsFor(clean(byId('st-company-name')?.value)).find(item => item.id === clientId);
+        state.selectedCompanyClientId = client && client.source === 'saved' ? client.id : '';
         if (client) {
             byId('st-client-name').value = client.name || '';
             if (byId('st-contact-person') && !byId('st-contact-person').value) byId('st-contact-person').value = client.phone || '';
