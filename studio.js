@@ -5,6 +5,8 @@ function studioLocalISODate() {
 }
 function openStudio(type, editRefCode = null) {
     state.activeEditingId = editRefCode || null;
+    const openedDocument = editRefCode ? (state.documents || []).find(item => item.refCode === editRefCode) : null;
+    state.activeEditingUpdatedAt = openedDocument?.updatedAt || '';
     const studioPanel = document.getElementById('tab-studio');
     if (studioPanel) studioPanel.classList.toggle('dar-edit-popup', !!editRefCode);
     switchTab('studio');
@@ -483,6 +485,7 @@ function commitDocumentToMemory() {
                 showCustomModal(wasEditing ? 'Document Updated' : 'Document Saved', `${type} ${refCode} ${wasEditing ? 'updated' : 'saved'} successfully. The original reference and payment history are retained.`, `${staffAction}<button type="button" class="btn btn-primary" onclick="closeCustomModal(); previewInvoiceDocument('${refCode}')">Preview / Print</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); openStudio('${type}')">Create Next</button> <button type="button" class="btn btn-secondary" onclick="closeCustomModal(); switchTab('${destinationTab}')">Back to ${type === 'Quotation' ? 'Quotations' : 'Invoices'}</button>`);
             }
             state.activeEditingId = null;
+            state.activeEditingUpdatedAt = '';
         } else if (typeof showCustomModal === 'function') {
             showCustomModal('Save failed', err.message || 'The document could not be saved. Please check your connection and try again.');
         }
@@ -490,7 +493,7 @@ function commitDocumentToMemory() {
 
     if (previousDocument?.sourceQuotationRef) {
         let saveConflict = '';
-        const previousUpdatedAt = previousDocument.updatedAt || '';
+        const previousUpdatedAt = state.activeEditingUpdatedAt || previousDocument.updatedAt || '';
         db.ref('documents').transaction(current => {
             const docs = current && typeof current === 'object' ? current : {};
             const liveInvoice = docs[refCode];
@@ -533,7 +536,7 @@ function commitDocumentToMemory() {
         }, false);
     } else {
         let saveConflict = '';
-        const previousUpdatedAt = previousDocument?.updatedAt || '';
+        const previousUpdatedAt = state.activeEditingUpdatedAt || previousDocument?.updatedAt || '';
         db.ref(`documents/${refCode}`).transaction(liveDocument => {
             if (previousDocument && !liveDocument) {
                 saveConflict = 'This document was removed by another user. Refresh before editing.';
