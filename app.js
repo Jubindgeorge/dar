@@ -1103,7 +1103,7 @@ window.closePreviewModal = function() {
 
 /* Data protection: snapshot export and reversible deletion.
    Publish matching Firebase rules before enabling delete/recover operations. */
-const DAR_PROTECTED_COLLECTIONS = ['clients', 'documents', 'services', 'monthlyExpenses'];
+const DAR_PROTECTED_COLLECTIONS = ['clients', 'documents', 'services', 'monthlyExpenses', 'staff', 'companyClients', 'suppliers', 'purchases'];
 function darSafeKey(value) {
     const key = String(value || '');
     if (!key || [...key].some(ch => '.#$[]/'.includes(ch) || ch.charCodeAt(0) === 92 || ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127)) throw new Error('Invalid record identifier');
