@@ -361,7 +361,7 @@ function commitDocumentToMemory() {
         return;
     }
     const proposedPaid = previousDocumentForValidation && window.getDarDocumentPaidAmount
-        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt})
+        ? window.getDarDocumentPaidAmount({...previousDocumentForValidation, advanceAmount:advanceAmt, ...(previousDocumentForValidation.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:advanceAmt} : {})})
         : advanceAmt;
     if (Math.max(advanceAmt, proposedPaid) > totalAmt + 0.005) {
         showCustomModal('Payments exceed total', 'The invoice total cannot be less than the recorded advance and payments.');
@@ -452,6 +452,7 @@ function commitDocumentToMemory() {
         legacyDiscountAmount,
         advanceAmt,
         advanceAmount: advanceAmt,
+        ...(previousDocument?.advanceIncludedInPaymentLogs === false ? {paymentAdvanceBalance:advanceAmt} : {}),
         totalAmount: totalAmt,
         totalAmt,
         total: totalAmt,
@@ -507,7 +508,7 @@ function commitDocumentToMemory() {
                 saveConflict = 'This invoice was changed by another user. Refresh it before editing again.';
                 return;
             }
-            const latestPaid = window.getDarDocumentPaidAmount({...liveInvoice,advanceAmount:advanceAmt});
+            const latestPaid = window.getDarDocumentPaidAmount({...liveInvoice,advanceAmount:advanceAmt,...(liveInvoice.advanceIncludedInPaymentLogs===false?{paymentAdvanceBalance:advanceAmt}:{})});
             if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
                 saveConflict = 'The latest recorded payments exceed the new invoice total.';
                 return;
@@ -551,7 +552,7 @@ function commitDocumentToMemory() {
                     saveConflict = 'This document was changed by another user. Refresh before editing again.';
                     return;
                 }
-                const latestPaid = window.getDarDocumentPaidAmount({...liveDocument,advanceAmount:advanceAmt});
+                const latestPaid = window.getDarDocumentPaidAmount({...liveDocument,advanceAmount:advanceAmt,...(liveDocument.advanceIncludedInPaymentLogs===false?{paymentAdvanceBalance:advanceAmt}:{})});
                 if (Math.max(advanceAmt,latestPaid) > totalAmt + 0.005) {
                     saveConflict = 'The latest recorded payments exceed the new document total.';
                     return;
