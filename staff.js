@@ -433,12 +433,21 @@
         const panel = byId('staff-import-preview');
         const button = byId('staff-import-button');
         if (!panel) return;
-        const valid = staffImportRows.filter(row=>row.staffCode && row.fullName);
+        const valid = staffImportRows.filter(row=>row.fullName);
         const invalid = staffImportRows.length-valid.length;
-        const existingCodes = new Set((state.staff||[]).filter(row=>row.companyId===staffImportCompanyId || norm(row.companyName)===norm(companyNameById(staffImportCompanyId))).map(row=>norm(row.staffCode||row.staffId)));
+        const companyStaff = (state.staff||[]).filter(row=>row.companyId===staffImportCompanyId || norm(row.companyName)===norm(companyNameById(staffImportCompanyId)));
+        const existingCodes = new Set(companyStaff.map(row=>norm(row.staffCode||row.staffId)));
+        const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
+        const existingPassports = new Set(companyStaff.map(row=>norm(row.passportNumber)).filter(Boolean));
         const seen = new Set();
-        const duplicates = valid.filter(row=>{const code=norm(row.staffCode); if(existingCodes.has(code)||seen.has(code)) return true; seen.add(code); return false;}).length;
-        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'—')+'</td><td>'+html(row.fullName||'—')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardExpiry||row.visaExpiry||'—')+'</td><td>'+html(!row.staffCode||!row.fullName?'Missing required field':existingCodes.has(norm(row.staffCode))?'Already exists':'Ready')+'</td></tr>').join('');
+        const duplicates = valid.filter(row=>{
+            const card=norm(row.labourCardNumber), passport=norm(row.passportNumber);
+            const key=card || passport;
+            if ((card && existingCards.has(card)) || (passport && existingPassports.has(passport)) || (key && seen.has(key))) return true;
+            if (key) seen.add(key);
+            return false;
+        }).length;
+        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'Auto')+'</td><td>'+html(row.fullName||'—')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardExpiry||row.visaExpiry||'—')+'</td><td>'+html(!row.fullName?'Missing full name':(row.labourCardNumber&&existingCards.has(norm(row.labourCardNumber)))||(row.passportNumber&&existingPassports.has(norm(row.passportNumber)))?'Already exists':'Ready')+'</td></tr>').join('');
         panel.hidden = false;
         panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+valid.length+' complete · '+invalid+' incomplete · '+duplicates+' duplicate(s)</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Full Name</th><th>Nationality</th><th>Passport</th><th>Visa Expiry</th><th>Check</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
         button.disabled = !valid.length || !staffImportCompanyId;
@@ -492,13 +501,18 @@
         const company = companyById(staffImportCompanyId);
         if (!company || !staffImportRows.length) { showCustomModal('Select company first','Choose an existing company and preview a file before importing.'); return; }
         const valid = staffImportRows.filter(row=>row.staffCode && row.fullName);
-        const existing = new Set((state.staff||[]).filter(row=>row.companyId===company.id || norm(row.companyName)===norm(company.companyName)).map(row=>norm(row.staffCode||row.staffId)));
+        const companyStaff = (state.staff||[]).filter(row=>row.companyId===company.id || norm(row.companyName)===norm(company.companyName));
+        const existing = new Set(companyStaff.map(row=>norm(row.staffCode||row.staffId)));
+        const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
+        const existingPassports = new Set(companyStaff.map(row=>norm(row.passportNumber)).filter(Boolean));
         const batchSeen = new Set();
         const generatedCodes = [];
         const importable = valid.filter(row=>{
-            const code=norm(row.staffCode);
-            if (!code || existing.has(code) || batchSeen.has(code)) return false;
-            batchSeen.add(code); return true;
+            const card=norm(row.labourCardNumber), passport=norm(row.passportNumber);
+            const key=card || passport;
+            if ((card && existingCards.has(card)) || (passport && existingPassports.has(passport)) || (key && batchSeen.has(key))) return false;
+            if (key) batchSeen.add(key);
+            return true;
         });
         if (!importable.length) { showCustomModal('Nothing to import','No new complete staff records were found. Existing or duplicate Staff IDs are skipped.'); return; }
         const updates = {};
