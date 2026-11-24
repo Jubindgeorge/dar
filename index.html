@@ -26,6 +26,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
@@ -352,6 +353,17 @@
                             <button type="button" class="btn btn-secondary" onclick="clearStaffCompanyFilter()">All Companies</button>
                             <button type="button" class="btn btn-primary" onclick="openStaffModal()">+ Add Staff</button>
                         </div>
+                    </div>
+                    <div class="staff-import-panel">
+                        <div class="staff-import-heading"><strong>Bulk Import Staff</strong><span class="dar-hint">Select an existing company first. Excel and PDF imports use the same company assignment.</span></div>
+                        <div class="staff-import-controls">
+                            <label for="staff-import-company">Company *</label>
+                            <select id="staff-import-company" onchange="updateStaffImportAvailability()"><option value="">Select existing company</option></select>
+                            <input id="staff-import-file" type="file" accept=".xlsx,.xls,.pdf" disabled onchange="previewStaffImportFile(this.files && this.files[0])" aria-label="Choose staff Excel or PDF file">
+                            <button id="staff-import-button" type="button" class="btn btn-secondary" disabled onclick="commitStaffImport()">Import Staff</button>
+                        </div>
+                        <p id="staff-import-help" class="dar-hint">Choose a company to enable Excel (.xlsx/.xls) or table-based PDF import.</p>
+                        <div id="staff-import-preview" class="staff-import-preview" aria-live="polite" hidden></div>
                     </div>
                     <div class="staff-filter-row">
                         <input id="staff-search" type="search" placeholder="Search staff ID, name, company or passport..." oninput="renderStaffTable()" aria-label="Search staff">
