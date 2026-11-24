@@ -25,9 +25,19 @@
     function companyClientsFor(name) {
         return (state.companyClients || []).filter(client => norm(client.companyName) === norm(name));
     }
+    function nextStaffCode(reserved) {
+        const used = new Set([...(state.staff || []).map(item => clean(item.staffCode || item.staffId)), ...(reserved || [])].map(norm));
+        let sequence = 1;
+        let candidate = '';
+        do {
+            candidate = 'STAFF-' + String(sequence).padStart(4, '0');
+            sequence++;
+        } while (used.has(norm(candidate)));
+        return candidate;
+    }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
-        const dates = [record.visaExpiry, record.passportExpiry].filter(Boolean).map(value => {
+        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry].filter(Boolean).map(value => {
             const date = new Date(value + 'T00:00:00');
             return Number.isNaN(date.getTime()) ? null : Math.ceil((date.getTime() - new Date().setHours(0,0,0,0)) / 86400000);
         }).filter(value => value !== null);
@@ -95,7 +105,7 @@
             '<td>'+html(staff.companyName || companyNameById(staff.companyId) || '-')+'</td>'+
             '<td>'+html(staff.lastWorkDone || '-')+'</td>'+
             '<td>'+html(window.darFormatTableDate(staff.joiningDate))+'</td>'+
-            '<td>'+html(staff.visaExpiry || '-')+'</td>'+
+            '<td>'+html(staff.labourCardExpiry || '-')+'</td>'+
             '<td>'+html(staff.passportExpiry || '-')+'</td>'+
             '<td>'+statusPill(dueStatus(staff))+'</td>'+
             '<td class="staff-actions"><button type="button" class="btn btn-secondary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit</button> '+(staff.linkedInvoiceRef ? '<button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+html(staff.linkedInvoiceRef)+'\')">Invoice</button>' : '')+'</td>'+
@@ -126,13 +136,16 @@
         companySelect.innerHTML = '<option value="">Select company</option>' + (state.clients || []).map(c => '<option value="'+html(c.id)+'">'+html(c.companyName)+'</option>').join('');
         const companyId = record.companyId || defaults.companyId || companyIdByName(record.companyName || defaults.companyName || '');
         companySelect.value = companyId;
-        byId('sf-staff-code').value = record.staffCode || record.staffId || defaults.staffCode || '';
+        byId('sf-staff-code').value = record.staffCode || record.staffId || defaults.staffCode || nextStaffCode();
+        byId('sf-staff-code').readOnly = true;
         byId('sf-full-name').value = record.fullName || defaults.fullName || '';
         byId('sf-nationality').value = record.nationality || '';
         byId('sf-designation').value = record.designation || '';
         byId('sf-last-work').value = record.lastWorkDone || defaults.lastWorkDone || '';
         byId('sf-passport').value = record.passportNumber || '';
         byId('sf-passport-expiry').value = record.passportExpiry || '';
+        byId('sf-labour-card-number').value = record.labourCardNumber || '';
+        byId('sf-labour-card-expiry').value = record.labourCardExpiry || '';
         byId('sf-visa-number').value = record.visaNumber || '';
         byId('sf-visa-expiry').value = record.visaExpiry || defaults.visaExpiry || '';
         byId('sf-visa-status').value = record.visaStatus || '';
@@ -151,7 +164,7 @@
         const id = clean(byId('sf-record-id').value) || db.ref('staff').push().key;
         const companyId = clean(byId('sf-company').value);
         const companyName = companyNameById(companyId);
-        const staffCode = clean(byId('sf-staff-code').value);
+        const staffCode = clean(byId('sf-staff-code').value) || nextStaffCode();
         const fullName = clean(byId('sf-full-name').value);
         if (!staffCode || !fullName || !companyId || !companyName) {
             showCustomModal('Required fields','Staff ID, Full Name and Company are required.'); return;
@@ -164,6 +177,8 @@
             nationality: clean(byId('sf-nationality').value),
             designation: clean(byId('sf-designation').value),
             lastWorkDone: clean(byId('sf-last-work').value),
+            labourCardNumber: clean(byId('sf-labour-card-number').value),
+            labourCardExpiry: clean(byId('sf-labour-card-expiry').value),
             passportNumber: clean(byId('sf-passport').value),
             passportExpiry: clean(byId('sf-passport-expiry').value),
             visaNumber: clean(byId('sf-visa-number').value),
@@ -396,13 +411,15 @@
                 const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
 
                 records.push({
-                    staffCode:cardNumber || passport,
+                    staffCode:'',
+                    labourCardNumber:cardNumber,
+                    labourCardExpiry:normalizeStaffImportDate(expiry),
                     fullName:name,
                     passportNumber:passport,
                     nationality,
                     designation,
                     visaNumber:permitId,
-                    visaExpiry:normalizeStaffImportDate(expiry),
+                    visaExpiry:'',
                     visaStatus:permit,
                     renewalStatus:/RENEW/i.test(permit)?'Renewal':'Pending'
                 });
@@ -421,7 +438,7 @@
         const existingCodes = new Set((state.staff||[]).filter(row=>row.companyId===staffImportCompanyId || norm(row.companyName)===norm(companyNameById(staffImportCompanyId))).map(row=>norm(row.staffCode||row.staffId)));
         const seen = new Set();
         const duplicates = valid.filter(row=>{const code=norm(row.staffCode); if(existingCodes.has(code)||seen.has(code)) return true; seen.add(code); return false;}).length;
-        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'—')+'</td><td>'+html(row.fullName||'—')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.visaExpiry||'—')+'</td><td>'+html(!row.staffCode||!row.fullName?'Missing required field':existingCodes.has(norm(row.staffCode))?'Already exists':'Ready')+'</td></tr>').join('');
+        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'—')+'</td><td>'+html(row.fullName||'—')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardExpiry||row.visaExpiry||'—')+'</td><td>'+html(!row.staffCode||!row.fullName?'Missing required field':existingCodes.has(norm(row.staffCode))?'Already exists':'Ready')+'</td></tr>').join('');
         panel.hidden = false;
         panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+valid.length+' complete · '+invalid+' incomplete · '+duplicates+' duplicate(s)</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Full Name</th><th>Nationality</th><th>Passport</th><th>Visa Expiry</th><th>Check</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
         button.disabled = !valid.length || !staffImportCompanyId;
@@ -457,6 +474,7 @@
             staffImportRows = rows.map(row=>({
                 ...row,
                 passportExpiry:normalizeStaffImportDate(row.passportExpiry),
+                labourCardExpiry:normalizeStaffImportDate(row.labourCardExpiry),
                 visaExpiry:normalizeStaffImportDate(row.visaExpiry),
                 joiningDate:normalizeStaffImportDate(row.joiningDate)
             }));
@@ -476,6 +494,7 @@
         const valid = staffImportRows.filter(row=>row.staffCode && row.fullName);
         const existing = new Set((state.staff||[]).filter(row=>row.companyId===company.id || norm(row.companyName)===norm(company.companyName)).map(row=>norm(row.staffCode||row.staffId)));
         const batchSeen = new Set();
+        const generatedCodes = [];
         const importable = valid.filter(row=>{
             const code=norm(row.staffCode);
             if (!code || existing.has(code) || batchSeen.has(code)) return false;
@@ -487,10 +506,13 @@
         const timestamp = new Date().toISOString();
         importable.forEach(row=>{
             const id=db.ref('staff').push().key;
+            const generatedStaffCode=nextStaffCode(generatedCodes);
+            generatedCodes.push(generatedStaffCode);
             const record={
-                id, staffCode:row.staffCode, staffId:row.staffCode, fullName:row.fullName,
+                id, staffCode:generatedStaffCode, staffId:generatedStaffCode, fullName:row.fullName,
                 companyId:company.id, companyName:company.companyName,
                 nationality:row.nationality||'', designation:row.designation||'',
+                labourCardNumber:row.labourCardNumber||'', labourCardExpiry:row.labourCardExpiry||'',
                 lastWorkDone:row.lastWorkDone||'', passportNumber:row.passportNumber||'',
                 passportExpiry:row.passportExpiry||'', visaNumber:row.visaNumber||'',
                 visaExpiry:row.visaExpiry||'', visaStatus:row.visaStatus||'',
