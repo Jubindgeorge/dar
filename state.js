@@ -42,6 +42,7 @@ function initFirebaseListeners() {
         const val = snapshot.val();
         state.documents = val ? Object.keys(val).map(k => ({ refCode: k, ...val[k] })) : [];
         if (typeof renderDocumentsTable === 'function') renderDocumentsTable();
+        if (typeof populateCompanyClients === 'function') populateCompanyClients();
         if (typeof renderWorksTable === 'function') renderWorksTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
         if (typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
