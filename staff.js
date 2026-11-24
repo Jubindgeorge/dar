@@ -340,52 +340,72 @@
             if (grids.length) return grids;
         }
 
-        // UAE MOHRE "List of Employees" report: each employee is a vertical block,
-        // not a row under Staff ID / Full Name headings.
+        // UAE MOHRE "List of Employees" report: employee fields are stacked vertically.
+        // Do not require the 14-digit permit ID: it may appear before the passport
+        // (page 2) or be absent from an extracted row (as in some MOHRE reports).
         const isMohre = /list of employees|establishment number|passport number|person name|card type|job name|card number/i.test(combined);
         if (isMohre) {
             const records = [];
             const passportPattern = /^[A-Z0-9]{7,10}$/i;
-            const idPattern = /^\d{14}$/;
-            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            const permitPattern = /(?:NEW|RENEW|PRE APPROVAL).*WORK PERMIT/i;
-            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\s+/g,' ').trim();
-            const flat = allLines.join(' ').split(/\s+/).map(value=>value.trim()).filter(Boolean);
+            const permitStartPattern = /^(NEW|RENEW|PRE)$/i;
+            const datePattern = /^\\d{2}\\/\\d{2}\\/\\d{4}$/;
+            const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
+            const flat = allLines.join(' ').split(/\\s+/).map(value=>value.trim()).filter(Boolean);
             const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
+            const isPassport = value => passportPattern.test(value) && (/[A-Z]/i.test(value) || value.length === 8);
             for (let i=0;i<flat.length;i++) {
                 const passport = flat[i];
-                if (!passportPattern.test(passport) || (!/[A-Z]/i.test(passport) && passport.length !== 8)) continue;
-                let idIndex = -1;
-                for (let j=i+1;j<flat.length && j<i+35;j++) { if (idPattern.test(flat[j])) { idIndex=j; break; } }
-                if (idIndex < 0) continue;
-                const name = flat.slice(i+1,idIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\s+/g,' ').trim();
+                if (!isPassport(passport)) continue;
+
+                // Find this employee's permit block first. It is a more reliable
+                // boundary than the optional 14-digit permit ID.
                 let permitStart = -1, permitEnd = -1;
-                for (let j=idIndex+1;j<Math.min(flat.length,idIndex+20);j++) {
-                    if (/^(NEW|RENEW|PRE)$/i.test(flat[j])) {
-                        const endIndex = flat.slice(j,Math.min(flat.length,j+8)).findIndex(value=>/^PERMIT$/i.test(value));
-                        if (endIndex >= 0) { permitStart=j; permitEnd=j+endIndex; break; }
-                    }
+                for (let j=i+1;j<Math.min(flat.length,i+55);j++) {
+                    if (!permitStartPattern.test(flat[j])) continue;
+                    const endIndex = flat.slice(j,Math.min(flat.length,j+10)).findIndex(value=>/^PERMIT$/i.test(value));
+                    if (endIndex >= 0) { permitStart=j; permitEnd=j+endIndex; break; }
+                    if (j > i+1 && isPassport(flat[j])) break;
                 }
-                if (!name || permitStart < 0) continue;
+                if (permitStart < 0) continue;
+
+                // Name is between passport and permit; discard a permit ID if
+                // it occurs in that span. This also handles a missing permit ID.
+                const name = flat.slice(i+1,permitStart)
+                    .filter(value=>!/^\\d{14}$/.test(value))
+                    .map(latin).filter(value=>/[A-Za-z]/.test(value))
+                    .join(' ').replace(/\\s+/g,' ').trim();
+                if (!name) continue;
+
                 const permit = flat.slice(permitStart,permitEnd+1).join(' ');
                 let nationalityIndex = -1;
-                for (let j=permitEnd+1;j<Math.min(flat.length,permitEnd+12);j++) {
-                    if (nationalities.has(flat[j].toUpperCase())) { nationalityIndex=j; break; }
+                for (let j=permitEnd+1;j<Math.min(flat.length,permitEnd+18);j++) {
+                    const token=flat[j].toUpperCase();
+                    if (nationalities.has(token)) { nationalityIndex=j; break; }
+                    if (isPassport(flat[j])) break;
                 }
                 if (nationalityIndex < 0) continue;
-                const designation = flat.slice(permitEnd+1,nationalityIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').trim();
-                const nationality = flat[nationalityIndex].toUpperCase()==='SRI' && flat[nationalityIndex+1]?.toUpperCase()==='LANKA' ? 'SRI LANKA' : flat[nationalityIndex].toUpperCase();
+
+                const designation = flat.slice(permitEnd+1,nationalityIndex)
+                    .map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').trim();
+                const nationality = flat[nationalityIndex].toUpperCase()==='SRI' && flat[nationalityIndex+1]?.toUpperCase()==='LANKA'
+                    ? 'SRI LANKA' : flat[nationalityIndex].toUpperCase();
                 const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
-                const afterNationality = flat.slice(nationalityEnd+1,nationalityEnd+8);
-                const cardNumber = afterNationality.find(value=>/^\d{8,10}$/.test(value)) || '';
+                const afterNationality = flat.slice(nationalityEnd+1,nationalityEnd+10);
+                const cardNumber = afterNationality.find(value=>/^\\d{8,10}$/.test(value)) || '';
                 const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
+
                 records.push({
-                    staffCode:cardNumber || passport, fullName:name, passportNumber:passport,
-                    nationality, designation, visaNumber:flat[idIndex],
-                    visaExpiry:normalizeStaffImportDate(expiry), visaStatus:permit,
+                    staffCode:cardNumber || passport,
+                    fullName:name,
+                    passportNumber:passport,
+                    nationality,
+                    designation,
+                    visaNumber:'',
+                    visaExpiry:normalizeStaffImportDate(expiry),
+                    visaStatus:permit,
                     renewalStatus:/RENEW/i.test(permit)?'Renewal':'Pending'
                 });
-                i = idIndex;
+                i = nationalityEnd;
             }
             if (records.length) return records;
         }
