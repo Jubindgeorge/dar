@@ -669,15 +669,19 @@
         const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
         const existingPassports = new Set(companyStaff.map(row=>norm(row.passportNumber)).filter(Boolean));
         const existingPersons = new Set(companyStaff.map(row=>norm(row.personNumber)).filter(Boolean));
-        const seen = new Set();
+        const seenCards = new Set(), seenPassports = new Set(), seenPersons = new Set(), duplicateRows = new Set();
         const duplicates = valid.filter(row=>{
             const card=norm(row.labourCardNumber), passport=norm(row.passportNumber), person=norm(row.personNumber);
-            const key=card || passport || person;
-            if ((card && existingCards.has(card)) || (passport && existingPassports.has(passport)) || (person && existingPersons.has(person)) || (key && seen.has(key))) return true;
-            if (key) seen.add(key);
-            return false;
+            const duplicate = (card && (existingCards.has(card) || seenCards.has(card))) ||
+                (passport && (existingPassports.has(passport) || seenPassports.has(passport))) ||
+                (person && (existingPersons.has(person) || seenPersons.has(person)));
+            if (card) seenCards.add(card);
+            if (passport) seenPassports.add(passport);
+            if (person) seenPersons.add(person);
+            if (duplicate) duplicateRows.add(row);
+            return !!duplicate;
         }).length;
-        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'Auto')+'</td><td>'+html(row.fullName||'—')+(row.personNumber?'<small class="staff-person-number">Person Labour No: '+html(row.personNumber)+'</small>':'')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardNumber||'—')+'</td><td>'+html(row.labourCardExpiry||'—')+'</td><td>'+html(!row.fullName?'Missing full name':(row.labourCardNumber&&existingCards.has(norm(row.labourCardNumber)))||(row.passportNumber&&existingPassports.has(norm(row.passportNumber)))?'Already exists':'Ready')+'</td></tr>').join('');
+        const preview = staffImportRows.slice(0,30).map((row,index)=>'<tr><td>'+ (index+1) +'</td><td>'+html(row.staffCode||'Auto')+'</td><td>'+html(row.fullName||'—')+(row.personNumber?'<small class="staff-person-number">Person Labour No: '+html(row.personNumber)+'</small>':'')+'</td><td>'+html(row.nationality||'—')+'</td><td>'+html(row.passportNumber||'—')+'</td><td>'+html(row.labourCardNumber||'—')+'</td><td>'+html(row.labourCardExpiry||'—')+'</td><td>'+html(!row.fullName?'Missing full name':duplicateRows.has(row)?'Duplicate identifier':'Ready')+'</td></tr>').join('');
         panel.hidden = false;
         panel.innerHTML = '<div class="staff-import-summary"><strong>'+staffImportRows.length+' rows detected</strong><span>'+valid.length+' complete · '+invalid+' incomplete · '+duplicates+' duplicate(s)</span></div><div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Staff ID</th><th>Name / Person Labour No.</th><th>Nationality</th><th>Passport</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Check</th></tr></thead><tbody>'+preview+'</tbody></table></div>'+(staffImportRows.length>30?'<p class="dar-hint">Showing first 30 rows in preview.</p>':'');
         button.disabled = !valid.length || !staffImportCompanyId;
@@ -736,14 +740,17 @@
         const existingCards = new Set(companyStaff.map(row=>norm(row.labourCardNumber)).filter(Boolean));
         const existingPassports = new Set(companyStaff.map(row=>norm(row.passportNumber)).filter(Boolean));
         const existingPersons = new Set(companyStaff.map(row=>norm(row.personNumber)).filter(Boolean));
-        const batchSeen = new Set();
+        const batchCards = new Set(), batchPassports = new Set(), batchPersons = new Set();
         const generatedCodes = [];
         const importable = valid.filter(row=>{
             const card=norm(row.labourCardNumber), passport=norm(row.passportNumber), person=norm(row.personNumber);
-            const key=card || passport || person;
-            if ((card && existingCards.has(card)) || (passport && existingPassports.has(passport)) || (person && existingPersons.has(person)) || (key && batchSeen.has(key))) return false;
-            if (key) batchSeen.add(key);
-            return true;
+            const duplicate = (card && (existingCards.has(card) || batchCards.has(card))) ||
+                (passport && (existingPassports.has(passport) || batchPassports.has(passport))) ||
+                (person && (existingPersons.has(person) || batchPersons.has(person)));
+            if (card) batchCards.add(card);
+            if (passport) batchPassports.add(passport);
+            if (person) batchPersons.add(person);
+            return !duplicate;
         });
         if (!importable.length) { showCustomModal('Nothing to import','No new complete staff records were found. Existing labour-card numbers or passport numbers are skipped.'); return; }
         const updates = {};
