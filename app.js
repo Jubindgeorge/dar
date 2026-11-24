@@ -233,8 +233,10 @@ window.handleLogin = async function(event) {
             setAuthStatus('Checking account approval...');
         }
     } catch (error) {
-        console.error('Login failed:', error.code);
-        setAuthStatus('Sign-in failed. Check your email and password.');
+        console.error('Login failed:', error.code, error.message);
+        const code = error && error.code ? ' (' + error.code + ')' : '';
+        const detail = error && error.message ? ' ' + error.message : ' Please check your connection and try again.';
+        setAuthStatus('Sign-in failed' + code + '.' + detail);
     } finally { darLoginInProgress = false; }
 };
 window.handleSignup = async function(event) {
