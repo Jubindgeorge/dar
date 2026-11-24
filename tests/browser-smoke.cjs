@@ -47,8 +47,7 @@ const assert = require('node:assert/strict');
         );
         if(person)target.push(make('316010402646'+String(47+index).padStart(2,'0'),137,y-20));
       };
-      make('The List Of Employees',20,760);
-      make('Passport Number',35,730);
+      page1Items.push(make('The List Of Employees',20,760),make('Passport Number',35,730));
       for(let index=0;index<16;index++)employee(page1Items,index,680-index*35,index!==15);
       // The 16th employee's Person Labour No. is printed at the top of page 2.
       page2Items.push(make('20010038231120',137,720));
