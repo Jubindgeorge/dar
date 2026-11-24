@@ -350,33 +350,42 @@
             const datePattern = /^\\d{2}\\/\\d{2}\\/\\d{4}$/;
             const permitPattern = /(?:NEW|RENEW|PRE APPROVAL).*WORK PERMIT/i;
             const latin = value => clean(value).replace(/[^A-Za-z0-9 .'-]/g,'').replace(/\\s+/g,' ').trim();
-            const flat = allLines.flatMap(line => line.split(/\\s{2,}|\\s+(?=(?:NEW|RENEW|PRE APPROVAL)\\b)/i).map(v=>v.trim()).filter(Boolean));
+            const flat = allLines.join(' ').split(/\\s+/).map(value=>value.trim()).filter(Boolean);
+            const nationalities = new Set(['INDIA','PAKISTAN','NEPAL','GHANA','BANGLADESH','SRI','LANKA','PHILIPPINES','EGYPT','KENYA','UGANDA']);
             for (let i=0;i<flat.length;i++) {
-                const passport = flat[i].match(/^([A-Z0-9]{7,10})$/i);
-                if (!passportPattern.test(flat[i]) || !passport) continue;
-                const block = [];
-                for (let j=i+1;j<flat.length && !passportPattern.test(flat[j]);j++) block.push(flat[j]);
-                const idIndex = block.findIndex(value=>idPattern.test(value));
+                const passport = flat[i];
+                if (!passportPattern.test(passport) || !/[A-Z]/i.test(passport)) continue;
+                let idIndex = -1;
+                for (let j=i+1;j<flat.length && j<i+35;j++) { if (idPattern.test(flat[j])) { idIndex=j; break; } }
                 if (idIndex < 0) continue;
-                const name = block.slice(0,idIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\\s+/g,' ').trim();
-                const tail = block.slice(idIndex+1);
-                const permitIndex = tail.findIndex(value=>permitPattern.test(value));
-                if (!name || permitIndex < 0) continue;
-                const permit = tail[permitIndex];
-                const afterPermit = tail.slice(permitIndex+1);
-                const nationalityIndex = afterPermit.findIndex(value=>/^(INDIA|PAKISTAN|NEPAL|GHANA|BANGLADESH|SRI LANKA|PHILIPPINES|EGYPT|UNITED KINGDOM|KENYA|UGANDA)$/i.test(value));
-                if (nationalityIndex < 1) continue;
-                const designation = latin(afterPermit[nationalityIndex-1]);
-                const nationality = clean(afterPermit[nationalityIndex]).toUpperCase();
-                const cardNumber = afterPermit.slice(nationalityIndex+1).find(value=>/^\\d{8,10}$/.test(value)) || '';
-                const expiry = afterPermit.slice(nationalityIndex+1).find(value=>datePattern.test(value)) || '';
+                const name = flat.slice(i+1,idIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').replace(/\\s+/g,' ').trim();
+                let permitStart = -1, permitEnd = -1;
+                for (let j=idIndex+1;j<Math.min(flat.length,idIndex+20);j++) {
+                    if (/^(NEW|RENEW|PRE)$/i.test(flat[j])) {
+                        const endIndex = flat.slice(j,Math.min(flat.length,j+8)).findIndex(value=>/^PERMIT$/i.test(value));
+                        if (endIndex >= 0) { permitStart=j; permitEnd=j+endIndex; break; }
+                    }
+                }
+                if (!name || permitStart < 0) continue;
+                const permit = flat.slice(permitStart,permitEnd+1).join(' ');
+                let nationalityIndex = -1;
+                for (let j=permitEnd+1;j<Math.min(flat.length,permitEnd+12);j++) {
+                    if (nationalities.has(flat[j].toUpperCase())) { nationalityIndex=j; break; }
+                }
+                if (nationalityIndex < 0) continue;
+                const designation = flat.slice(permitEnd+1,nationalityIndex).map(latin).filter(value=>/[A-Za-z]/.test(value)).join(' ').trim();
+                const nationality = flat[nationalityIndex].toUpperCase()==='SRI' && flat[nationalityIndex+1]?.toUpperCase()==='LANKA' ? 'SRI LANKA' : flat[nationalityIndex].toUpperCase();
+                const nationalityEnd = nationality==='SRI LANKA' ? nationalityIndex+1 : nationalityIndex;
+                const afterNationality = flat.slice(nationalityEnd+1,nationalityEnd+8);
+                const cardNumber = afterNationality.find(value=>/^\\d{8,10}$/.test(value)) || '';
+                const expiry = afterNationality.find(value=>datePattern.test(value)) || '';
                 records.push({
-                    staffCode:cardNumber || flat[i], fullName:name, passportNumber:flat[i],
-                    nationality, designation, visaNumber:block[idIndex],
+                    staffCode:cardNumber || passport, fullName:name, passportNumber:passport,
+                    nationality, designation, visaNumber:flat[idIndex],
                     visaExpiry:normalizeStaffImportDate(expiry), visaStatus:permit,
                     renewalStatus:/RENEW/i.test(permit)?'Renewal':'Pending'
                 });
-                i += block.length;
+                i = idIndex;
             }
             if (records.length) return records;
         }
