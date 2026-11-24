@@ -441,7 +441,9 @@
     function populateStaffImportCompanies() {
         const select=byId('staff-import-company'); if(!select) return;
         const selected=select.value;
-        select.innerHTML='<option value="">Select existing company</option>'+(state.clients||[]).slice().sort((a,b)=>clean(a.companyName).localeCompare(clean(b.companyName))).map(company=>'<option value="'+html(company.id)+'">'+html(company.companyName)+'</option>').join('');
+        const options='<option value="">Select existing company</option>'+(state.clients||[]).slice().sort((a,b)=>clean(a.companyName).localeCompare(clean(b.companyName))).map(company=>'<option value="'+html(company.id)+'">'+html(company.companyName)+'</option>').join('');
+        if (select.innerHTML === options) return;
+        select.innerHTML=options;
         select.value=selected;
         updateStaffImportAvailability();
     }
