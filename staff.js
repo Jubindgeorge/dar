@@ -620,7 +620,6 @@
             const ref=clean(doc.refCode),metadata={staffId:person.id,staffCode:person.staffCode||person.staffId,staffName:person.fullName};
             if(doc.staffId===metadata.staffId&&doc.staffCode===metadata.staffCode&&doc.staffName===metadata.staffName)return;
             Object.entries(metadata).forEach(([field,value])=>{updates['documents/'+ref+'/'+field]=value;});
-            Object.assign(doc,metadata);
             const refs=linkedByStaff.get(person.id)||[];refs.push(ref);linkedByStaff.set(person.id,refs);
         });
         linkedByStaff.forEach((refs,id)=>{
@@ -629,7 +628,6 @@
             updates['staff/'+id+'/linkedDocumentRefs']=merged;
             const invoice=(state.documents||[]).find(doc=>refs.includes(clean(doc.refCode))&&String(doc.type||'').toLowerCase()==='invoice');
             if(invoice&&!person.linkedInvoiceRef)updates['staff/'+id+'/linkedInvoiceRef']=invoice.refCode;
-            person.linkedDocumentRefs=merged;if(invoice&&!person.linkedInvoiceRef)person.linkedInvoiceRef=invoice.refCode;
         });
         const unchanged=plan.filter(item=>item.status==='same').length;
         const skipped=plan.filter(item=>['duplicate','conflict','invalid'].includes(item.status)).length;
@@ -640,7 +638,19 @@
             if(error){byId('staff-import-button').disabled=false;showCustomModal('Import failed','Firebase could not save the staff changes. Existing staff records and linked documents were not intentionally deleted.');return;}
             state.staff=state.staff||[];
             changed.forEach(({id,record})=>{const index=state.staff.findIndex(item=>item.id===id);if(index>=0)state.staff[index]=record;});
-            state.staff.push(...created);renderStaffTable();
+            state.staff.push(...created);
+            linkedByStaff.forEach((refs,id)=>{
+                const person=state.staff.find(item=>item.id===id);
+                if(!person)return;
+                person.linkedDocumentRefs=[...new Set([...(Array.isArray(person.linkedDocumentRefs)?person.linkedDocumentRefs:[]),...refs])];
+                const invoice=(state.documents||[]).find(doc=>refs.includes(clean(doc.refCode))&&String(doc.type||'').toLowerCase()==='invoice');
+                if(invoice&&!person.linkedInvoiceRef)person.linkedInvoiceRef=invoice.refCode;
+                refs.forEach(ref=>{
+                    const doc=(state.documents||[]).find(item=>clean(item.refCode)===ref);
+                    if(doc)Object.assign(doc,{staffId:person.id,staffCode:person.staffCode||person.staffId,staffName:person.fullName});
+                });
+            });
+            renderStaffTable();
             staffImportRows=[];byId('staff-import-preview').hidden=true;byId('staff-import-file').value='';
             byId('staff-import-help').textContent='Imported '+created.length+' new and updated '+changed.length+' existing staff record(s) for '+company.companyName+'. Linked '+linkedDocuments+' existing invoice/quotation document(s).';
             showCustomModal('Import completed',created.length+' new · '+changed.length+' updated · '+unchanged+' unchanged/skipped · '+skipped+' duplicate/conflicting/incomplete skipped · '+linkedDocuments+' existing documents linked. Financial values and existing document records were preserved.');
