@@ -25,6 +25,7 @@ function openStudio(type, editRefCode = null) {
     populateStudioInjectorSelect();
     populateStudioClientDropdown();
     state.selectedCompanyClientId = '';
+    state.selectedStudioStaffId = '';
 
     if (editRefCode && state.documents) {
         const doc = state.documents.find(d => d.refCode === editRefCode);
@@ -44,6 +45,7 @@ function openStudio(type, editRefCode = null) {
             const clientNameInput = document.getElementById('st-client-name');
             if (clientNameInput) clientNameInput.value = doc.clientName || '';
             state.selectedCompanyClientId = doc.companyClientId || '';
+            state.selectedStudioStaffId = doc.staffId || '';
 
             const compNameInput = document.getElementById('st-company-name');
             if (compNameInput) compNameInput.value = doc.companyName || '';
@@ -119,6 +121,9 @@ function openStudio(type, editRefCode = null) {
         addStudioRow(false);
     }
     if (typeof populateCompanyClients === 'function') populateCompanyClients();
+    populateStudioStaffDropdown();
+    const staffSelect = document.getElementById('st-staff-selector');
+    if (staffSelect) staffSelect.value = state.selectedStudioStaffId || '';
     recalculateStudioTotals();
 }
 
@@ -155,11 +160,46 @@ function normalizeStudioCompanyName(value) {
     return String(value || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+function populateStudioStaffDropdown() {
+    const select = document.getElementById('st-staff-selector');
+    if (!select) return;
+    const companyName = document.getElementById('st-company-name')?.value || '';
+    const normalized = normalizeStudioCompanyName(companyName);
+    const company = (state.clients || []).find(item => normalizeStudioCompanyName(item.companyName) === normalized);
+    const staff = (state.staff || []).filter(item => normalized && ((company?.id && item.companyId === company.id) || normalizeStudioCompanyName(item.companyName) === normalized)).sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || '')));
+    select.innerHTML = '<option value="">-- No staff selected --</option>' + staff.map(item => {
+        const code = item.staffCode || item.staffId || item.id || '';
+        const label = [code, item.fullName || 'Unnamed staff'].filter(Boolean).join(' · ');
+        return '<option value="' + escapeHtml(item.id || '') + '">' + escapeHtml(label) + '</option>';
+    }).join('');
+    if (state.selectedStudioStaffId && staff.some(item => item.id === state.selectedStudioStaffId)) select.value = state.selectedStudioStaffId;
+    else if (state.selectedStudioStaffId) { state.selectedStudioStaffId = ''; select.value = ''; }
+}
+
+function selectStudioStaff(staffId) {
+    const staff = (state.staff || []).find(item => item.id === staffId);
+    state.selectedStudioStaffId = staff ? staff.id : '';
+    if (!staff) return;
+    const companyInput = document.getElementById('st-company-name');
+    if (companyInput && staff.companyName) companyInput.value = staff.companyName;
+    const clientInput = document.getElementById('st-client-name');
+    if (clientInput) clientInput.value = staff.fullName || '';
+    const contactInput = document.getElementById('st-contact-person');
+    if (contactInput) contactInput.value = '';
+    const companyClientSelect = document.getElementById('st-company-client-selector');
+    if (companyClientSelect) companyClientSelect.value = '';
+    state.selectedCompanyClientId = '';
+    populateStudioStaffDropdown();
+    const select = document.getElementById('st-staff-selector');
+    if (select) select.value = staff.id;
+}
+window.selectStudioStaff = selectStudioStaff;
 function previewStudioCompanyMatches() {
     const input = document.getElementById('st-company-name');
     const target = document.getElementById('st-company-matches');
     if (!input || !target) return;
     if (typeof populateCompanyClients === 'function') populateCompanyClients();
+    populateStudioStaffDropdown();
     const query = normalizeStudioCompanyName(input.value);
     if (!query) { target.replaceChildren(); return; }
     const matches = (state.clients || []).filter(c => normalizeStudioCompanyName(c.companyName).includes(query)).slice(0, 6);
@@ -204,6 +244,7 @@ function autofillStudioClient(companyName) {
         const compInput = document.getElementById('st-company-name');
         if (compInput) compInput.value = client.companyName || '';
         document.getElementById('st-company-matches')?.replaceChildren();
+        populateStudioStaffDropdown();
         const contactInput = document.getElementById('st-contact-person');
         if (contactInput) contactInput.value = client.contactPerson || '';
         state.selectedCompanyClientId = '';
@@ -287,6 +328,16 @@ function commitDocumentToMemory() {
     const companyName = document.getElementById('st-company-name')?.value.trim() || '';
     const contactPerson = document.getElementById('st-contact-person')?.value.trim() || '';
     const notes = document.getElementById('st-notes')?.value.trim() || '';
+    if (state.selectedStudioStaffId) {
+        const linkedStaff = (state.staff || []).find(item => item.id === state.selectedStudioStaffId);
+        const linkedCompany = (state.clients || []).find(item => normalizeStudioCompanyName(item.companyName) === normalizeStudioCompanyName(companyName));
+        const belongsToCompany = linkedStaff && normalizeStudioCompanyName(linkedStaff.companyName) === normalizeStudioCompanyName(companyName) &&
+            (!linkedCompany?.id || !linkedStaff.companyId || linkedStaff.companyId === linkedCompany.id);
+        if (!belongsToCompany) {
+            showCustomModal('Staff/company mismatch', 'Select an imported staff member belonging to the same company shown on this invoice.');
+            return;
+        }
+    }
     const govtAmt = parseFloat(document.getElementById('st-govt-amt')?.value) || 0;
     const rows = [...document.querySelectorAll('#st-spreadsheet-body tr')];
     if (!rows.length) {
@@ -439,6 +490,10 @@ function commitDocumentToMemory() {
         contactPerson,
         notes,
         companyClientId: state.selectedCompanyClientId || '',
+        staffId: state.selectedStudioStaffId || '',
+        staffCode: (state.staff || []).find(item => item.id === state.selectedStudioStaffId)?.staffCode || (state.staff || []).find(item => item.id === state.selectedStudioStaffId)?.staffId || '',
+        staffName: (state.staff || []).find(item => item.id === state.selectedStudioStaffId)?.fullName || '',
+        personNumber: (state.staff || []).find(item => item.id === state.selectedStudioStaffId)?.personNumber || '',
         createdDate: previousDocument ? (previousDocument.createdDate || previousDocument.createdAt || '') : createdDate,
         transactionDate: createdDate,
         updatedAt: new Date().toISOString(),
@@ -463,15 +518,45 @@ function commitDocumentToMemory() {
         total: totalAmt,
         amount: totalAmt,
         items,
-        branchTag: companyName && !/^direct clients?$/i.test(companyName) && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName) ? 'staff' : 'company'
+        branchTag: state.selectedStudioStaffId || (companyName && !/^direct clients?$/i.test(companyName) && clientName && normalizeStudioCompanyName(companyName) !== normalizeStudioCompanyName(clientName)) ? 'staff' : 'company'
     };
 
     // Update the existing record in place. For converted invoices, atomically adjust
     // the source quotation's invoiced balance as well.
     const wasEditing = !!state.activeEditingId;
     const destinationTab = type === 'Quotation' ? 'quotations' : 'documents';
-    const finishSave = (err, committedDocuments = null) => {
+    const finishSave = async (err, committedDocuments = null) => {
         if (!err) {
+            const previousStaffId = previousDocument?.staffId || '';
+            const nextStaffId = payload.staffId || '';
+            try {
+                if (previousStaffId && previousStaffId !== nextStaffId) {
+                    await db.ref('staff/' + previousStaffId).transaction(current => {
+                        if (!current) return current;
+                        const refs = (Array.isArray(current.linkedDocumentRefs) ? current.linkedDocumentRefs : []).filter(ref => ref !== refCode);
+                        return { ...current, linkedDocumentRefs: refs, linkedInvoiceRef: current.linkedInvoiceRef === refCode ? (refs[0] || '') : (current.linkedInvoiceRef || '') };
+                    });
+                }
+                if (nextStaffId) {
+                    await db.ref('staff/' + nextStaffId).transaction(current => {
+                        if (!current) return current;
+                        const refs = Array.isArray(current.linkedDocumentRefs) ? current.linkedDocumentRefs.slice() : [];
+                        if (!refs.includes(refCode)) refs.push(refCode);
+                        return { ...current, linkedDocumentRefs: refs, linkedInvoiceRef: refCode };
+                    });
+                }
+                (state.staff || []).forEach(item => {
+                    if (item.id === previousStaffId && previousStaffId !== nextStaffId) {
+                        item.linkedDocumentRefs = (Array.isArray(item.linkedDocumentRefs) ? item.linkedDocumentRefs : []).filter(ref => ref !== refCode);
+                        if (item.linkedInvoiceRef === refCode) item.linkedInvoiceRef = item.linkedDocumentRefs[0] || '';
+                    }
+                    if (item.id === nextStaffId) {
+                        item.linkedDocumentRefs = Array.isArray(item.linkedDocumentRefs) ? item.linkedDocumentRefs : [];
+                        if (!item.linkedDocumentRefs.includes(refCode)) item.linkedDocumentRefs.push(refCode);
+                        item.linkedInvoiceRef = refCode;
+                    }
+                });
+            } catch (linkError) { console.error('Invoice saved, but staff back-link could not be synchronized:', linkError); }
             if (committedDocuments) {
                 state.documents = Object.values(committedDocuments).filter(d => d && d.refCode);
             } else {

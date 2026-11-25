@@ -415,7 +415,7 @@ const assert = require('node:assert/strict');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
-      state.activeStaffCompanyId='';
+      state.activeStaffCompanyId='company-test';
       renderStaffTable();
       state.suppliers=[{id:'supplier-test',name:'Test Supplier'}];
       state.purchases=[{id:'purchase-test',supplierId:'supplier-test',supplierName:'Test Supplier',reference:'PO-TEST-001',date:'2026-10-20',description:'Test service',amount:125,paymentStatus:'Unpaid'}];

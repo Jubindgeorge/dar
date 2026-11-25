@@ -11,6 +11,7 @@
     state.companyClients = state.companyClients || [];
     state.activeStaffCompanyId = state.activeStaffCompanyId || '';
     state.selectedCompanyClientId = state.selectedCompanyClientId || '';
+    state.activeStaffProfileId = state.activeStaffProfileId || '';
 
     function companyById(id) {
         return (state.clients || []).find(company => company.id === id);
@@ -50,14 +51,20 @@
     function nextStaffCode(companyId, reserved) {
         const company = companyById(companyId);
         const companyName = company?.companyName || '';
-        const used = new Set([...(state.staff || []).filter(item => item.companyId === companyId || (companyName && norm(item.companyName) === norm(companyName))).map(item => clean(item.staffCode || item.staffId)), ...(reserved || [])].map(norm));
-        let sequence = 1;
-        let candidate = '';
-        do {
-            candidate = 'STAFF-' + String(sequence).padStart(4, '0');
-            sequence++;
-        } while (used.has(norm(candidate)));
-        return candidate;
+        const companyStaff = (state.staff || []).filter(item =>
+            item.companyId === companyId ||
+            (companyName && norm(item.companyName) === norm(companyName))
+        );
+        const reservedCodes = Array.from(reserved || []);
+        const existingCodes = [
+            ...companyStaff.map(item => clean(item.staffCode || item.staffId)),
+            ...reservedCodes.map(item => typeof item === 'string' ? item : clean(item?.staffCode || item?.staffId))
+        ];
+        const highestSequence = existingCodes.reduce((highest, code) => {
+            const match = /^STAFF-(\d+)$/i.exec(clean(code));
+            return match ? Math.max(highest, Number(match[1])) : highest;
+        }, 0);
+        return 'STAFF-' + String(highestSequence + 1).padStart(4, '0');
     }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
@@ -77,6 +84,7 @@
 
     window.openCompanyStaff = function (companyId) {
         state.activeStaffCompanyId = companyId || '';
+        state.activeStaffProfileId = '';
         const filter = byId('staff-company-filter');
         if (filter) filter.value = state.activeStaffCompanyId;
         if (typeof switchTab === 'function') switchTab('staff');
@@ -84,13 +92,17 @@
     };
     window.setStaffCompanyFilter = function (companyId) {
         state.activeStaffCompanyId = companyId || '';
+        state.activeStaffProfileId = '';
+        const filter = byId('staff-company-filter');
+        if (filter) filter.value = state.activeStaffCompanyId;
+        const importCompany = byId('staff-import-company');
+        if (importCompany) importCompany.value = state.activeStaffCompanyId;
         renderStaffTable();
     };
-    window.clearStaffCompanyFilter = function () {
-        state.activeStaffCompanyId = '';
-        const filter = byId('staff-company-filter');
-        if (filter) filter.value = '';
-        renderStaffTable();
+    window.openStaffModalForSelectedCompany = function () {
+        if (!state.activeStaffCompanyId) { showCustomModal('Select company first','Choose an existing company before adding staff.'); return; }
+        const company = companyById(state.activeStaffCompanyId);
+        openStaffModal('', {companyId:state.activeStaffCompanyId,companyName:company?.companyName || ''});
     };
 
     window.renderStaffTable = function () {
@@ -100,16 +112,34 @@
         const companyFilter = byId('staff-company-filter');
         if (companyFilter) {
             const selected = state.activeStaffCompanyId || companyFilter.value || '';
-            const options = '<option value="">All companies</option>' + (state.clients || []).slice().sort((a,b)=>clean(a.companyName).localeCompare(clean(b.companyName))).map(c => '<option value="'+html(c.id)+'">'+html(c.companyName)+'</option>').join('');
+            const options = '<option value="">Select existing company</option>' + (state.clients || []).slice().sort((a,b)=>clean(a.companyName).localeCompare(clean(b.companyName))).map(c => '<option value="'+html(c.id)+'">'+html(c.companyName)+'</option>').join('');
             if (companyFilter.innerHTML !== options) companyFilter.innerHTML = options;
             companyFilter.value = selected;
         }
+        const addButton = byId('staff-add-button');
+        if (addButton) addButton.disabled = !state.activeStaffCompanyId;
+        const importCompany = byId('staff-import-company');
+        if (importCompany && state.activeStaffCompanyId) {
+            importCompany.value = state.activeStaffCompanyId;
+            if (typeof updateStaffImportAvailability === 'function') updateStaffImportAvailability();
+        }
+        const listView = byId('staff-list-view');
+        const profileView = byId('staff-profile-view');
+        if (state.activeStaffProfileId) {
+            if (listView) listView.hidden = true;
+            if (profileView) profileView.hidden = false;
+            renderStaffProfile(state.activeStaffProfileId);
+            return;
+        }
+        if (listView) listView.hidden = false;
+        if (profileView) { profileView.hidden = true; profileView.innerHTML = ''; }
         const companyContext = byId('staff-company-context');
-        if (companyContext) companyContext.textContent = state.activeStaffCompanyId ? ('Company: ' + companyNameById(state.activeStaffCompanyId)) : 'All companies';
+        if (companyContext) companyContext.textContent = state.activeStaffCompanyId ? ('Company: ' + companyNameById(state.activeStaffCompanyId)) : 'Select a company';
         const search = norm(byId('staff-search')?.value);
         const renewal = clean(byId('staff-renewal-filter')?.value);
         const fromDate = clean(byId('staff-date-from')?.value);
         const toDate = clean(byId('staff-date-to')?.value);
+        if (!state.activeStaffCompanyId) { body.innerHTML = '<tr><td colspan="9" class="staff-empty">Select an existing company above to view its staff records.</td></tr>'; return; }
         const records = (state.staff || []).filter(staff => {
             if (state.activeStaffCompanyId && staff.companyId !== state.activeStaffCompanyId && norm(staff.companyName) !== norm(companyNameById(state.activeStaffCompanyId))) return false;
             if (renewal && dueStatus(staff) !== renewal && clean(staff.renewalStatus) !== renewal) return false;
@@ -132,11 +162,55 @@
             '<td>'+html(staff.labourCardExpiry || '-')+'</td>'+
             '<td>'+html(staff.passportNumber || '-')+'</td>'+
             '<td>'+statusPill(dueStatus(staff))+'</td>'+
-            '<td class="staff-actions"><button type="button" class="btn btn-secondary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit</button> '+(staff.linkedInvoiceRef ? '<button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+html(staff.linkedInvoiceRef)+'\')">Invoice</button>' : '')+'</td>'+
+            '<td class="staff-actions"><button type="button" class="btn btn-primary" onclick="openStaffProfile(\''+html(staff.id)+'\')">View Profile</button></td>'+
             '</tr>').join('');
         if (window.applyDarLanguage) window.applyDarLanguage();
     };
 
+    function documentsForStaff(staff) {
+        const refs = new Set([...(Array.isArray(staff.linkedDocumentRefs) ? staff.linkedDocumentRefs : []), staff.linkedInvoiceRef].filter(Boolean));
+        const staffCode = norm(staff.staffCode || staff.staffId);
+        const staffCompany = norm(staff.companyName || companyNameById(staff.companyId));
+        const staffName = norm(staff.fullName);
+        const personNumber = norm(staff.personNumber);
+        return (state.documents || []).filter(doc => {
+            if (doc.staffId === staff.id || refs.has(doc.refCode)) return true;
+            const sameCompany = (!doc.companyId || !staff.companyId || doc.companyId === staff.companyId) &&
+                (!doc.companyName || !staffCompany || norm(doc.companyName) === staffCompany);
+            if (!sameCompany) return false;
+            if (staffCode && doc.staffCode && norm(doc.staffCode) === staffCode) return true;
+            if (staffName && doc.staffName && norm(doc.staffName) === staffName &&
+                (!personNumber || !doc.personNumber || norm(doc.personNumber) === personNumber)) return true;
+            return false;
+        }).sort((a,b)=>clean(b.transactionDate || b.createdDate || b.createdAt).localeCompare(clean(a.transactionDate || a.createdDate || a.createdAt)));
+    }
+    window.openStaffProfile = function (staffId) {
+        const staff = (state.staff || []).find(item => item.id === staffId);
+        if (!staff) { showCustomModal('Staff not found','This staff record could not be found. Refresh the staff list and try again.'); return; }
+        state.activeStaffProfileId = staffId; renderStaffTable();
+    };
+    window.closeStaffProfile = function () { state.activeStaffProfileId = ''; renderStaffTable(); };
+    window.renderStaffProfile = function (staffId) {
+        const root = byId('staff-profile-view');
+        const staff = (state.staff || []).find(item => item.id === staffId);
+        if (!root || !staff) return;
+        const docs = documentsForStaff(staff);
+        const invoices = docs.filter(doc => norm(doc.type) === 'invoice');
+        const quotations = docs.filter(doc => norm(doc.type) === 'quotation');
+        const info = (label,value) => '<div class="staff-profile-field"><span>'+html(label)+'</span><strong>'+html(value || '-')+'</strong></div>';
+        const rows = list => list.length ? list.map(doc => {
+            const kind = norm(doc.type) === 'quotation' ? 'Quotation' : 'Invoice';
+            const amount = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount) || 0;
+            const date = doc.transactionDate || doc.createdDate || doc.createdAt || '';
+            const ref = html(doc.refCode || '');
+            return '<tr><td>'+ref+'</td><td>'+html(date)+'</td><td>'+html(doc.packageName || doc.serviceName || doc.title || '-')+'</td><td>AED '+amount.toFixed(2)+'</td><td>'+kind+'</td><td><button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+ref+'\')">View / Print</button> <button type="button" class="btn btn-secondary" onclick="openStudio(\''+kind+'\',\''+ref+'\')">Edit</button></td></tr>';
+        }).join('') : '<tr><td colspan="6" class="staff-empty">No linked documents yet.</td></tr>';
+        root.innerHTML = '<div class="staff-profile-heading"><div><button type="button" class="btn btn-secondary" onclick="closeStaffProfile()">← Back to Staff List</button><h2>'+html(staff.fullName || 'Staff Profile')+'</h2><p class="dar-hint">'+html(staff.staffCode || staff.staffId || '')+' · '+html(staff.companyName || companyNameById(staff.companyId))+'</p></div><button type="button" class="btn btn-primary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit Staff Profile</button></div>' +
+        '<div class="staff-profile-card"><h3>Personal & Employment Details</h3><div class="staff-profile-grid">'+info('Staff ID',staff.staffCode || staff.staffId)+info('Person Labour No.',staff.personNumber)+info('Full Name',staff.fullName)+info('Company',staff.companyName || companyNameById(staff.companyId))+info('Nationality',staff.nationality)+info('Designation',staff.designation)+info('Joining Date',staff.joiningDate)+info('Last Work Done',staff.lastWorkDone)+info('Phone',staff.phone)+info('Email',staff.email)+'</div></div>' +
+        '<div class="staff-profile-card"><h3>Identity & Labour Details</h3><div class="staff-profile-grid">'+info('Passport Number',staff.passportNumber)+info('Passport Expiry',staff.passportExpiry)+info('Labour Card Number',staff.labourCardNumber)+info('Labour Card Expiry',staff.labourCardExpiry)+info('Visa Number',staff.visaNumber)+info('Visa Expiry',staff.visaExpiry)+info('Visa Status',staff.visaStatus)+info('Renewal Status',dueStatus(staff))+info('Document Reference',staff.documentReference)+info('Notes',staff.notes)+'</div></div>' +
+        '<div class="staff-profile-card"><h3>Invoices <span class="staff-doc-count">'+invoices.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Invoice No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(invoices)+'</tbody></table></div></div>' +
+        '<div class="staff-profile-card"><h3>Quotations <span class="staff-doc-count">'+quotations.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Quotation No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(quotations)+'</tbody></table></div></div>';
+    };
     window.openStaffModalFromInvoice = function (refCode) {
         const doc = (state.documents || []).find(item => item.refCode === refCode);
         if (!doc) { showCustomModal('Invoice not found','The saved invoice could not be found in the current session.'); return; }
