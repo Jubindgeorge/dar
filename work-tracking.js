@@ -50,7 +50,7 @@ window.darEditWorkStage = function(id){
  const onEscape=e=>{if(e.key==='Escape')closeEditor();};
  document.addEventListener('keydown',onEscape);
  root.onclick=e=>{if(e.target===root)closeEditor();};
- root.innerHTML='<div class="dar-stage-dialog"><h3>Update Work · '+safe(id)+'</h3><p>'+safe(packageName(d))+'</p><label>Stage <select id="dar-pro-stage">'+select([...new Set([...available,current])],current)+'</select></label><label>Status <select id="dar-pro-status">'+select(['Not Started','In Progress','Waiting for Client','Waiting for Government','On Hold','Rejected','Completed'],d.proStatus||'Not Started')+'</select></label><label>Remarks <textarea id="dar-pro-note" rows="2"></textarea></label><button class="btn btn-primary" id="dar-pro-save">Save Stage</button> <button class="btn btn-secondary" id="dar-pro-close">Cancel</button></div>';
+ root.innerHTML='<div class="dar-stage-dialog"><h3>Update Work · '+safe(id)+'</h3><p>'+safe(packageName(d))+'</p><label>Stage <select id="dar-pro-stage">'+select([...new Set([...available,current])],current)+'</select></label><label>Status <select id="dar-pro-status">'+select(['Not Started','In Progress','Waiting for Client','Waiting for Government','On Hold','Rejected','Completed','Closed'],d.proStatus||'Not Started')+'</select></label><label>Remarks <textarea id="dar-pro-note" rows="2"></textarea></label><button class="btn btn-primary" id="dar-pro-save">Save Stage</button> <button class="btn btn-secondary" id="dar-pro-close">Cancel</button></div>';
  root.querySelector('#dar-pro-close').onclick=closeEditor;
  root.querySelector('#dar-pro-stage').focus();
  root.querySelector('#dar-pro-save').onclick=async()=>{
