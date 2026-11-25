@@ -132,7 +132,7 @@
   function openSearchResult(item){
     if(item.kind==='company'){if(window.viewClientDetail)window.viewClientDetail(item.record.id);else window.switchTab('clients');}
     else if(item.kind==='staff'){if(window.openStaffProfile)window.openStaffProfile(item.record.id);else window.switchTab('staff');}
-    else if(item.kind==='client'){if(window.openCompanyClientModal)window.openCompanyClientModal(item.record.id);else window.switchTab('clients');}
+    else if(item.kind==='client'){const search=byId('doc-search-input');if(search)search.value=item.record.name||'';const filter=byId('doc-payment-status-filter');if(filter)filter.value='';window.switchTab('documents');}
     else if(item.kind==='invoice'){if(window.previewInvoiceDocument)window.previewInvoiceDocument(item.record.refCode);else window.darDashboardOpen('invoices');}
     else if(item.kind==='quotation'){window.darDashboardOpen('quotations',item.record.refCode);}
   }
