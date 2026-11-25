@@ -357,7 +357,7 @@
                         <div class="staff-import-heading"><strong>Bulk Import Staff</strong><span class="dar-hint">Select an existing company first. MOHRE employee-list PDFs import Person Labour No., passport, job, card type, contract and labour-card details. Visa details are handled separately.</span></div>
                         <div class="staff-import-controls">
                             <label for="staff-import-company">Company *</label>
-                            <select id="staff-import-company" onchange="updateStaffImportAvailability()"><option value="">Select existing company</option></select>
+                            <select id="staff-import-company" onchange="setStaffCompanyFilter(this.value); updateStaffImportAvailability()"><option value="">Select existing company</option></select>
                             <input id="staff-import-file" type="file" accept=".xlsx,.xls,.pdf" disabled onchange="previewStaffImportFile(this.files && this.files[0])" aria-label="Choose staff Excel or PDF file">
                             <button id="staff-import-button" type="button" class="btn btn-secondary" disabled onclick="commitStaffImport()">Import Staff</button>
                         </div>
