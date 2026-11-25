@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
     await page.goto('http://127.0.0.1:8765/index.html', {waitUntil:'domcontentloaded'});
     await page.waitForTimeout(1500);
     await page.evaluate(() => switchTab('accounts-ledger'));
+    await page.evaluate(() => { if (!document.getElementById('finance-centre') && typeof window.initDarFinanceCentre === 'function') window.initDarFinanceCentre(); });
     const financeCentreSmoke = await page.evaluate(() => {
       const savedDocs=state.documents, savedExpenses=state.monthlyExpenses;
       state.documents=[
