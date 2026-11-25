@@ -211,6 +211,17 @@
         '<div class="staff-profile-card"><h3>Invoices <span class="staff-doc-count">'+invoices.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Invoice No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(invoices)+'</tbody></table></div></div>' +
         '<div class="staff-profile-card"><h3>Quotations <span class="staff-doc-count">'+quotations.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Quotation No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(quotations)+'</tbody></table></div></div>';
     };
+    window.openStaffModalFromStudio = function () {
+        const companyName = clean(byId('st-company-name')?.value);
+        const companyId = companyIdByName(companyName);
+        if (!companyId || !companyName) {
+            showCustomModal('Select a registered company', 'Choose an existing company before adding company staff. Direct clients cannot have staff records.');
+            return;
+        }
+        state.addingStaffFromStudio = true;
+        window.openStaffModal('', { companyId, companyName, returnToStudio: true });
+    };
+
     window.openStaffModalFromInvoice = function (refCode) {
         const doc = (state.documents || []).find(item => item.refCode === refCode);
         if (!doc) { showCustomModal('Invoice not found','The saved invoice could not be found in the current session.'); return; }
@@ -313,7 +324,22 @@
             if (error) { showCustomModal('Save failed','Staff details could not be saved. Check Firebase permissions and connection.'); return; }
             const index = (state.staff || []).findIndex(item => item.id === id);
             if (index >= 0) state.staff[index] = record; else state.staff.push(record);
-            const finish = () => { closeStaffModal(); renderStaffTable(); if (typeof showCustomModal === 'function') showCustomModal('Staff Saved','Staff profile saved successfully.'); };
+            const finish = () => {
+                const returnToStudio = !!state.addingStaffFromStudio;
+                state.addingStaffFromStudio = false;
+                closeStaffModal();
+                renderStaffTable();
+                if (returnToStudio) {
+                    state.selectedStudioStaffId = id;
+                    if (typeof populateStudioStaffDropdown === 'function') populateStudioStaffDropdown();
+                    const staffSelect = byId('st-staff-selector');
+                    if (staffSelect) staffSelect.value = id;
+                    if (byId('st-client-name')) byId('st-client-name').value = fullName;
+                    if (byId('st-company-name')) byId('st-company-name').value = companyName;
+                    if (byId('st-contact-person')) byId('st-contact-person').value = '';
+                    if (typeof showCustomModal === 'function') showCustomModal('Staff Added','New staff profile saved and selected for this document.');
+                } else if (typeof showCustomModal === 'function') showCustomModal('Staff Saved','Staff profile saved successfully.');
+            };
             if (linkedInvoiceRef) {
                 db.ref('documents/' + linkedInvoiceRef).update({staffId:id, staffCode, staffName:fullName, companyId, companyName}, invoiceError => {
                     if (invoiceError) console.warn('Staff saved but invoice link could not be updated:', invoiceError);
