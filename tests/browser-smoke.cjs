@@ -10,6 +10,8 @@ const assert = require('node:assert/strict');
     await page.waitForTimeout(1500);
     await page.evaluate(() => switchTab('accounts-ledger'));
     await page.evaluate(() => { if (!document.getElementById('finance-centre') && typeof window.initDarFinanceCentre === 'function') window.initDarFinanceCentre(); });
+    const financeDiagnostics = await page.evaluate(() => ({readyState:document.readyState,root:!!document.getElementById('tab-accounts-ledger'),shell:!!document.getElementById('finance-centre'),initializer:typeof window.initDarFinanceCentre,renderer:typeof window.renderFinanceCentre,script: [...document.scripts].map(x=>x.src).filter(x=>x.includes('finance-centre'))}));
+    if (!financeDiagnostics.shell) throw new Error('Finance Centre did not initialize: '+JSON.stringify(financeDiagnostics)+'; page errors: '+errors.join(' | '));
     const financeCentreSmoke = await page.evaluate(() => {
       const savedDocs=state.documents, savedExpenses=state.monthlyExpenses;
       state.documents=[
