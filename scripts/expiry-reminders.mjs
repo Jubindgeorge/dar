@@ -18,7 +18,7 @@ async function deliver(ref,send){const tx=await ref.transaction(old=>{if(old?.st
 async function sendEmail(to,subject,text){
  if(env.GMAIL_USER&&env.GMAIL_APP_PASSWORD){
   const nodemailer=await import('nodemailer');
-  const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:env.GMAIL_USER,pass:env.GMAIL_APP_PASSWORD}});
+  const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:env.GMAIL_USER,pass:env.GMAIL_APP_PASSWORD.replaceAll(' ','')}});
   const info=await transporter.sendMail({from:env.REMINDER_FROM_EMAIL||env.GMAIL_USER,to,subject,text});
   return info.messageId||'';
  }
