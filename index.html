@@ -193,20 +193,20 @@
                         <section class="dash-section">
                             <div class="dash-section-title"><h3>Invoice payment pipeline</h3><span>Payment status</span></div>
                             <div class="dash-status-list">
-                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-warning"></i>Unpaid</span><strong id="dash-exec-unpaid">0</strong></button>
-                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-info"></i>Advance / partially paid</span><strong id="dash-exec-partial">0</strong></button>
-                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-success"></i>Fully paid</span><strong id="dash-exec-paid">0</strong></button>
-                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-danger"></i>Overdue</span><strong id="dash-exec-overdue">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','unpaid')"><span><i class="dash-dot dot-warning"></i>Unpaid</span><strong id="dash-exec-unpaid">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','partial')"><span><i class="dash-dot dot-info"></i>Advance / partially paid</span><strong id="dash-exec-partial">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','paid')"><span><i class="dash-dot dot-success"></i>Fully paid</span><strong id="dash-exec-paid">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','overdue')"><span><i class="dash-dot dot-danger"></i>Overdue</span><strong id="dash-exec-overdue">0</strong></button>
                             </div>
                         </section>
                         <section class="dash-section">
                             <div class="dash-section-title"><h3>Work lifecycle</h3><span>Manually confirmed stages</span></div>
                             <div class="dash-status-list">
-                                <button type="button" onclick="darDashboardOpen('works')"><span>Work pending</span><strong id="dash-exec-work-pending">0</strong></button>
-                                <button type="button" onclick="darDashboardOpen('works')"><span>In progress</span><strong id="dash-exec-work-progress">0</strong></button>
-                                <button type="button" onclick="darDashboardOpen('works')"><span>Work completed</span><strong id="dash-exec-work-completed">0</strong></button>
-                                <button type="button" onclick="darDashboardOpen('works')"><span>Closed</span><strong id="dash-exec-work-closed">0</strong></button>
-                                <button type="button" class="dash-status-emphasis" onclick="darDashboardOpen('invoices')"><span>Completed – balance pending</span><strong id="dash-exec-completed-balance">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','pending')"><span>Work pending</span><strong id="dash-exec-work-pending">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','progress')"><span>In progress</span><strong id="dash-exec-work-progress">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','completed')"><span>Work completed</span><strong id="dash-exec-work-completed">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','closed')"><span>Closed</span><strong id="dash-exec-work-closed">0</strong></button>
+                                <button type="button" class="dash-status-emphasis" onclick="darDashboardOpen('invoices','completed-balance')"><span>Completed – balance pending</span><strong id="dash-exec-completed-balance">0</strong></button>
                             </div>
                         </section>
                     </div>
@@ -215,10 +215,10 @@
                         <section class="dash-section">
                             <div class="dash-section-title"><h3>Outstanding invoice ageing</h3><span>Balance by age</span></div>
                             <div class="dash-age-list">
-                                <div><span>0–30 days</span><strong id="dash-exec-age-30">AED 0.00</strong></div>
-                                <div><span>31–60 days</span><strong id="dash-exec-age-60">AED 0.00</strong></div>
-                                <div><span>61–90 days</span><strong id="dash-exec-age-90">AED 0.00</strong></div>
-                                <div><span>90+ days</span><strong id="dash-exec-age-90plus">AED 0.00</strong></div>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-0-30')"><span>0–30 days</span><strong id="dash-exec-age-30">AED 0.00</strong></button>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-31-60')"><span>31–60 days</span><strong id="dash-exec-age-60">AED 0.00</strong></button>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-61-90')"><span>61–90 days</span><strong id="dash-exec-age-90">AED 0.00</strong></button>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-90-plus')"><span>90+ days</span><strong id="dash-exec-age-90plus">AED 0.00</strong></button>
                             </div>
                             <p class="dash-footnote">Age uses due date, or invoice date when no due date is saved.</p>
                         </section>
