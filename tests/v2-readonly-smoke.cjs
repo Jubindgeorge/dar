@@ -97,10 +97,11 @@ assert.match(dashboard, /tradeLicenseExpiry/, 'dashboard reads company expiry pr
 assert.match(dashboard, /otherStaffDocumentExpiry/, 'dashboard reads staff expiry profile fields');
 assert.match(dashboard, /window\.viewClientDetail/, 'company search opens company profile');
 assert.match(dashboard, /window\.openStaffProfile/, 'staff search opens staff profile');
-assert.match(dashboard, /window\.viewDocumentHistory/, 'invoice search opens invoice history');
+assert.match(dashboard, /window\.previewInvoiceDocument/, 'invoice search opens the selected invoice preview');
+assert.match(dashboard, /window\.openCompanyClientModal/, 'company-client search opens the exact client profile');
 assert.match(html, /onclick="openStudio\('Invoice'\)"/, 'quick action opens invoice creation');
 assert.match(html, /onclick="openStudio\('Quotation'\)"/, 'quick action opens quotation creation');
-assert.match(html, /onclick="switchTab\('accounts-ledger'\)"/, 'quick action opens payment ledger');
+assert.match(html, /darDashboardOpen\('record-payment'\)/, 'quick action opens the payment entry destination');
 assert.match(dashboard, /raw === 'completed'/, 'work completion is based on the manually maintained PRO status');
 assert.match(dashboard, /raw === 'closed'/, 'dashboard recognizes explicitly closed work');
 assert.match(fs.readFileSync('work-tracking.js', 'utf8'), /'Completed','Closed'/, 'work tracking supports manual closure');
