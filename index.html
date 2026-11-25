@@ -379,6 +379,14 @@
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Arabic Title</span><strong id="cd-name-ar" style="font-size: 1rem; direction: rtl; display: block;">-</strong></div>
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Phone</span><strong id="cd-phone" style="font-size: 1rem;">-</strong></div>
                     </div>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px;"><button type="button" class="btn btn-primary" onclick="openClientModal(state.activeViewingClientId)"><i class="fa-solid fa-pen"></i> Edit Company Profile</button></div>
+                    <h3 style="color:var(--primary);margin:18px 0 10px;font-size:1.1rem;">Company Documents & Expiry Details</h3>
+                    <div style="background:var(--panel-bg);border:1px solid var(--border-color);padding:16px;border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px;">
+                        <div><small>Company Email</small><strong id="cd-company-email">-</strong></div><div><small>WhatsApp</small><strong id="cd-company-whatsapp">-</strong></div>
+                        <div><small>Trade Licence Number</small><strong id="cd-trade-license-number">-</strong><br><small>Expiry</small><strong id="cd-trade-license-expiry">-</strong></div><div><small>Establishment Card Number</small><strong id="cd-establishment-number">-</strong><br><small>Expiry</small><strong id="cd-establishment-expiry">-</strong></div>
+                        <div><small>Immigration / Labour Card Number</small><strong id="cd-labour-card-number">-</strong><br><small>Expiry</small><strong id="cd-labour-card-expiry">-</strong></div><div><small>Tenancy Contract Number</small><strong id="cd-tenancy-number">-</strong><br><small>Expiry</small><strong id="cd-tenancy-expiry">-</strong></div>
+                        <div><small>Other Document</small><strong id="cd-other-document">-</strong></div><div><small>Other Document Expiry</small><strong id="cd-other-document-expiry">-</strong></div>
+                    </div>
                     <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 1.1rem;">Associated Records</h3>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -545,7 +553,7 @@
                 <!-- Package-first operational tracking; PDF/quotation templates unchanged. -->
                 <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div class="v2-filter-toolbar"><label for="dar-work-status-filter">Work status</label><select id="dar-work-status-filter" onchange="darRenderWorkTracking()"><option value="">All work statuses</option><option value="active">All Active Works</option><option value="pending">Work Pending</option><option value="progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="completed-balance">Completed – Balance Pending</option></select></div><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
                 <section id="tab-completed-files" class="view-panel"><h2>Completed Files</h2><p class="dar-hint">Fully paid invoices grouped by Company → Package, or Private → Package.</p><div id="dar-completed-files"></div></section>
-                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Expiry reminders appear here without opening popups. Automated email requires a secure server scheduler.</p><div id="dar-expiry-notifications"></div></section>
+                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Company, staff and linked-client expiry alerts. Individual email and WhatsApp reminders run when server credentials are configured. Company-group messages remain manual only.</p><div id="dar-expiry-notifications"></div></section>
                 <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
                 <section id="tab-accounts-ledger" class="view-panel">
                     <div style="margin-bottom: 20px;">
@@ -819,7 +827,7 @@
 
     <!-- Client Registration Modal -->
     <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
-        <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
+        <div class="custom-modal-content" style="text-align:left;width:calc(100% - 32px);max-width:560px;max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;margin:16px auto;">
             <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Add New Company</h3>
             <input type="hidden" id="cl-modal-id">
             <div class="form-group">
@@ -834,9 +842,24 @@
                 <label>Contact Person / Phone</label>
                 <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
             </div>
+            <h4 style="margin:18px 0 10px;color:var(--primary);">Company Contact & Notification Details</h4>
+            <div class="form-group"><label for="cl-input-email">Company Email</label><input type="email" id="cl-input-email" placeholder="accounts@company.com"></div>
+            <div class="form-group"><label for="cl-input-whatsapp">Company WhatsApp Number</label><input type="tel" id="cl-input-whatsapp" placeholder="+9715XXXXXXXX"></div>
+            <div class="form-group"><label for="cl-input-group-link">Company WhatsApp Group Link (manual sharing only)</label><input type="url" id="cl-input-group-link" placeholder="https://chat.whatsapp.com/..."></div>
+            <h4 style="margin:18px 0 10px;color:var(--primary);">Company Documents & Expiry Dates</h4>
+            <div class="form-group"><label for="cl-input-trade-license-no">Trade Licence Number</label><input type="text" id="cl-input-trade-license-no"></div>
+            <div class="form-group"><label for="cl-input-trade-license-expiry">Trade Licence Expiry</label><input type="date" id="cl-input-trade-license-expiry"></div>
+            <div class="form-group"><label for="cl-input-establishment-no">Establishment Card Number</label><input type="text" id="cl-input-establishment-no"></div>
+            <div class="form-group"><label for="cl-input-establishment-expiry">Establishment Card Expiry</label><input type="date" id="cl-input-establishment-expiry"></div>
+            <div class="form-group"><label for="cl-input-labour-card-no">Immigration / Labour Card Number</label><input type="text" id="cl-input-labour-card-no"></div>
+            <div class="form-group"><label for="cl-input-labour-card-expiry">Immigration / Labour Card Expiry</label><input type="date" id="cl-input-labour-card-expiry"></div>
+            <div class="form-group"><label for="cl-input-tenancy-no">Tenancy Contract Number</label><input type="text" id="cl-input-tenancy-no"></div>
+            <div class="form-group"><label for="cl-input-tenancy-expiry">Tenancy Contract Expiry</label><input type="date" id="cl-input-tenancy-expiry"></div>
+            <div class="form-group"><label for="cl-input-other-doc-name">Other Document Name</label><input type="text" id="cl-input-other-doc-name"></div>
+            <div class="form-group"><label for="cl-input-other-doc-expiry">Other Document Expiry</label><input type="date" id="cl-input-other-doc-expiry"></div>
             <div class="custom-modal-actions">
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
+                <button id="cl-save-button" type="button" onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
             </div>
         </div>
     </div>
@@ -854,6 +877,10 @@
             <div class="form-group"><label for="cc-input-name">Client Full Name *</label><input id="cc-input-name" type="text" required></div>
             <div class="form-group"><label for="cc-input-phone">Phone</label><input id="cc-input-phone" type="tel"></div>
             <div class="form-group"><label for="cc-input-email">Email</label><input id="cc-input-email" type="email"></div>
+            <div class="form-group"><label for="cc-input-whatsapp">WhatsApp</label><input id="cc-input-whatsapp" type="tel" placeholder="+9715XXXXXXXX"></div>
+            <div class="form-group"><label for="cc-input-passport-expiry">Passport Expiry (if applicable)</label><input id="cc-input-passport-expiry" type="date"></div>
+            <div class="form-group"><label for="cc-input-emirates-id-expiry">Emirates ID Expiry (if applicable)</label><input id="cc-input-emirates-id-expiry" type="date"></div>
+            <div class="form-group"><label for="cc-input-visa-expiry">Visa Expiry (if applicable)</label><input id="cc-input-visa-expiry" type="date"></div>
             <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
         </div>
     </div>
@@ -874,6 +901,10 @@
                 <div class="form-group"><label for="sf-last-work">Last Work Done</label><input id="sf-last-work" type="text"></div>
                 <div class="form-group"><label for="sf-passport">Passport Number</label><input id="sf-passport" type="text"></div>
                 <div class="form-group"><label for="sf-passport-expiry">Passport Expiry</label><input id="sf-passport-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-emirates-id">Emirates ID Number</label><input id="sf-emirates-id" type="text"></div>
+                <div class="form-group"><label for="sf-emirates-id-expiry">Emirates ID Expiry</label><input id="sf-emirates-id-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-other-document-name">Other Staff Document Name</label><input id="sf-other-document-name" type="text" placeholder="e.g. Insurance / Certificate"></div>
+                <div class="form-group"><label for="sf-other-document-expiry">Other Staff Document Expiry</label><input id="sf-other-document-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-labour-card-number">Labour Card Number</label><input id="sf-labour-card-number" type="text"></div>
                 <div class="form-group"><label for="sf-labour-card-expiry">Labour Card Expiry</label><input id="sf-labour-card-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-number">Visa Number</label><input id="sf-visa-number" type="text"></div>
@@ -881,7 +912,7 @@
                 <div class="form-group"><label for="sf-visa-status">Visa Status</label><select id="sf-visa-status"><option value="">Select status</option><option>Valid</option><option>Expired</option><option>Under Renewal</option><option>Cancelled</option><option>Pending</option></select></div>
                 <div class="form-group"><label for="sf-renewal-status">Renewal Status</label><select id="sf-renewal-status"><option>Not Required</option><option>Pending</option><option>Due Soon</option><option>In Progress</option><option>Renewed</option></select></div>
                 <div class="form-group"><label for="sf-joining-date">Joining Date</label><input id="sf-joining-date" type="date"></div>
-                <div class="form-group"><label for="sf-phone">Contact Number</label><input id="sf-phone" type="tel"></div>
+                <div class="form-group"><label for="sf-phone">Contact Number</label><input id="sf-phone" type="tel"></div><div class="form-group"><label for="sf-whatsapp">WhatsApp Number (for expiry alerts)</label><input id="sf-whatsapp" type="tel" placeholder="+9715XXXXXXXX"></div>
                 <div class="form-group"><label for="sf-email">Email</label><input id="sf-email" type="email"></div>
                 <div class="form-group"><label for="sf-document-reference">Document Reference / Secure URL</label><input id="sf-document-reference" type="text" placeholder="Storage reference or secure document URL"></div>
                 <div class="form-group staff-notes-field"><label for="sf-notes">Notes</label><textarea id="sf-notes" rows="3"></textarea></div>
