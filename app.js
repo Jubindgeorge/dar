@@ -67,6 +67,7 @@ function clearDarUserData() {
 }
 let darLoginInProgress = false;
 let darApprovalRef = null;
+let darApprovalTimeout = null;
 let darRequestRef = null;
 let darNotificationsOpen = false;
 let darAuthVersion = 0;
@@ -109,6 +110,7 @@ window.toggleSignup = function(show) {
     setAuthStatus('');
 };
 function stopDarListeners() {
+    if (darApprovalTimeout) { clearTimeout(darApprovalTimeout); darApprovalTimeout = null; }
     if (darApprovalRef) { darApprovalRef.off(); darApprovalRef = null; }
     if (darRequestRef) { darRequestRef.off(); darRequestRef = null; }
     if (darListenersActive) {
@@ -198,18 +200,40 @@ function initializeFirebaseLogin() {
                 updateDarMaintenanceUi();
                 return;
             }
+            setAuthStatus('Checking administrator approval…');
             darApprovalRef = db.ref('approvals/' + user.uid);
+            let approvalResolved = false;
+            darApprovalTimeout = setTimeout(() => {
+                if (version !== darAuthVersion || approvalResolved) return;
+                approvalResolved = true;
+                if (darApprovalRef) { darApprovalRef.off(); darApprovalRef = null; }
+                darApprovalTimeout = null;
+                setDarAccess(false);
+                setAuthStatus('Could not finish the approval check. Your email/password were accepted, but Firebase Database did not respond. Check your connection and try again. If this continues, ask the administrator to check Firebase Database access.');
+            }, 12000);
             darApprovalRef.on('value', snapshot => {
-                if (version !== darAuthVersion) return;
+                if (version !== darAuthVersion || approvalResolved) return;
+                approvalResolved = true;
+                if (darApprovalTimeout) { clearTimeout(darApprovalTimeout); darApprovalTimeout = null; }
                 const approved = snapshot.val() === true;
                 setDarAccess(approved);
-                setAuthStatus(approved ? '' : 'Email verified. Waiting for an administrator to approve your account.');
+                setAuthStatus(approved ? '' : 'Your email is verified, but this account is not approved yet. Ask the DAR administrator to approve your account, then sign in again.');
                 if (!approved && darListenersActive) {
                     DAR_DATA_LISTENER_PATHS.forEach(path => db.ref(path).off());
                     darListenersActive = false;
                     clearDarUserData();
                 }
-            }, error => setAuthStatus('Approval check failed: ' + error.message));
+            }, error => {
+                if (version !== darAuthVersion) return;
+                approvalResolved = true;
+                if (darApprovalTimeout) { clearTimeout(darApprovalTimeout); darApprovalTimeout = null; }
+                if (darApprovalRef) { darApprovalRef.off(); darApprovalRef = null; }
+                setDarAccess(false);
+                const reason = error && error.code === 'PERMISSION_DENIED'
+                    ? 'Firebase denied access to the approval record. Ask the administrator to check the approvals database rules.'
+                    : 'Firebase could not read the approval record: ' + (error?.message || 'Unknown database error');
+                setAuthStatus(reason);
+            });
         } catch (error) {
             setAuthStatus('Could not verify access. Please sign in again.');
             console.error('DAR authorization failed:', error);
@@ -218,27 +242,48 @@ function initializeFirebaseLogin() {
 }
 window.handleLogin = async function(event) {
     if (event) event.preventDefault();
-    const email = document.getElementById('login-user').value.trim();
-    const password = document.getElementById('login-pin').value;
+    const email = document.getElementById('login-user')?.value.trim() || '';
+    const password = document.getElementById('login-pin')?.value || '';
     const remember = document.getElementById('remember-device')?.checked;
+    if (!email || !password) {
+        setAuthStatus('Enter both your email address and password.');
+        return;
+    }
+    if (typeof firebase === 'undefined' || !firebase.apps?.length) {
+        setAuthStatus('Firebase did not initialize. Refresh the page; if the problem continues, contact the administrator.');
+        return;
+    }
     darLoginInProgress = true;
+    setAuthStatus('Signing in…');
     try {
         await firebase.auth().setPersistence(remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
         const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        document.getElementById('login-pin').value = '';
+        const passwordField = document.getElementById('login-pin');
+        if (passwordField) passwordField.value = '';
         if (!credential.user.emailVerified) {
             try {
                 await credential.user.sendEmailVerification();
-                setAuthStatus('Verification email sent. Check inbox/spam, verify, then sign in again.');
+                setAuthStatus('Your email is not verified yet. We sent a verification email; check your inbox and spam folder, verify it, then sign in again.');
             } finally { await firebase.auth().signOut(); }
         } else {
-            setAuthStatus('Checking account approval...');
+            setAuthStatus('Sign-in successful. Checking administrator approval…');
         }
     } catch (error) {
         console.error('Login failed:', error.code, error.message);
-        const code = error && error.code ? ' (' + error.code + ')' : '';
-        const detail = error && error.message ? ' ' + error.message : ' Please check your connection and try again.';
-        setAuthStatus('Sign-in failed' + code + '.' + detail);
+        const messages = {
+            'auth/invalid-email': 'The email address format is invalid.',
+            'auth/user-disabled': 'This account has been disabled. Contact the administrator.',
+            'auth/user-not-found': 'No DAR account exists for this email address.',
+            'auth/wrong-password': 'The password is incorrect. Try again or use the account recovery option.',
+            'auth/invalid-credential': 'The email or password is incorrect.',
+            'auth/too-many-requests': 'Too many failed attempts. Wait a while and try again.',
+            'auth/network-request-failed': 'Could not reach Firebase Authentication. Check your internet connection and try again.',
+            'auth/operation-not-allowed': 'Email/password sign-in is disabled in Firebase Authentication. Ask the administrator to enable it.',
+            'auth/unauthorized-domain': 'This website domain is not authorized in Firebase Authentication. Ask the administrator to add the deployed domain.',
+            'auth/invalid-api-key': 'Firebase rejected the API key. The site configuration needs administrator attention.'
+        };
+        const detail = messages[error?.code] || (error?.message ? error.message : 'Unknown sign-in error.');
+        setAuthStatus('Sign-in failed: ' + detail + (error?.code ? ' [' + error.code + ']' : ''));
     } finally { darLoginInProgress = false; }
 };
 window.handleSignup = async function(event) {
