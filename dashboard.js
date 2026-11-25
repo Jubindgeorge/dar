@@ -126,14 +126,14 @@
       const row=document.createElement('button');row.type='button';row.className='dash-recent-row';
       const name=document.createElement('span');const title=document.createElement('strong');title.textContent=(d.type||'Invoice')+' · '+(d.refCode||'');const sub=document.createElement('small');sub.textContent=(d.clientName||d.companyName||'Client')+' · '+dateText(invoiceDate(d));name.append(title,sub);
       const value=document.createElement('b');value.textContent=money(amount(d));row.append(name,value);
-      row.addEventListener('click',()=>{if(norm(d.type)==='quotation'){window.darDashboardOpen('quotations',d.refCode);}else if(typeof window.viewDocumentHistory==='function')window.viewDocumentHistory(d.refCode);else window.darDashboardOpen('invoices');});root.append(row);
+      row.addEventListener('click',()=>{if(norm(d.type)==='quotation'){window.darDashboardOpen('quotations',d.refCode);}else if(typeof window.previewInvoiceDocument==='function')window.previewInvoiceDocument(d.refCode);else window.darDashboardOpen('invoices');});root.append(row);
     });
   }
   function openSearchResult(item){
     if(item.kind==='company'){if(window.viewClientDetail)window.viewClientDetail(item.record.id);else window.switchTab('clients');}
     else if(item.kind==='staff'){if(window.openStaffProfile)window.openStaffProfile(item.record.id);else window.switchTab('staff');}
-    else if(item.kind==='client'){if(item.record.companyId&&window.viewClientDetail)window.viewClientDetail(item.record.companyId);else window.switchTab('clients');}
-    else if(item.kind==='invoice'){if(window.viewDocumentHistory)window.viewDocumentHistory(item.record.refCode);else window.switchTab('documents');}
+    else if(item.kind==='client'){if(window.openCompanyClientModal)window.openCompanyClientModal(item.record.id);else window.switchTab('clients');}
+    else if(item.kind==='invoice'){if(window.previewInvoiceDocument)window.previewInvoiceDocument(item.record.refCode);else window.darDashboardOpen('invoices');}
     else if(item.kind==='quotation'){window.darDashboardOpen('quotations',item.record.refCode);}
   }
   function searchItems(query){
