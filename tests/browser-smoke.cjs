@@ -58,6 +58,45 @@ const assert = require('node:assert/strict');
     assert.match(dashboardSmoke.age60,/50\.00/,'Dashboard assigns due balances to 31–60 day ageing');
     assert.match(dashboardSmoke.clientSearch,/Dash Client/,'Global search includes company-linked client profiles');
     assert.match(dashboardSmoke.staffSearch,/Dash Person/,'Global search includes staff ID and staff profile');
+    const destinationSmoke = await page.evaluate(() => {
+      const day = offset => {
+        const d = new Date(window.darDates.todayISO() + 'T00:00:00');
+        d.setDate(d.getDate() + offset);
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      };
+      const previous={documents:state.documents,clients:state.clients,staff:state.staff,companyClients:state.companyClients};
+      state.clients=[{id:'expiry-company',companyName:'Expiry Company',tradeLicenseExpiry:day(12),establishmentCardExpiry:day(-3)}];
+      state.staff=[{id:'expiry-staff',fullName:'Expiry Staff',companyId:'expiry-company',labourCardExpiry:day(8),emiratesIdExpiry:day(60)}];
+      state.companyClients=[{id:'expiry-person',name:'Expiry Person',companyId:'expiry-company',passportExpiry:day(20)}];
+      state.documents=[{refCode:'EXPIRY-FILE',type:'Invoice',totalAmount:100,advanceAmount:100,archiveExpiryDate:day(5),clientName:'Expiry Person'}];
+      window.darDashboardOpen('expiry');
+      const expiryText=document.getElementById('dar-expiry-notifications').innerText;
+      const expiryRows=document.querySelectorAll('#dar-expiry-notifications tbody tr').length;
+      state.documents=[
+        {refCode:'FILTER-PARTIAL',type:'Invoice',totalAmount:100,advanceAmount:25,proStatus:'In Progress'},
+        {refCode:'FILTER-PAID',type:'Invoice',totalAmount:80,advanceAmount:80,proStatus:'Completed'},
+        {refCode:'FILTER-QUOTE',type:'Quotation',totalAmount:300}
+      ];
+      document.getElementById('doc-payment-status-filter').value='partial';
+      renderDocumentsTable();
+      const invoiceRows=[...document.querySelectorAll('#doc-table-body tr')].map(row=>row.innerText).join(' ');
+      document.getElementById('dar-work-status-filter').value='completed';
+      window.switchTab('work-tracking');
+      const workRows=[...document.querySelectorAll('#dar-work-tracking tbody tr')].map(row=>row.innerText).join(' ');
+      const expiryTabActive=document.getElementById('tab-expiry-notifications').classList.contains('active');
+      state.documents=previous.documents;state.clients=previous.clients;state.staff=previous.staff;state.companyClients=previous.companyClients;
+      window.renderDashboardStats();
+      return {expiryText,expiryRows,invoiceRows,workRows,expiryTabActive};
+    });
+    assert.match(destinationSmoke.expiryText,/Expiry Company/,'Notification Center shows company profile expiry dates');
+    assert.match(destinationSmoke.expiryText,/Expiry Staff/,'Notification Center shows staff profile expiry dates');
+    assert.match(destinationSmoke.expiryText,/Expiry Person/,'Notification Center shows linked client passport expiry dates');
+    assert.match(destinationSmoke.expiryText,/Trade Licence/,'Notification Center uses the saved company document field names');
+    assert.equal(destinationSmoke.expiryRows,5,'Notification Center includes all due company, staff, client and invoice-file expiry rows');
+    assert.match(destinationSmoke.invoiceRows,/FILTER-PARTIAL/,'Invoice status shortcut filters the invoice register to partial payments');
+    assert.doesNotMatch(destinationSmoke.invoiceRows,/FILTER-PAID/,'Invoice status shortcut excludes unrelated paid records');
+    assert.match(destinationSmoke.workRows,/FILTER-PAID/,'Work lifecycle shortcut filters PRO Work Tracking to manually completed records');
+    assert.equal(destinationSmoke.expiryTabActive,true,'Expiry dashboard shortcut opens the Notification Center destination');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
