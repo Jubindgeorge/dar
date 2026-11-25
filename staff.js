@@ -23,30 +23,13 @@
         const company = (state.clients || []).find(c => norm(c.companyName) === norm(name));
         return company?.id || '';
     }
-    function companyClientsFor(name) {
-        const companyKey = norm(name);
-        if (!companyKey) return [];
-        const saved = (state.companyClients || [])
-            .filter(client => norm(client.companyName) === companyKey)
-            .map(client => ({...client, source: 'saved'}));
-        const seen = new Set(saved.map(client => norm(client.name)));
-        const fromDocuments = (state.documents || [])
-            .filter(doc => norm(doc.companyName) === companyKey && clean(doc.clientName))
-            .map(doc => ({
-                id: 'document-client:' + norm(doc.clientName),
-                name: clean(doc.clientName),
-                companyName: clean(doc.companyName),
-                phone: clean(doc.contactPerson),
-                email: clean(doc.email),
-                source: 'document'
-            }))
-            .filter(client => {
-                const key = norm(client.name);
-                if (!key || seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        return [...saved, ...fromDocuments].sort((a, b) => clean(a.name).localeCompare(clean(b.name)));
+    // Direct clients are independent records. Legacy companyId/companyName values
+    // are ignored for selection; they remain untouched until a separately approved migration.
+    function companyClientsFor(_companyName) {
+        return (state.companyClients || [])
+            .filter(client => clean(client.name))
+            .map(client => ({...client, source: 'saved'}))
+            .sort((a, b) => clean(a.name).localeCompare(clean(b.name)));
     }
     function nextStaffCode(companyId, reserved) {
         const company = companyById(companyId);
@@ -373,13 +356,10 @@
     };
     window.openCompanyClientModal = function (clientId) {
         const existing = clientId ? (state.companyClients || []).find(item => item.id === clientId) : null;
-        const companyName = existing ? (clean(existing.companyName) || companyNameById(existing.companyId)) : clean(byId('st-company-name')?.value);
-        if (!companyName) { showCustomModal('Select company first','Choose an existing company or enter the company name before adding its client.'); return; }
-        if (existing && byId('st-company-name')) byId('st-company-name').value = companyName;
         byId('cc-record-id').value = existing?.id || '';
-        byId('cc-modal-title').textContent = existing ? 'Edit Company Client Profile' : 'Add Client to Company';
-        byId('cc-save-button').textContent = existing ? 'Save Changes' : 'Save Client';
-        byId('company-client-parent').textContent = 'Company: ' + companyName;
+        byId('cc-modal-title').textContent = existing ? 'Edit Direct Client Profile' : 'Add Direct Client';
+        byId('cc-save-button').textContent = existing ? 'Save Changes' : 'Save Direct Client';
+        byId('company-client-parent').textContent = 'Independent direct-client record — not linked to a company.';
         byId('cc-input-name').value = existing ? clean(existing.name) : clean(byId('st-client-name')?.value);
         byId('cc-input-phone').value = existing ? clean(existing.phone) : '';
         byId('cc-input-email').value = existing ? clean(existing.email) : '';
@@ -399,21 +379,19 @@
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. Client was not saved.'); return; }
         const editingId = clean(byId('cc-record-id').value);
         const previous = editingId ? (state.companyClients || []).find(item => item.id === editingId) : null;
-        const companyName = previous ? (clean(previous.companyName) || companyNameById(previous.companyId)) : clean(byId('st-company-name')?.value);
-        const companyId = previous ? (previous.companyId || companyIdByName(companyName)) : companyIdByName(companyName);
         const name = clean(byId('cc-input-name').value);
-        if (!companyName || !name) { showCustomModal('Required fields','Company and Client Name are required.'); return; }
-        const duplicate = (state.companyClients || []).find(item => item.id !== editingId && norm(item.companyName) === norm(companyName) && norm(item.name) === norm(name));
+        if (!name) { showCustomModal('Required field','Direct Client Name is required.'); return; }
+        const duplicate = (state.companyClients || []).find(item => item.id !== editingId && norm(item.name) === norm(name));
         if (duplicate) {
             state.selectedCompanyClientId = duplicate.id;
             if(byId('st-client-name'))byId('st-client-name').value = duplicate.name;
             populateCompanyClients(); closeCompanyClientModal();
-            showCustomModal('Client already exists','The existing client was selected for this company.');
+            showCustomModal('Direct client already exists','The existing independent direct-client record was selected.');
             return;
         }
         const id = editingId || db.ref('companyClients').push().key;
         const record = {
-            ...(previous || {}), companyId, companyName, name,
+            name,
             phone:clean(byId('cc-input-phone').value),
             email:clean(byId('cc-input-email').value),
             whatsapp:clean(byId('cc-input-whatsapp').value),
@@ -423,8 +401,9 @@
             createdAt:previous?.createdAt||new Date().toISOString(),
             updatedAt:new Date().toISOString()
         };
+        // Replace the legacy record so newly saved direct clients no longer carry company links.
         const ref = db.ref('companyClients/' + id);
-        const save = editingId ? ref.update(record) : ref.set(record);
+        const save = ref.set(record);
         Promise.resolve(save).then(() => {
             record.id = id;
             state.companyClients = state.companyClients || [];
@@ -433,10 +412,10 @@
             state.selectedCompanyClientId = id;
             if(byId('st-client-name'))byId('st-client-name').value = name;
             populateCompanyClients(); closeCompanyClientModal();
-            showCustomModal(editingId?'Client Updated':'Client Saved',(editingId?'Client profile updated for ':'New client saved and linked to ') + companyName + '.');
+            showCustomModal(editingId?'Direct Client Updated':'Direct Client Saved','Independent direct-client profile saved successfully.');
         }).catch(error => showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection. ' + error.message));
     };
-    window.refreshStaffCompanyClients = function () { /* Reserved for dependent fields; all clients remain company-linked. */ };
+    window.refreshStaffCompanyClients = function () { /* Direct clients are independent of company selection. */ };
 
     // Bulk import: both Excel and PDF require one existing company selection.
     let staffImportRows = [];
