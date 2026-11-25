@@ -19,7 +19,12 @@ Required Firebase secrets:
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: service-account JSON for Firebase project `dar-al-shams`.
 - `FIREBASE_DATABASE_URL`: `https://dar-al-shams-default-rtdb.firebaseio.com`.
 
-Email (Resend):
+Email (Gmail SMTP — preferred for the requested Gmail delivery):
+- `GMAIL_USER`: the Gmail mailbox that sends the reminders.
+- `GMAIL_APP_PASSWORD`: a Google App Password for that mailbox (requires 2-Step Verification; never use the normal Gmail password).
+- `REMINDER_FROM_EMAIL`: optional sender display address; defaults to `GMAIL_USER`.
+
+Resend is supported as an alternative if Gmail SMTP is not used:
 - `RESEND_API_KEY`
 - `REMINDER_FROM_EMAIL`: verified sender address.
 
