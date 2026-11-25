@@ -134,7 +134,7 @@
     else if(item.kind==='staff'){if(window.openStaffProfile)window.openStaffProfile(item.record.id);else window.switchTab('staff');}
     else if(item.kind==='client'){if(item.record.companyId&&window.viewClientDetail)window.viewClientDetail(item.record.companyId);else window.switchTab('clients');}
     else if(item.kind==='invoice'){if(window.viewDocumentHistory)window.viewDocumentHistory(item.record.refCode);else window.switchTab('documents');}
-    else if(item.kind==='quotation'){window.switchTab('quotations');}
+    else if(item.kind==='quotation'){window.darDashboardOpen('quotations',item.record.refCode);}
   }
   function searchItems(query){
     const q=norm(query);if(!q)return[];
@@ -156,7 +156,7 @@
     input.addEventListener('keydown',e=>{if(e.key==='Escape'){input.value='';root.replaceChildren();}});
   }
   window.darDashboardOpen = function(kind,filter){
-    const tabs={companies:'clients',staff:'staff',invoices:'documents',quotations:'quotations',works:'work-tracking',expiry:'expiry-notifications',ledger:'accounts-ledger',directory:'works'};
+    const tabs={companies:'clients',staff:'staff',invoices:'documents',quotations:'quotations',works:'work-tracking',expiry:'expiry-notifications',ledger:'accounts-ledger',directory:'works','record-payment':'accounts-ledger'};
     if(kind==='invoices'){
       const select=byId('doc-payment-status-filter');if(select)select.value=filter||'';
     }else if(kind==='works'){
@@ -166,6 +166,7 @@
     }
     window.switchTab(tabs[kind]||'dashboard');
     if(kind==='quotations'&&typeof window.renderQuotationTable==='function')window.renderQuotationTable();
+    if(kind==='record-payment'&&typeof window.openAddPaymentModal==='function')window.openAddPaymentModal();
   };
   window.renderDashboardStats = renderDashboardStats;
   document.addEventListener('DOMContentLoaded',()=>{setupSearch();renderDashboardStats();});
