@@ -8,6 +8,56 @@ const assert = require('node:assert/strict');
     page.on('pageerror', err => errors.push(err.message));
     await page.goto('http://127.0.0.1:8765/index.html', {waitUntil:'domcontentloaded'});
     await page.waitForTimeout(1500);
+    const dashboardSmoke = await page.evaluate(() => {
+      const previous = {
+        documents:state.documents, clients:state.clients, staff:state.staff, companyClients:state.companyClients
+      };
+      const day = offset => {
+        const d = new Date(window.darDates.todayISO() + 'T00:00:00');
+        d.setDate(d.getDate() - offset);
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      };
+      state.documents = [
+        {refCode:'DASH-INV-PARTIAL',type:'Invoice',totalAmount:100,advanceAmount:20,dueDate:day(5),transactionDate:day(10),proStatus:'Completed',clientName:'Dash Client'},
+        {refCode:'DASH-INV-OVERDUE',type:'Invoice',totalAmount:50,advanceAmount:0,dueDate:day(40),transactionDate:day(45),proStatus:'In Progress',clientName:'Other Client'},
+        {refCode:'DASH-INV-PAID',type:'Invoice',totalAmount:200,advanceAmount:200,dueDate:day(10),transactionDate:day(12),proStatus:'Not Started',clientName:'Paid Client'},
+        {refCode:'DASH-QUOTE',type:'Quotation',totalAmount:999,advanceAmount:0}
+      ];
+      state.clients=[{id:'dash-company',companyName:'Dash Company'}];
+      state.staff=[{id:'dash-staff',staffCode:'DASH-STAFF-1',fullName:'Dash Person',companyId:'dash-company',companyName:'Dash Company'}];
+      state.companyClients=[{id:'dash-client',companyId:'dash-company',companyName:'Dash Company',name:'Dash Client'}];
+      window.renderDashboardStats();
+      const values = {
+        invoiced:document.getElementById('dash-exec-invoiced').textContent,
+        received:document.getElementById('dash-exec-received').textContent,
+        outstanding:document.getElementById('dash-exec-outstanding').textContent,
+        partial:document.getElementById('dash-exec-partial').textContent,
+        overdue:document.getElementById('dash-exec-overdue').textContent,
+        completedBalance:document.getElementById('dash-exec-completed-balance').textContent,
+        age30:document.getElementById('dash-exec-age-30').textContent,
+        age60:document.getElementById('dash-exec-age-60').textContent
+      };
+      const search=document.getElementById('dash-exec-search');
+      search.value='Dash Client';
+      search.dispatchEvent(new Event('input',{bubbles:true}));
+      values.clientSearch=document.getElementById('dash-exec-search-results').innerText;
+      search.value='DASH-STAFF-1';
+      search.dispatchEvent(new Event('input',{bubbles:true}));
+      values.staffSearch=document.getElementById('dash-exec-search-results').innerText;
+      state.documents=previous.documents;state.clients=previous.clients;state.staff=previous.staff;state.companyClients=previous.companyClients;
+      window.renderDashboardStats();
+      return values;
+    });
+    assert.match(dashboardSmoke.invoiced,/350\.00/,'Executive dashboard excludes quotations from invoice totals');
+    assert.match(dashboardSmoke.received,/220\.00/,'Executive dashboard uses confirmed advances/payments');
+    assert.match(dashboardSmoke.outstanding,/130\.00/,'Executive dashboard calculates remaining balance');
+    assert.equal(dashboardSmoke.partial,'1','Dashboard keeps partial payment status separate');
+    assert.equal(dashboardSmoke.overdue,'1','Dashboard detects overdue unpaid invoices');
+    assert.equal(dashboardSmoke.completedBalance,'1','Dashboard detects completed work with outstanding balance');
+    assert.match(dashboardSmoke.age30,/80\.00/,'Dashboard assigns due balances to 0–30 day ageing');
+    assert.match(dashboardSmoke.age60,/50\.00/,'Dashboard assigns due balances to 31–60 day ageing');
+    assert.match(dashboardSmoke.clientSearch,/Dash Client/,'Global search includes company-linked client profiles');
+    assert.match(dashboardSmoke.staffSearch,/Dash Person/,'Global search includes staff ID and staff profile');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
