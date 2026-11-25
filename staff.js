@@ -347,7 +347,7 @@
     };
     window.openCompanyClientModal = function (clientId) {
         const existing = clientId ? (state.companyClients || []).find(item => item.id === clientId) : null;
-        const companyName = existing ? existing.companyName : clean(byId('st-company-name')?.value);
+        const companyName = existing ? (clean(existing.companyName) || companyNameById(existing.companyId)) : clean(byId('st-company-name')?.value);
         if (!companyName) { showCustomModal('Select company first','Choose an existing company or enter the company name before adding its client.'); return; }
         if (existing && byId('st-company-name')) byId('st-company-name').value = companyName;
         byId('cc-record-id').value = existing?.id || '';
@@ -373,8 +373,8 @@
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. Client was not saved.'); return; }
         const editingId = clean(byId('cc-record-id').value);
         const previous = editingId ? (state.companyClients || []).find(item => item.id === editingId) : null;
-        const companyName = previous ? previous.companyName : clean(byId('st-company-name')?.value);
-        const companyId = previous ? previous.companyId : companyIdByName(companyName);
+        const companyName = previous ? (clean(previous.companyName) || companyNameById(previous.companyId)) : clean(byId('st-company-name')?.value);
+        const companyId = previous ? (previous.companyId || companyIdByName(companyName)) : companyIdByName(companyName);
         const name = clean(byId('cc-input-name').value);
         if (!companyName || !name) { showCustomModal('Required fields','Company and Client Name are required.'); return; }
         const duplicate = (state.companyClients || []).find(item => item.id !== editingId && norm(item.companyName) === norm(companyName) && norm(item.name) === norm(name));
