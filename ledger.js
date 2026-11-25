@@ -55,7 +55,7 @@ window.renderAccountsLedgerMaster = function() {
     const currentSelected = select.value;
     select.innerHTML = '<option value="">-- Choose Invoice Reference --</option>';
 
-    const docs = state.documents || [];
+    const docs = (state.documents || []).filter(doc => (doc.type || 'Invoice') !== 'Quotation');
     docs.forEach(doc => {
         const opt = document.createElement('option');
         opt.value = doc.refCode;
