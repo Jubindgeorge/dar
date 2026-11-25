@@ -72,6 +72,7 @@ const assert = require('node:assert/strict');
       window.darDashboardOpen('expiry');
       const expiryText=document.getElementById('dar-expiry-notifications').innerText;
       const expiryRows=document.querySelectorAll('#dar-expiry-notifications tbody tr').length;
+      const expiryTabActive=document.getElementById('tab-expiry-notifications').classList.contains('active');
       state.documents=[
         {refCode:'FILTER-PARTIAL',type:'Invoice',totalAmount:100,advanceAmount:25,proStatus:'In Progress'},
         {refCode:'FILTER-PAID',type:'Invoice',totalAmount:80,advanceAmount:80,proStatus:'Completed'},
@@ -83,7 +84,6 @@ const assert = require('node:assert/strict');
       document.getElementById('dar-work-status-filter').value='completed';
       window.switchTab('work-tracking');
       const workRows=[...document.querySelectorAll('#dar-work-tracking tbody tr')].map(row=>row.innerText).join(' ');
-      const expiryTabActive=document.getElementById('tab-expiry-notifications').classList.contains('active');
       state.documents=previous.documents;state.clients=previous.clients;state.staff=previous.staff;state.companyClients=previous.companyClients;
       window.renderDashboardStats();
       return {expiryText,expiryRows,invoiceRows,workRows,expiryTabActive};
