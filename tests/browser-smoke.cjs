@@ -646,10 +646,12 @@ const assert = require('node:assert/strict');
     const expiryCenterSmoke = await page.evaluate(() => {
       const addDays = days => { const d=new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); };
       state.clients=[{id:'expiry-company-test',companyName:'Expiry Test LLC',email:'office@example.com',whatsapp:'+971500000001',whatsappGroupLink:'https://chat.whatsapp.com/ABC123',tradeLicenseExpiry:addDays(10)}];
-      state.staff=[{id:'expiry-staff-test',companyId:'expiry-company-test',companyName:'Expiry Test LLC',fullName:'Expiry Test Employee',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'SENSITIVE-PASSPORT-123',passportExpiry:addDays(7),otherStaffDocumentName:'Insurance',otherStaffDocumentExpiry:addDays(15)}];
+      state.staff=[{id:'expiry-staff-test',companyId:'expiry-company-test',companyName:'Expiry Test LLC',fullName:'Expiry Test Employee',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'SENSITIVE-PASSPORT-123',passportExpiry:addDays(7),emiratesIdNumber:'784-TEST',emiratesIdExpiry:addDays(12),otherStaffDocumentName:'Insurance',otherStaffDocumentExpiry:addDays(15)}];
       window.darRenderExpiryNotifications();
       const text=document.getElementById('dar-expiry-notifications').innerText;
-      return {text,staffWhatsappField:!!document.getElementById('sf-whatsapp'),emiratesExpiryField:!!document.getElementById('sf-emirates-id-expiry'),otherExpiryField:!!document.getElementById('sf-other-document-expiry')};
+      window.renderStaffProfile('expiry-staff-test');
+      const profile=document.getElementById('staff-profile-view').innerText;
+      return {text,profile,staffWhatsappField:!!document.getElementById('sf-whatsapp'),emiratesExpiryField:!!document.getElementById('sf-emirates-id-expiry'),otherExpiryField:!!document.getElementById('sf-other-document-expiry')};
     });
     assert.match(expiryCenterSmoke.text,/Expiry Test LLC/,'Expiry center includes company expiry records');
     assert.match(expiryCenterSmoke.text,/Expiry Test Employee/,'Expiry center includes staff expiry records');
@@ -659,7 +661,10 @@ const assert = require('node:assert/strict');
     assert.equal(expiryCenterSmoke.staffWhatsappField,true,'Staff WhatsApp contact field is present');
     assert.equal(expiryCenterSmoke.emiratesExpiryField,true,'Staff Emirates ID expiry field is present');
     assert.equal(expiryCenterSmoke.otherExpiryField,true,'Additional staff document expiry field is present');
-    console.log('PASS: company/staff expiry center and manual-only group message privacy');
+    assert.match(expiryCenterSmoke.profile,/WhatsApp/,'Staff profile displays the saved WhatsApp contact');
+    assert.match(expiryCenterSmoke.profile,/Emirates ID Expiry/,'Staff profile displays Emirates ID expiry');
+    assert.match(expiryCenterSmoke.profile,/Insurance/,'Staff profile displays the additional staff document');
+    console.log('PASS: company/staff expiry center, staff profile fields and manual-only group message privacy');
     console.log('PASS: company staff table and purchase/supplier module rendering');
     if (errors.length) console.log('Browser page errors (external dependencies may be unavailable):',errors.slice(0,6));
   } finally { await browser.close(); }
