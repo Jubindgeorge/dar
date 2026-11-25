@@ -37,6 +37,7 @@ window.darRenderWorkTracking = function () {
    const closed=d.isClosed===true||raw==='closed';
    const completed=raw==='completed'||raw==='complete';
    const progress=raw==='in progress'||raw==='processing';
+   if(filter==='active')return !closed&&!completed;
    if(filter==='pending')return !closed&&!completed&&!progress;
    if(filter==='progress')return progress;
    if(filter==='completed')return completed;
