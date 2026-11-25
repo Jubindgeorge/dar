@@ -110,8 +110,8 @@
   }
   function allExpiryRecords(){
     const todayDate=new Date(today()+'T00:00:00');const out=[];
-    const companyFields=['tradeLicenseExpiry','tradeLicenceExpiry','establishmentCardExpiry','immigrationCardExpiry','labourCardExpiry','tenancyContractExpiry','otherDocumentExpiry'];
-    const staffFields=['passportExpiry','emiratesIdExpiry','labourCardExpiry','visaExpiry'];
+    const companyFields=['tradeLicenseExpiry','tradeLicenceExpiry','establishmentCardExpiry','immigrationLabourCardExpiry','labourCardExpiry','tenancyContractExpiry','otherDocumentExpiry'];
+    const staffFields=['passportExpiry','emiratesIdExpiry','labourCardExpiry','visaExpiry','otherStaffDocumentExpiry'];
     companies().forEach(c=>companyFields.forEach(key=>{const value=c[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Company expiry',label:(c.companyName||'Company')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>c.id&&window.viewClientDetail?window.viewClientDetail(c.id):window.switchTab('clients')});}));
     staff().forEach(s=>staffFields.forEach(key=>{const value=s[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Staff expiry',label:(s.fullName||'Staff')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>s.id&&window.openStaffProfile?window.openStaffProfile(s.id):window.switchTab('staff')});}));
     return out;
