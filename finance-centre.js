@@ -53,7 +53,7 @@ function createShell(){
  '<section class="finance-panel" data-finance-panel="reconcile"><article class="finance-card"><div class="finance-card-head"><div><h3>Financial Reconciliation</h3><p>Read-only checks; no financial records are changed automatically.</p></div><button class="btn btn-secondary" id="finance-audit-refresh">Run checks</button></div><div id="finance-audit-count"></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Level</th><th>Record</th><th>Finding</th></tr></thead><tbody id="finance-audit"></tbody></table></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="staff"><div id="finance-staff"></div></section>';
  if(intro)intro.insertAdjacentElement('afterend',shell);else root.prepend(shell);
- const find=id=>$(id)?.closest('.table-responsive')?.parentElement?.parentElement;
+ const find=id=>$(id)?.closest('.table-responsive')?.parentElement;
  const staff=find('ledger-company-staff-tbody'),expense=find('monthly-expenses-tbody'),master=find('acc-full-ledger-tbody'),payments=find('acc-payment-logs-tbody');
  const toolbar=$('ledger-search')?.parentElement,selector=$('acc-invoice-select')?.closest('div[style*="background: var(--panel-bg)"]'),cards=$('acc-selected-summary-card');
  if(staff)$('finance-staff').appendChild(staff);if(expense)$('finance-expenses').appendChild(expense);
@@ -67,7 +67,7 @@ function createShell(){
 }
 function movePanels(){
  if(!$('finance-centre'))return;
- const find=id=>$(id)?.closest('.table-responsive')?.parentElement?.parentElement;
+ const find=id=>$(id)?.closest('.table-responsive')?.parentElement;
  const move=(id,target)=>{const el=find(id);if(el&&el.parentElement!==$(target))$(target).appendChild(el);};
  move('ledger-company-staff-tbody','finance-staff');move('monthly-expenses-tbody','finance-expenses');move('acc-full-ledger-tbody','finance-invoices');move('acc-payment-logs-tbody','finance-payments');
  const toolbar=$('ledger-search')?.parentElement;if(toolbar&&toolbar.parentElement!==$('finance-invoices'))$('finance-invoices').appendChild(toolbar);
