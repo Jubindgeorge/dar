@@ -32,6 +32,7 @@
   const expenses = () => list(typeof state !== 'undefined' ? state.monthlyExpenses : []);
   const companies = () => list(typeof state !== 'undefined' ? state.clients : []);
   const staff = () => list(typeof state !== 'undefined' ? state.staff : []);
+  const companyClients = () => list(typeof state !== 'undefined' ? state.companyClients : []);
   const dateText = value => window.darDates ? window.darDates.format(value) : (value || '-');
   function setText(id,value){const node=byId(id);if(node)node.textContent=String(value);}
   function renderLegacyStats(){
@@ -130,6 +131,7 @@
   function openSearchResult(item){
     if(item.kind==='company'){if(window.viewClientDetail)window.viewClientDetail(item.record.id);else window.switchTab('clients');}
     else if(item.kind==='staff'){if(window.openStaffProfile)window.openStaffProfile(item.record.id);else window.switchTab('staff');}
+    else if(item.kind==='client'){if(item.record.companyId&&window.viewClientDetail)window.viewClientDetail(item.record.companyId);else window.switchTab('clients');}
     else if(item.kind==='invoice'){if(window.viewDocumentHistory)window.viewDocumentHistory(item.record.refCode);else window.switchTab('documents');}
     else if(item.kind==='quotation'){window.switchTab('quotations');}
   }
@@ -138,6 +140,7 @@
     const out=[];
     companies().forEach(r=>{const hay=[r.companyName,r.nameAr,r.contactPerson,r.email,r.phone].map(norm).join(' ');if(hay.includes(q))out.push({kind:'company',label:r.companyName||'Company',detail:r.contactPerson||'Company profile',record:r});});
     staff().forEach(r=>{const hay=[r.staffCode,r.staffId,r.fullName,r.personNumber,r.passportNumber,r.labourCardNumber,r.companyName].map(norm).join(' ');if(hay.includes(q))out.push({kind:'staff',label:r.fullName||r.staffCode||'Staff',detail:r.companyName||r.passportNumber||'Staff profile',record:r});});
+    companyClients().forEach(r=>{const hay=[r.name,r.phone,r.email,r.whatsapp,r.companyName].map(norm).join(' ');if(hay.includes(q))out.push({kind:'client',label:r.name||'Client',detail:r.companyName||r.phone||'Company client',record:r});});
     list(state.documents).forEach(r=>{const hay=[r.refCode,r.clientName,r.companyName,r.packageName,r.title,r.serviceName,r.passportNumber].map(norm).join(' ');if(hay.includes(q))out.push({kind:norm(r.type)==='quotation'?'quotation':'invoice',label:(r.type||'Invoice')+' · '+(r.refCode||''),detail:r.clientName||r.companyName||'Document',record:r});});
     return out.slice(0,12);
   }
