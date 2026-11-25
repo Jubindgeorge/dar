@@ -8,6 +8,36 @@ const assert = require('node:assert/strict');
     page.on('pageerror', err => errors.push(err.message));
     await page.goto('http://127.0.0.1:8765/index.html', {waitUntil:'domcontentloaded'});
     await page.waitForTimeout(1500);
+    await page.evaluate(() => switchTab('accounts-ledger'));
+    const financeCentreSmoke = await page.evaluate(() => {
+      const savedDocs=state.documents, savedExpenses=state.monthlyExpenses;
+      state.documents=[
+        {refCode:'FINANCE-SMOKE-INV',type:'Invoice',transactionDate:'2026-11-10',totalAmount:1000,govtFee:200,clientName:'Finance Smoke Customer',advanceIncludedInPaymentLogs:true,paymentLogs:[{date:'2026-11-11',amount:300,note:'Smoke receipt'}]},
+        {refCode:'FINANCE-SMOKE-QTN',type:'Quotation',transactionDate:'2026-11-12',totalAmount:9000,clientName:'Quotation Must Be Excluded'}
+      ];
+      state.monthlyExpenses=[
+        {id:'finance-smoke-direct',month:'2026-11',date:'2026-11-12',amount:50,title:'Linked cost',linkedInvoiceRef:'FINANCE-SMOKE-INV'},
+        {id:'finance-smoke-office',month:'2026-11',date:'2026-11-13',amount:100,title:'Office cost'}
+      ];
+      document.getElementById('finance-date-from').value='2026-11-01';
+      document.getElementById('finance-date-to').value='2026-11-30';
+      renderFinanceCentre();
+      const result={
+        shell:!!document.getElementById('finance-centre'),
+        profit:document.getElementById('finance-pl').innerText,
+        collections:document.getElementById('finance-cash').innerText,
+        invoiceRows:document.querySelectorAll('#acc-full-ledger-tbody tr').length,
+        invoiceRowText:document.getElementById('acc-full-ledger-tbody').innerText
+      };
+      state.documents=savedDocs;state.monthlyExpenses=savedExpenses;renderFinanceCentre();
+      return result;
+    });
+    assert.equal(financeCentreSmoke.shell,true,'Finance Management Centre initializes inside Accounts Ledger');
+    assert.match(financeCentreSmoke.profit,/AED 650\\.00/,'Invoice-based profit subtracts government fees, linked costs and operating expenses exactly once');
+    assert.match(financeCentreSmoke.collections,/AED 300\\.00/,'Cash collections are reported separately from invoice revenue');
+    assert.equal(financeCentreSmoke.invoiceRows,1,'Quotation records are excluded from the invoice ledger');
+    assert.doesNotMatch(financeCentreSmoke.invoiceRowText,/FINANCE-SMOKE-QTN/,'Quotation does not appear in the financial invoice register');
+    console.log('PASS: Finance Centre invoice-basis calculations, cash receipt separation and quotation exclusion');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
