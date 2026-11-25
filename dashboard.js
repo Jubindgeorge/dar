@@ -97,7 +97,7 @@
     docs().forEach(d=>{
       if(status(d)==='overdue' && amount(d)-paid(d)>0.005)items.push({kind:'Overdue invoice',label:(d.refCode||'Invoice')+' · '+(d.clientName||d.companyName||'Client'),detail:money(amount(d)-paid(d)),action:()=>window.darDashboardOpen('invoices','overdue')});
       if(workStatus(d)==='completed' && amount(d)-paid(d)>0.005)items.push({kind:'Completed – balance pending',label:(d.refCode||'Invoice')+' · '+(d.clientName||d.companyName||'Client'),detail:money(amount(d)-paid(d)),action:()=>window.darDashboardOpen('invoices','completed-balance')});
-      if(norm(d.proStatus)==='waiting for client' || norm(d.proStatus)==='waiting for government' || norm(d.proStatus)==='on hold')items.push({kind:'Work follow-up',label:(d.refCode||'Work')+' · '+(d.clientName||d.companyName||'Client'),detail:d.proStatus,action:()=>window.switchTab('work-tracking')});
+      if(norm(d.proStatus)==='waiting for client' || norm(d.proStatus)==='waiting for government' || norm(d.proStatus)==='on hold')items.push({kind:'Work follow-up',label:(d.refCode||'Work')+' · '+(d.clientName||d.companyName||'Client'),detail:d.proStatus,action:()=>window.darDashboardOpen('works','follow-up')});
     });
     root.replaceChildren();
     if(!items.length){const p=document.createElement('p');p.className='dash-muted';p.textContent='No outstanding payment or document-expiry alerts found.';root.append(p);return;}
