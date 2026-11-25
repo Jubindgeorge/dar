@@ -643,6 +643,23 @@ const assert = require('node:assert/strict');
     console.log('PASS: service and expense deletions use recoverable data protection');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
+    const expiryCenterSmoke = await page.evaluate(() => {
+      const addDays = days => { const d=new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); };
+      state.clients=[{id:'expiry-company-test',companyName:'Expiry Test LLC',email:'office@example.com',whatsapp:'+971500000001',whatsappGroupLink:'https://chat.whatsapp.com/ABC123',tradeLicenseExpiry:addDays(10)}];
+      state.staff=[{id:'expiry-staff-test',companyId:'expiry-company-test',companyName:'Expiry Test LLC',fullName:'Expiry Test Employee',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'SENSITIVE-PASSPORT-123',passportExpiry:addDays(7),otherStaffDocumentName:'Insurance',otherStaffDocumentExpiry:addDays(15)}];
+      window.darRenderExpiryNotifications();
+      const text=document.getElementById('dar-expiry-notifications').innerText;
+      return {text,staffWhatsappField:!!document.getElementById('sf-whatsapp'),emiratesExpiryField:!!document.getElementById('sf-emirates-id-expiry'),otherExpiryField:!!document.getElementById('sf-other-document-expiry')};
+    });
+    assert.match(expiryCenterSmoke.text,/Expiry Test LLC/,'Expiry center includes company expiry records');
+    assert.match(expiryCenterSmoke.text,/Expiry Test Employee/,'Expiry center includes staff expiry records');
+    assert.match(expiryCenterSmoke.text,/Manual Company Group Messages/,'Expiry center prepares manual-only group messages');
+    assert.match(expiryCenterSmoke.text,/Open Company Group/,'Saved group link is used for manual group opening');
+    assert.doesNotMatch(expiryCenterSmoke.text,/SENSITIVE-PASSPORT-123/,'Expiry center does not expose passport numbers in group messages or status rows');
+    assert.equal(expiryCenterSmoke.staffWhatsappField,true,'Staff WhatsApp contact field is present');
+    assert.equal(expiryCenterSmoke.emiratesExpiryField,true,'Staff Emirates ID expiry field is present');
+    assert.equal(expiryCenterSmoke.otherExpiryField,true,'Additional staff document expiry field is present');
+    console.log('PASS: company/staff expiry center and manual-only group message privacy');
     console.log('PASS: company staff table and purchase/supplier module rendering');
     if (errors.length) console.log('Browser page errors (external dependencies may be unavailable):',errors.slice(0,6));
   } finally { await browser.close(); }
