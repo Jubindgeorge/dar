@@ -593,7 +593,7 @@ const assert = require('node:assert/strict');
       try {
         state.documents=[{refCode:'QTN-DELETE-TEST',type:'Quotation',totalAmount:50,invoicedAmount:0}];
         await deleteQuotation('QTN-DELETE-TEST');
-        const removed=state.documents.some(doc=>doc.refCode==='QTN-DELETE-TEST');
+        const removed=!state.documents.some(doc=>doc.refCode==='QTN-DELETE-TEST');
         state.documents=[
           {refCode:'QTN-LINKED-TEST',type:'Quotation',totalAmount:50,invoicedAmount:10},
           {refCode:'INV-LINKED-TEST',type:'Invoice',sourceQuotationRef:'QTN-LINKED-TEST',totalAmount:10}
