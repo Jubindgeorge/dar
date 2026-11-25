@@ -675,6 +675,11 @@
                                     <button type="button" class="btn btn-secondary" onclick="openCompanyClientModal()" style="white-space:nowrap;">+ New Client</button>
                                 </div>
                                 <input type="text" id="st-client-name" placeholder="Primary Account Holder" autocomplete="off">
+                                <label for="st-staff-selector" style="margin-top:8px;">Link Imported Company Staff</label>
+                                <select id="st-staff-selector" onchange="selectStudioStaff(this.value)" aria-label="Select imported staff belonging to the selected company">
+                                    <option value="">-- No staff selected --</option>
+                                </select>
+                                <small class="dar-hint">Select an imported employee to link this invoice to their staff profile. Only staff from the selected company are listed.</small>
                                 <small class="dar-hint">Choose a client linked to the selected company, or add a new one.</small>
                             </div>
                             <div>
