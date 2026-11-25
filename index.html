@@ -154,55 +154,122 @@
                     </div>
                 </section>
 
-                <!-- TAB 1: DASHBOARD -->
+                <!-- TAB 1: EXECUTIVE DASHBOARD -->
                 <section id="tab-dashboard" class="view-panel active">
-                    <div class="dashboard-grid">
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Saved Clients</p>
-                                <h3 id="dash-client-count" style="font-size: 1.8rem; color: var(--primary); margin-top: 5px;">0</h3>
-                            </div>
-                            <i class="fa-solid fa-users fa-2x" style="color: rgba(203,163,88,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Monthly Payouts</p>
-                                <h3 id="dash-monthly-payout" style="font-size: 1.8rem; color: var(--accent-green); margin-top: 5px;">AED 0</h3>
-                            </div>
-                            <i class="fa-solid fa-wallet fa-2x" style="color: rgba(34,197,94,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Annual Payouts</p>
-                                <h3 id="dash-annual-payout" style="font-size: 1.8rem; color: var(--accent-blue); margin-top: 5px;">AED 0</h3>
-                            </div>
-                            <i class="fa-solid fa-chart-line fa-2x" style="color: rgba(56,189,248,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Total Works Logged</p>
-                                <h3 id="dash-works-count" style="font-size: 1.8rem; color: #f59e0b; margin-top: 5px;">0</h3>
-                            </div>
-                            <i class="fa-solid fa-clipboard-check fa-2x" style="color: rgba(245,158,11,0.3);"></i>
-                        </div>
+                    <div class="dash-exec-heading">
+                        <div><p class="dash-kicker">DAR AL SHAMS · MANAGEMENT</p><h2>Executive Control Centre</h2><p>All-time business position with current-month highlights.</p></div>
+                        <div class="dash-period-chip"><i class="fa-solid fa-calendar-days"></i> All time · This month</div>
                     </div>
-                    <div class="dashboard-grid" style="margin-top:16px;">
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Business Works — All Time</p><h3 id="dash-business-total">AED 0.00</h3><small id="dash-business-count">0 records</small></div></div>
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Staff Works — All Time</p><h3 id="dash-staff-total">AED 0.00</h3><small id="dash-staff-count">0 records</small></div></div>
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Recorded Expenses — This Month</p><h3 id="dash-month-expenses">AED 0.00</h3></div></div>
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Invoiced Less Expenses — This Month</p><h3 id="dash-month-net">AED 0.00</h3><small style="color:var(--text-muted);">Not cash flow or net profit</small></div></div>
+
+                    <div class="dash-search-wrap">
+                        <label for="dash-exec-search"><i class="fa-solid fa-magnifying-glass"></i> Global search</label>
+                        <input id="dash-exec-search" type="search" autocomplete="off" placeholder="Search company, client, staff, passport, labour card, invoice or quotation reference">
+                        <div id="dash-exec-search-results" class="dash-search-results" role="listbox" aria-label="Search results"></div>
                     </div>
-                    <div class="dashboard-grid" style="margin-top:16px;" aria-label="V2 payment overview">
-                        <div class="metric-card"><div><p>Payments Received — All Time</p><h3 id="dash-v2-received">AED 0.00</h3></div></div>
-                        <div class="metric-card"><div><p>Outstanding — All Time</p><h3 id="dash-v2-outstanding">AED 0.00</h3><small id="dash-v2-payment-status" style="color:var(--text-muted);">Paid: 0 · Partial: 0 · Unpaid: 0 · Overdue: 0</small></div></div>
-                        <div class="metric-card"><div><p>Unassigned Works</p><h3 id="dash-v2-unassigned">0</h3></div></div>
+
+                    <section class="dash-section" aria-label="Quick actions">
+                        <div class="dash-section-title"><h3>Quick actions</h3><span>Common tasks</span></div>
+                        <div class="dash-quick-grid">
+                            <button type="button" onclick="openStudio('Invoice')"><i class="fa-solid fa-file-circle-plus"></i><span>Create invoice</span></button>
+                            <button type="button" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>Create quotation</span></button>
+                            <button type="button" onclick="openClientModal(false)"><i class="fa-solid fa-building"></i><span>Add company</span></button>
+                            <button type="button" onclick="switchTab('staff')"><i class="fa-solid fa-user-plus"></i><span>Company staff</span></button>
+                            <button type="button" onclick="switchTab('accounts-ledger')"><i class="fa-solid fa-money-bill-transfer"></i><span>Record payment</span></button>
+                            <button type="button" onclick="switchTab('work-tracking')"><i class="fa-solid fa-list-check"></i><span>Update work</span></button>
+                        </div>
+                    </section>
+
+                    <section class="dash-section">
+                        <div class="dash-section-title"><h3>Business overview</h3><span>All-time totals</span></div>
+                        <div class="dash-metric-grid">
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices')"><span>Total invoiced</span><strong id="dash-exec-invoiced">AED 0.00</strong><small>Valid invoices</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('ledger')"><span>Payments received</span><strong id="dash-exec-received">AED 0.00</strong><small>Confirmed payments</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices')"><span>Outstanding balance</span><strong id="dash-exec-outstanding">AED 0.00</strong><small>Remaining to collect</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('works')"><span>Active works</span><strong id="dash-exec-active-works">0</strong><small>Pending and in progress</small></button>
+                        </div>
+                    </section>
+
+                    <div class="dash-two-column">
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Invoice payment pipeline</h3><span>Payment status</span></div>
+                            <div class="dash-status-list">
+                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-warning"></i>Unpaid</span><strong id="dash-exec-unpaid">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-info"></i>Advance / partially paid</span><strong id="dash-exec-partial">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-success"></i>Fully paid</span><strong id="dash-exec-paid">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices')"><span><i class="dash-dot dot-danger"></i>Overdue</span><strong id="dash-exec-overdue">0</strong></button>
+                            </div>
+                        </section>
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Work lifecycle</h3><span>Manually confirmed stages</span></div>
+                            <div class="dash-status-list">
+                                <button type="button" onclick="darDashboardOpen('works')"><span>Work pending</span><strong id="dash-exec-work-pending">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works')"><span>In progress</span><strong id="dash-exec-work-progress">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works')"><span>Work completed</span><strong id="dash-exec-work-completed">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works')"><span>Closed</span><strong id="dash-exec-work-closed">0</strong></button>
+                                <button type="button" class="dash-status-emphasis" onclick="darDashboardOpen('invoices')"><span>Completed – balance pending</span><strong id="dash-exec-completed-balance">0</strong></button>
+                            </div>
+                        </section>
                     </div>
-                    <div class="v2-report-toolbar">
-                        <strong>Financial Reports</strong>
-                        <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
-                        <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export Excel</button><button type="button" class="btn btn-secondary" onclick="exportDarFinancialReportPDF()">Export PDF</button>
+
+                    <div class="dash-two-column">
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Outstanding invoice ageing</h3><span>Balance by age</span></div>
+                            <div class="dash-age-list">
+                                <div><span>0–30 days</span><strong id="dash-exec-age-30">AED 0.00</strong></div>
+                                <div><span>31–60 days</span><strong id="dash-exec-age-60">AED 0.00</strong></div>
+                                <div><span>61–90 days</span><strong id="dash-exec-age-90">AED 0.00</strong></div>
+                                <div><span>90+ days</span><strong id="dash-exec-age-90plus">AED 0.00</strong></div>
+                            </div>
+                            <p class="dash-footnote">Age uses due date, or invoice date when no due date is saved.</p>
+                        </section>
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Current-month highlights</h3><span id="dash-exec-month-label">This month</span></div>
+                            <div class="dash-age-list">
+                                <div><span>Collections</span><strong id="dash-exec-month-received">AED 0.00</strong></div>
+                                <div><span>Recorded expenses</span><strong id="dash-exec-month-expenses">AED 0.00</strong></div>
+                                <div><span>Cash operating result</span><strong id="dash-exec-month-net">AED 0.00</strong></div>
+                            </div>
+                            <p class="dash-footnote">Cash operating result = collections minus recorded expenses; it is not accounting profit.</p>
+                        </section>
                     </div>
-                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded expenses. Invoice totals are not necessarily payments received. Report exports group by the selected period and do not modify records.</p>
+
+                    <div class="dash-two-column">
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Alerts and follow-ups</h3><span>Upcoming and overdue</span></div>
+                            <div id="dash-exec-alert-list" class="dash-alert-list"><p class="dash-muted">Loading alerts…</p></div>
+                        </section>
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Profiles and quotations</h3><span>Quick access</span></div>
+                            <div class="dash-profile-shortcuts">
+                                <button type="button" onclick="darDashboardOpen('companies')"><i class="fa-solid fa-building"></i><span>Companies</span><strong id="dash-exec-companies">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('staff')"><i class="fa-solid fa-users"></i><span>Staff profiles</span><strong id="dash-exec-staff">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('quotations')"><i class="fa-solid fa-file-signature"></i><span>Quotations</span><strong id="dash-exec-quotations">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('expiry')"><i class="fa-solid fa-bell"></i><span>Expiry centre</span><i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                        </section>
+                    </div>
+
+                    <section class="dash-section">
+                        <div class="dash-section-title"><h3>Recent activity</h3><span>Latest invoices and quotations</span></div>
+                        <div id="dash-exec-recent" class="dash-recent-list"><p class="dash-muted">Loading activity…</p></div>
+                    </section>
+
+                    <section class="dash-section dash-reports-section">
+                        <div class="dash-section-title"><h3>Financial reports</h3><span>Daily, monthly and yearly exports</span></div>
+                        <div class="v2-report-toolbar">
+                            <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
+                            <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export Excel</button>
+                            <button type="button" class="btn btn-secondary" onclick="exportDarFinancialReportPDF()">Export PDF</button>
+                        </div>
+                        <p class="dash-footnote">Invoice totals, confirmed collections and recorded expenses are reported separately. Exports do not modify ERP records.</p>
+                    </section>
+
+                    <!-- Legacy dashboard element IDs retained for existing scripts and compatibility. -->
+                    <div hidden aria-hidden="true">
+                        <span id="dash-client-count">0</span><span id="dash-monthly-payout">AED 0</span><span id="dash-annual-payout">AED 0</span><span id="dash-works-count">0</span>
+                        <span id="dash-business-total">AED 0</span><span id="dash-staff-total">AED 0</span><span id="dash-business-count">0</span><span id="dash-staff-count">0</span>
+                        <span id="dash-month-expenses">AED 0</span><span id="dash-month-net">AED 0</span><span id="dash-v2-received">AED 0</span><span id="dash-v2-outstanding">AED 0</span><span id="dash-v2-payment-status"></span><span id="dash-v2-unassigned">0</span>
+                    </div>
                 </section>
 
                 <!-- TAB 2: CLIENTS -->
@@ -1080,5 +1147,6 @@
     <script src="work-tracking.js"></script>
     <script src="translator.js"></script>
     <script src="language.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
