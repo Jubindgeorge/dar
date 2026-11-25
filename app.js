@@ -778,7 +778,8 @@ function renderDocumentsTable() {
         const ageDays = dueDate ? Math.max(0, Math.floor((Date.parse(todayISO+'T00:00:00Z') - Date.parse(dueDate+'T00:00:00Z')) / 86400000)) : null;
         const completed = String(d.proStatus || d.workStatus || '').toLowerCase() === 'completed';
         let matchesPayment = true;
-        if (paymentFilter === 'completed-balance') matchesPayment = completed && balance > 0.005;
+        if (paymentFilter === 'outstanding') matchesPayment = balance > 0.005;
+        else if (paymentFilter === 'completed-balance') matchesPayment = completed && balance > 0.005;
         else if (paymentFilter === 'age-0-30') matchesPayment = balance > 0.005 && ageDays !== null && ageDays <= 30;
         else if (paymentFilter === 'age-31-60') matchesPayment = balance > 0.005 && ageDays !== null && ageDays >= 31 && ageDays <= 60;
         else if (paymentFilter === 'age-61-90') matchesPayment = balance > 0.005 && ageDays !== null && ageDays >= 61 && ageDays <= 90;
