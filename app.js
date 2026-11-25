@@ -508,7 +508,7 @@ function renderClientsTable() {
             <td>${window.darFormatTableDate(cl.createdDate || cl.createdAt)}</td>
             <td style="text-align: center;">
                 <button onclick="openCompanyStaff('${cl.id}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-id-card"></i> Staff Data</button>
-                <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-folder-open"></i> Dossier</button>
+                <button onclick="viewClientDetail('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-user"></i> View Profile</button>
                 <button onclick="openClientModal('${cl.id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
                 <button onclick="deleteClientAccount('${cl.id}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-trash"></i></button>
             </td>
@@ -610,6 +610,10 @@ window.viewClientDetail = function(clientId) {
     const profileText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value || '-'; };
     profileText('cd-company-email', client.email);
     profileText('cd-company-whatsapp', client.whatsapp);
+    profileText('cd-trade-license-number', client.tradeLicenseNumber);
+    profileText('cd-establishment-number', client.establishmentCardNumber);
+    profileText('cd-labour-card-number', client.immigrationLabourCardNumber);
+    profileText('cd-tenancy-number', client.tenancyContractNumber);
     profileText('cd-trade-license-expiry', client.tradeLicenseExpiry);
     profileText('cd-establishment-expiry', client.establishmentCardExpiry);
     profileText('cd-labour-card-expiry', client.immigrationLabourCardExpiry);
