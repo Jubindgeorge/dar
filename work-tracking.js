@@ -30,7 +30,23 @@ window.darRenderWorkTracking = function () {
  const table=document.createElement('div');table.className='table-responsive';
  table.innerHTML='<table class="data-table"><thead><tr><th>Date</th><th>Package (Main)</th><th>Service / Invoice</th><th>Company / Client</th><th>Current Stage</th><th>Work Status</th><th>Actions</th></tr></thead><tbody></tbody></table>';
  const tbody=table.querySelector('tbody');
- docs().filter(d=>d.type!=='Quotation').slice().sort((a,b)=>String(b.transactionDate||b.createdDate||b.date||'').localeCompare(String(a.transactionDate||a.createdDate||a.date||''))).forEach(d=>{
+ const filter=document.getElementById('dar-work-status-filter')?.value||'';
+ docs().filter(d=>{
+   if(d.type==='Quotation')return false;
+   const raw=String(d.proStatus||d.workStatus||d.operationalStatus||'').toLowerCase();
+   const closed=d.isClosed===true||raw==='closed';
+   const completed=raw==='completed'||raw==='complete';
+   const progress=raw==='in progress'||raw==='processing';
+   if(filter==='pending')return !closed&&!completed&&!progress;
+   if(filter==='progress')return progress;
+   if(filter==='completed')return completed;
+   if(filter==='closed')return closed;
+   if(filter==='completed-balance'){
+     const total=money(d),balance=Math.max(0,total-paid(d));
+     return completed&&balance>0.005;
+   }
+   return true;
+ }).slice().sort((a,b)=>String(b.transactionDate||b.createdDate||b.date||'').localeCompare(String(a.transactionDate||a.createdDate||a.date||''))).forEach(d=>{
    const tr=document.createElement('tr'),id=String(d.refCode||''),step=d.proStage||'Not Started',status=d.proStatus||'Not Started';
    for(const value of [(window.darFormatTableDate ? window.darFormatTableDate(d.transactionDate||d.createdDate||d.date) : String(d.createdDate||d.date||'').slice(0,10)),packageName(d),id+' · '+(d.items||[]).map(i=>i.title||i.serviceName||'').filter(Boolean).join(', '),company(d)==='Private'?(d.clientName||'Private'):company(d),step,status]){
       const td=document.createElement('td');td.textContent=value;tr.append(td);
