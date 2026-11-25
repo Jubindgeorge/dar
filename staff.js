@@ -68,7 +68,7 @@
     }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
-        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry].filter(Boolean).map(value => {
+        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry, record.emiratesIdExpiry, record.otherStaffDocumentExpiry].filter(Boolean).map(value => {
             const date = new Date(value + 'T00:00:00');
             return Number.isNaN(date.getTime()) ? null : Math.ceil((date.getTime() - new Date().setHours(0,0,0,0)) / 86400000);
         }).filter(value => value !== null);
@@ -206,8 +206,8 @@
             return '<tr><td>'+ref+'</td><td>'+html(date)+'</td><td>'+html(doc.packageName || doc.serviceName || doc.title || '-')+'</td><td>AED '+amount.toFixed(2)+'</td><td>'+kind+'</td><td><button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+ref+'\')">View / Print</button> <button type="button" class="btn btn-secondary" onclick="openStudio(\''+kind+'\',\''+ref+'\')">Edit</button></td></tr>';
         }).join('') : '<tr><td colspan="6" class="staff-empty">No linked documents yet.</td></tr>';
         root.innerHTML = '<div class="staff-profile-heading"><div><button type="button" class="btn btn-secondary" onclick="closeStaffProfile()">← Back to Staff List</button><h2>'+html(staff.fullName || 'Staff Profile')+'</h2><p class="dar-hint">'+html(staff.staffCode || staff.staffId || '')+' · '+html(staff.companyName || companyNameById(staff.companyId))+'</p></div><button type="button" class="btn btn-primary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit Staff Profile</button></div>' +
-        '<div class="staff-profile-card"><h3>Personal & Employment Details</h3><div class="staff-profile-grid">'+info('Staff ID',staff.staffCode || staff.staffId)+info('Person Labour No.',staff.personNumber)+info('Full Name',staff.fullName)+info('Company',staff.companyName || companyNameById(staff.companyId))+info('Nationality',staff.nationality)+info('Designation',staff.designation)+info('Joining Date',staff.joiningDate)+info('Last Work Done',staff.lastWorkDone)+info('Phone',staff.phone)+info('Email',staff.email)+'</div></div>' +
-        '<div class="staff-profile-card"><h3>Identity & Labour Details</h3><div class="staff-profile-grid">'+info('Passport Number',staff.passportNumber)+info('Passport Expiry',staff.passportExpiry)+info('Labour Card Number',staff.labourCardNumber)+info('Labour Card Expiry',staff.labourCardExpiry)+info('Visa Number',staff.visaNumber)+info('Visa Expiry',staff.visaExpiry)+info('Visa Status',staff.visaStatus)+info('Renewal Status',dueStatus(staff))+info('Document Reference',staff.documentReference)+info('Notes',staff.notes)+'</div></div>' +
+        '<div class="staff-profile-card"><h3>Personal & Employment Details</h3><div class="staff-profile-grid">'+info('Staff ID',staff.staffCode || staff.staffId)+info('Person Labour No.',staff.personNumber)+info('Full Name',staff.fullName)+info('Company',staff.companyName || companyNameById(staff.companyId))+info('Nationality',staff.nationality)+info('Designation',staff.designation)+info('Joining Date',staff.joiningDate)+info('Last Work Done',staff.lastWorkDone)+info('Phone',staff.phone)+info('WhatsApp',staff.whatsapp)+info('Email',staff.email)+'</div></div>' +
+        '<div class="staff-profile-card"><h3>Identity & Labour Details</h3><div class="staff-profile-grid">'+info('Passport Number',staff.passportNumber)+info('Passport Expiry',staff.passportExpiry)+info('Emirates ID Number',staff.emiratesIdNumber)+info('Emirates ID Expiry',staff.emiratesIdExpiry)+info('Other Staff Document',staff.otherStaffDocumentName)+info('Other Staff Document Expiry',staff.otherStaffDocumentExpiry)+info('Labour Card Number',staff.labourCardNumber)+info('Labour Card Expiry',staff.labourCardExpiry)+info('Visa Number',staff.visaNumber)+info('Visa Expiry',staff.visaExpiry)+info('Visa Status',staff.visaStatus)+info('Renewal Status',dueStatus(staff))+info('Document Reference',staff.documentReference)+info('Notes',staff.notes)+'</div></div>' +
         '<div class="staff-profile-card"><h3>Invoices <span class="staff-doc-count">'+invoices.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Invoice No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(invoices)+'</tbody></table></div></div>' +
         '<div class="staff-profile-card"><h3>Quotations <span class="staff-doc-count">'+quotations.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Quotation No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(quotations)+'</tbody></table></div></div>';
     };
@@ -246,6 +246,10 @@
         byId('sf-last-work').value = record.lastWorkDone || defaults.lastWorkDone || '';
         byId('sf-passport').value = record.passportNumber || '';
         byId('sf-passport-expiry').value = record.passportExpiry || '';
+        byId('sf-emirates-id').value = record.emiratesIdNumber || '';
+        byId('sf-emirates-id-expiry').value = record.emiratesIdExpiry || '';
+        byId('sf-other-document-name').value = record.otherStaffDocumentName || '';
+        byId('sf-other-document-expiry').value = record.otherStaffDocumentExpiry || '';
         byId('sf-labour-card-number').value = record.labourCardNumber || '';
         byId('sf-labour-card-expiry').value = record.labourCardExpiry || '';
         byId('sf-visa-number').value = record.visaNumber || '';
@@ -254,6 +258,7 @@
         byId('sf-renewal-status').value = record.renewalStatus || 'Pending';
         byId('sf-joining-date').value = record.joiningDate || '';
         byId('sf-phone').value = record.phone || '';
+        byId('sf-whatsapp').value = record.whatsapp || '';
         byId('sf-email').value = record.email || '';
         byId('sf-document-reference').value = record.documentReference || '';
         byId('sf-notes').value = record.notes || '';
@@ -286,12 +291,17 @@
             labourCardExpiry: clean(byId('sf-labour-card-expiry').value),
             passportNumber: clean(byId('sf-passport').value),
             passportExpiry: clean(byId('sf-passport-expiry').value),
+            emiratesIdNumber: clean(byId('sf-emirates-id').value),
+            emiratesIdExpiry: clean(byId('sf-emirates-id-expiry').value),
+            otherStaffDocumentName: clean(byId('sf-other-document-name').value),
+            otherStaffDocumentExpiry: clean(byId('sf-other-document-expiry').value),
             visaNumber: clean(byId('sf-visa-number').value),
             visaExpiry: clean(byId('sf-visa-expiry').value),
             visaStatus: clean(byId('sf-visa-status').value),
             renewalStatus: clean(byId('sf-renewal-status').value),
             joiningDate: clean(byId('sf-joining-date').value),
             phone: clean(byId('sf-phone').value),
+            whatsapp: clean(byId('sf-whatsapp').value),
             email: clean(byId('sf-email').value),
             documentReference: clean(byId('sf-document-reference').value),
             notes: clean(byId('sf-notes').value),
@@ -342,6 +352,10 @@
         byId('cc-input-name').value = clean(byId('st-client-name')?.value);
         byId('cc-input-phone').value = '';
         byId('cc-input-email').value = '';
+        byId('cc-input-whatsapp').value = '';
+        byId('cc-input-passport-expiry').value = '';
+        byId('cc-input-emirates-id-expiry').value = '';
+        byId('cc-input-visa-expiry').value = '';
         byId('company-client-modal').style.display = 'flex';
         byId('cc-input-name').focus();
     };
@@ -361,7 +375,16 @@
             return;
         }
         const id = db.ref('companyClients').push().key;
-        const record = {companyId, companyName, name, phone:clean(byId('cc-input-phone').value), email:clean(byId('cc-input-email').value), createdAt:new Date().toISOString()};
+        const record = {
+            companyId, companyName, name,
+            phone:clean(byId('cc-input-phone').value),
+            email:clean(byId('cc-input-email').value),
+            whatsapp:clean(byId('cc-input-whatsapp').value),
+            passportExpiry:clean(byId('cc-input-passport-expiry').value),
+            emiratesIdExpiry:clean(byId('cc-input-emirates-id-expiry').value),
+            visaExpiry:clean(byId('cc-input-visa-expiry').value),
+            createdAt:new Date().toISOString()
+        };
         db.ref('companyClients/' + id).set(record, error => {
             if (error) { showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection.'); return; }
             record.id = id;
