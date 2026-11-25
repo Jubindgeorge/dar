@@ -141,6 +141,14 @@ function updateInvoiceTable(){
  const table=body.closest('table');if(table){const labels=['Invoice Ref','Invoice Date','Customer','Government Fees (AED)','Linked Direct Costs (AED)','Invoiced (AED)','Collected (AED)','Outstanding (AED)','Invoice Contribution (AED)','Open'];table.querySelectorAll('thead th').forEach((th,i)=>{if(labels[i])th.textContent=labels[i];});if(table.querySelectorAll('thead th').length<10){const tr=table.querySelector('thead tr');if(tr){const th=document.createElement('th');th.textContent='Open';tr.appendChild(th);}}}
  body.querySelectorAll('[data-finance-open]').forEach(btn=>btn.addEventListener('click',()=>{if(typeof window.openStudio==='function')window.openStudio('Invoice',btn.dataset.financeOpen);else alert('Invoice editor is not available.');}));
 }
+function render(){
+ if(!$('finance-centre'))return;
+ const active=$('finance-centre').dataset.activeTab||'overview';
+ renderOverview();updateInvoiceTable();
+ if(active==='customers')renderCustomers();
+ if(active==='reports')renderReports();
+ if(active==='reconcile')renderAudit();
+}
 function wrapFunctions(){
  if(window.__darFinanceWrap)return;window.__darFinanceWrap=true;
  const oldMaster=window.renderAccountsLedgerMaster;if(oldMaster)window.renderAccountsLedgerMaster=function(){const x=oldMaster.apply(this,arguments);movePanels();render();return x;};
