@@ -133,7 +133,7 @@ function collectProfileExpiries(){
  clients.forEach(p=>clientFields.forEach(([field,label])=>{
   if(!p[field])return;const days=expiryDays(p[field]);if(days===null||days>30)return;
   const company=byCompany.get(String(p.companyId))||companies.find(c=>String(c.companyName||'').toLowerCase()===String(p.companyName||'').toLowerCase())||{};
-  out.push({kind:'Company Client',id:p.id,name:p.name||'Client',company:company.companyName||p.companyName||'',field,label,expiry:expiryISO(p[field]),days,open:()=>p.companyId&&window.viewClientDetail?window.viewClientDetail(p.companyId):window.switchTab('clients')});
+  out.push({kind:'Company Client',id:p.id,name:p.name||'Client',company:company.companyName||p.companyName||'',field,label,expiry:expiryISO(p[field]),days,open:()=>window.openCompanyClientModal?window.openCompanyClientModal(p.id):window.switchTab('clients')});
  }));
  return out;
 }
