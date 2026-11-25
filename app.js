@@ -753,6 +753,7 @@ function renderDocumentsTable() {
 
     const searchVal = (document.getElementById('doc-search-input')?.value || '').trim().toLowerCase();
     const branch = document.getElementById('doc-branch-filter')?.value || 'all';
+    const paymentFilter = document.getElementById('doc-payment-status-filter')?.value || '';
     const minRaw = document.getElementById('doc-min-amount')?.value || '';
     const maxRaw = document.getElementById('doc-max-amount')?.value || '';
     const min = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Math.max(0, Number(minRaw)) : null;
@@ -769,7 +770,21 @@ function renderDocumentsTable() {
         const matchesBranch = branch === 'all' ||
             (branch === 'staff' ? getAutomaticWorkBranch(d) === 'staff' : getAutomaticWorkBranch(d) !== 'staff');
         const amount = getDarDocumentAmount(d);
-        return matchesText && matchesBranch && matchesDate &&
+        const paid = Math.min(amount, Math.max(0, Number(window.getDarDocumentPaidAmount ? window.getDarDocumentPaidAmount(d) : (d.advanceAmount ?? d.advanceAmt ?? d.advance ?? 0)) || 0));
+        const balance = Math.max(0, amount - paid);
+        const paymentStatus = String(window.getDarDocumentPaymentStatus ? window.getDarDocumentPaymentStatus(d) : (balance <= 0.005 ? 'paid' : paid > 0 ? 'partial' : 'unpaid')).toLowerCase();
+        const dueDate = String(d.dueDate || d.paymentDueDate || d.transactionDate || d.createdDate || d.date || '').slice(0,10);
+        const todayISO = window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10);
+        const ageDays = dueDate ? Math.max(0, Math.floor((Date.parse(todayISO+'T00:00:00Z') - Date.parse(dueDate+'T00:00:00Z')) / 86400000)) : null;
+        const completed = String(d.proStatus || d.workStatus || '').toLowerCase() === 'completed';
+        let matchesPayment = true;
+        if (paymentFilter === 'completed-balance') matchesPayment = completed && balance > 0.005;
+        else if (paymentFilter === 'age-0-30') matchesPayment = balance > 0.005 && ageDays !== null && ageDays <= 30;
+        else if (paymentFilter === 'age-31-60') matchesPayment = balance > 0.005 && ageDays !== null && ageDays >= 31 && ageDays <= 60;
+        else if (paymentFilter === 'age-61-90') matchesPayment = balance > 0.005 && ageDays !== null && ageDays >= 61 && ageDays <= 90;
+        else if (paymentFilter === 'age-90-plus') matchesPayment = balance > 0.005 && ageDays !== null && ageDays > 90;
+        else if (paymentFilter) matchesPayment = paymentStatus === paymentFilter;
+        return matchesText && matchesBranch && matchesDate && matchesPayment &&
             (min === null || amount >= min) && (max === null || amount <= max);
     });
     const sortMode = document.getElementById('doc-sort-order')?.value || 'newest';
