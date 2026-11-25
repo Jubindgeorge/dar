@@ -759,7 +759,7 @@
 
     <!-- Client Registration Modal -->
     <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
-        <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
+        <div class="custom-modal-content" style="text-align:left;width:calc(100% - 32px);max-width:560px;max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;margin:16px auto;">
             <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Add New Company</h3>
             <input type="hidden" id="cl-modal-id">
             <div class="form-group">
@@ -791,7 +791,7 @@
             <div class="form-group"><label for="cl-input-other-doc-expiry">Other Document Expiry</label><input type="date" id="cl-input-other-doc-expiry"></div>
             <div class="custom-modal-actions">
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
+                <button id="cl-save-button" type="button" onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
             </div>
         </div>
     </div>
