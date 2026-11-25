@@ -174,7 +174,7 @@
                             <button type="button" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>Create quotation</span></button>
                             <button type="button" onclick="openClientModal(false)"><i class="fa-solid fa-building"></i><span>Add company</span></button>
                             <button type="button" onclick="switchTab('staff')"><i class="fa-solid fa-user-plus"></i><span>Company staff</span></button>
-                            <button type="button" onclick="switchTab('accounts-ledger')"><i class="fa-solid fa-money-bill-transfer"></i><span>Record payment</span></button>
+                            <button type="button" onclick="darDashboardOpen('record-payment')"><i class="fa-solid fa-money-bill-transfer"></i><span>Record payment</span></button>
                             <button type="button" onclick="switchTab('work-tracking')"><i class="fa-solid fa-list-check"></i><span>Update work</span></button>
                         </div>
                     </section>
@@ -184,8 +184,8 @@
                         <div class="dash-metric-grid">
                             <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices')"><span>Total invoiced</span><strong id="dash-exec-invoiced">AED 0.00</strong><small>Valid invoices</small></button>
                             <button class="dash-metric-card" type="button" onclick="darDashboardOpen('ledger')"><span>Payments received</span><strong id="dash-exec-received">AED 0.00</strong><small>Confirmed payments</small></button>
-                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices')"><span>Outstanding balance</span><strong id="dash-exec-outstanding">AED 0.00</strong><small>Remaining to collect</small></button>
-                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('works')"><span>Active works</span><strong id="dash-exec-active-works">0</strong><small>Pending and in progress</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices','outstanding')"><span>Outstanding balance</span><strong id="dash-exec-outstanding">AED 0.00</strong><small>Remaining to collect</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('works','active')"><span>Active works</span><strong id="dash-exec-active-works">0</strong><small>Pending and in progress</small></button>
                         </div>
                     </section>
 
@@ -480,7 +480,7 @@
                             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;">
                                 <input type="search" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." aria-label="Search financial records" style="flex:2 1 210px;min-width:0;">
                                 <select id="doc-payment-status-filter" onchange="renderDocumentsTable()" aria-label="Filter invoices by payment and ageing status" style="flex:1 1 160px;min-width:0;">
-                                    <option value="">All payment statuses</option><option value="unpaid">Unpaid</option><option value="partial">Advance / Partially Paid</option><option value="paid">Fully Paid</option><option value="overdue">Overdue</option><option value="completed-balance">Completed Work – Balance Pending</option><option value="age-0-30">Balance Age: 0–30 days</option><option value="age-31-60">Balance Age: 31–60 days</option><option value="age-61-90">Balance Age: 61–90 days</option><option value="age-90-plus">Balance Age: 90+ days</option>
+                                    <option value="">All payment statuses</option><option value="outstanding">All outstanding</option><option value="unpaid">Unpaid</option><option value="partial">Advance / Partially Paid</option><option value="paid">Fully Paid</option><option value="overdue">Overdue</option><option value="completed-balance">Completed Work – Balance Pending</option><option value="age-0-30">Balance Age: 0–30 days</option><option value="age-31-60">Balance Age: 31–60 days</option><option value="age-61-90">Balance Age: 61–90 days</option><option value="age-90-plus">Balance Age: 90+ days</option>
                                 </select>
                                 <select id="doc-branch-filter" onchange="renderDocumentsTable()" aria-label="Filter records by work type" style="flex:1 1 130px;min-width:0;">
                                     <option value="all">All work types</option>
@@ -543,7 +543,7 @@
                 </section>
 
                 <!-- Package-first operational tracking; PDF/quotation templates unchanged. -->
-                <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div class="v2-filter-toolbar"><label for="dar-work-status-filter">Work status</label><select id="dar-work-status-filter" onchange="darRenderWorkTracking()"><option value="">All work statuses</option><option value="pending">Work Pending</option><option value="progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="completed-balance">Completed – Balance Pending</option></select></div><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
+                <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div class="v2-filter-toolbar"><label for="dar-work-status-filter">Work status</label><select id="dar-work-status-filter" onchange="darRenderWorkTracking()"><option value="">All work statuses</option><option value="active">All Active Works</option><option value="pending">Work Pending</option><option value="progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="completed-balance">Completed – Balance Pending</option></select></div><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
                 <section id="tab-completed-files" class="view-panel"><h2>Completed Files</h2><p class="dar-hint">Fully paid invoices grouped by Company → Package, or Private → Package.</p><div id="dar-completed-files"></div></section>
                 <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Expiry reminders appear here without opening popups. Automated email requires a secure server scheduler.</p><div id="dar-expiry-notifications"></div></section>
                 <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
