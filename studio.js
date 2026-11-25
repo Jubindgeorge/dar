@@ -199,6 +199,7 @@ function previewStudioCompanyMatches() {
     const target = document.getElementById('st-company-matches');
     if (!input || !target) return;
     if (typeof populateCompanyClients === 'function') populateCompanyClients();
+    populateStudioStaffDropdown();
     const query = normalizeStudioCompanyName(input.value);
     if (!query) { target.replaceChildren(); return; }
     const matches = (state.clients || []).filter(c => normalizeStudioCompanyName(c.companyName).includes(query)).slice(0, 6);
@@ -327,6 +328,16 @@ function commitDocumentToMemory() {
     const companyName = document.getElementById('st-company-name')?.value.trim() || '';
     const contactPerson = document.getElementById('st-contact-person')?.value.trim() || '';
     const notes = document.getElementById('st-notes')?.value.trim() || '';
+    if (state.selectedStudioStaffId) {
+        const linkedStaff = (state.staff || []).find(item => item.id === state.selectedStudioStaffId);
+        const linkedCompany = (state.clients || []).find(item => normalizeStudioCompanyName(item.companyName) === normalizeStudioCompanyName(companyName));
+        const belongsToCompany = linkedStaff && normalizeStudioCompanyName(linkedStaff.companyName) === normalizeStudioCompanyName(companyName) &&
+            (!linkedCompany?.id || !linkedStaff.companyId || linkedStaff.companyId === linkedCompany.id);
+        if (!belongsToCompany) {
+            showCustomModal('Staff/company mismatch', 'Select an imported staff member belonging to the same company shown on this invoice.');
+            return;
+        }
+    }
     const govtAmt = parseFloat(document.getElementById('st-govt-amt')?.value) || 0;
     const rows = [...document.querySelectorAll('#st-spreadsheet-body tr')];
     if (!rows.length) {
