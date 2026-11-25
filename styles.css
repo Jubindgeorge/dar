@@ -671,3 +671,15 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 .staff-import-preview { margin-top:12px; }
 .staff-import-summary { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:8px; font-size:.82rem; }
 .staff-import-preview .data-table { min-width:760px; }
+
+/* Company-scoped staff directory and individual staff profiles. */
+.staff-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:4px 0 18px}
+.staff-profile-heading h2{color:var(--primary);font-size:1.35rem;margin-top:12px}
+.staff-profile-card{margin:0 0 16px;padding:18px;background:var(--panel-bg);border:1px solid var(--border-color);border-radius:10px}
+.staff-profile-card h3{color:var(--primary);font-size:1rem;margin-bottom:14px}
+.staff-profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.staff-profile-field{padding:10px 12px;background:rgba(15,23,42,.45);border:1px solid var(--border-color);border-radius:7px;min-width:0}
+.staff-profile-field span{display:block;color:var(--text-muted);font-size:.72rem;margin-bottom:5px}
+.staff-profile-field strong{display:block;overflow-wrap:anywhere;font-size:.88rem}
+.staff-doc-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;margin-left:7px;padding:0 7px;border-radius:999px;background:var(--border-color);color:var(--text-main);font-size:.75rem}
+#staff-profile-view[hidden],#staff-list-view[hidden]{display:none!important}
