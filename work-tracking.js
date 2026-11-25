@@ -42,6 +42,7 @@ window.darRenderWorkTracking = function () {
    if(filter==='progress')return progress;
    if(filter==='completed')return completed;
    if(filter==='closed')return closed;
+   if(filter==='follow-up')return ['waiting for client','waiting for government','on hold'].includes(raw);
    if(filter==='completed-balance'){
      const total=money(d),balance=Math.max(0,total-paid(d));
      return completed&&balance>0.005;
