@@ -649,7 +649,7 @@ const assert = require('node:assert/strict');
       state.staff=[{id:'expiry-staff-test',companyId:'expiry-company-test',companyName:'Expiry Test LLC',fullName:'Expiry Test Employee',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'SENSITIVE-PASSPORT-123',passportExpiry:addDays(7),emiratesIdNumber:'784-TEST',emiratesIdExpiry:addDays(12),otherStaffDocumentName:'Insurance',otherStaffDocumentExpiry:addDays(15)}];
       window.darRenderExpiryNotifications();
       const text=document.getElementById('dar-expiry-notifications').innerText;
-      window.renderStaffProfile('expiry-staff-test');
+      window.openStaffProfile('expiry-staff-test');
       const profile=document.getElementById('staff-profile-view').innerText;
       return {text,profile,staffWhatsappField:!!document.getElementById('sf-whatsapp'),emiratesExpiryField:!!document.getElementById('sf-emirates-id-expiry'),otherExpiryField:!!document.getElementById('sf-other-document-expiry')};
     });
