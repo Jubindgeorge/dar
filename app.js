@@ -524,6 +524,19 @@ window.openClientModal = function(id) {
     document.getElementById('cl-input-company-name').value = cl ? cl.companyName : '';
     document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
     document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
+    document.getElementById('cl-input-email').value = cl ? (cl.email || '') : '';
+    document.getElementById('cl-input-whatsapp').value = cl ? (cl.whatsapp || '') : '';
+    document.getElementById('cl-input-group-link').value = cl ? (cl.whatsappGroupLink || '') : '';
+    document.getElementById('cl-input-trade-license-no').value = cl ? (cl.tradeLicenseNumber || '') : '';
+    document.getElementById('cl-input-trade-license-expiry').value = cl ? (cl.tradeLicenseExpiry || '') : '';
+    document.getElementById('cl-input-establishment-no').value = cl ? (cl.establishmentCardNumber || '') : '';
+    document.getElementById('cl-input-establishment-expiry').value = cl ? (cl.establishmentCardExpiry || '') : '';
+    document.getElementById('cl-input-labour-card-no').value = cl ? (cl.immigrationLabourCardNumber || '') : '';
+    document.getElementById('cl-input-labour-card-expiry').value = cl ? (cl.immigrationLabourCardExpiry || '') : '';
+    document.getElementById('cl-input-tenancy-no').value = cl ? (cl.tenancyContractNumber || '') : '';
+    document.getElementById('cl-input-tenancy-expiry').value = cl ? (cl.tenancyContractExpiry || '') : '';
+    document.getElementById('cl-input-other-doc-name').value = cl ? (cl.otherDocumentName || '') : '';
+    document.getElementById('cl-input-other-doc-expiry').value = cl ? (cl.otherDocumentExpiry || '') : '';
     document.getElementById('client-modal').style.display = 'flex';
 };
 
@@ -537,6 +550,21 @@ window.saveClientModalData = async function() {
     const companyName = document.getElementById('cl-input-company-name').value.trim();
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
     const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
+    const companyProfile = {
+        email: document.getElementById('cl-input-email').value.trim(),
+        whatsapp: document.getElementById('cl-input-whatsapp').value.trim(),
+        whatsappGroupLink: document.getElementById('cl-input-group-link').value.trim(),
+        tradeLicenseNumber: document.getElementById('cl-input-trade-license-no').value.trim(),
+        tradeLicenseExpiry: document.getElementById('cl-input-trade-license-expiry').value,
+        establishmentCardNumber: document.getElementById('cl-input-establishment-no').value.trim(),
+        establishmentCardExpiry: document.getElementById('cl-input-establishment-expiry').value,
+        immigrationLabourCardNumber: document.getElementById('cl-input-labour-card-no').value.trim(),
+        immigrationLabourCardExpiry: document.getElementById('cl-input-labour-card-expiry').value,
+        tenancyContractNumber: document.getElementById('cl-input-tenancy-no').value.trim(),
+        tenancyContractExpiry: document.getElementById('cl-input-tenancy-expiry').value,
+        otherDocumentName: document.getElementById('cl-input-other-doc-name').value.trim(),
+        otherDocumentExpiry: document.getElementById('cl-input-other-doc-expiry').value
+    };
     if (!id && companyName) {
         const normalized = companyName.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
         const duplicate = (state.clients || []).find(c => (c.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim() === normalized);
@@ -555,7 +583,7 @@ window.saveClientModalData = async function() {
 
     const previous = (state.clients || []).find(item => item.id === id) || {};
     const audit = window.darDates ? window.darDates.audit(previous) : { createdDate: previous.createdDate || localISODate(), updatedAt: new Date().toISOString() };
-    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...audit }, (err) => {
+    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...companyProfile, ...audit }, (err) => {
         if (!err) { closeClientModal(); }
         else showCustomModal('Save failed', 'Client details could not be saved. Check Firebase permissions and your connection.');
     });
@@ -579,6 +607,15 @@ window.viewClientDetail = function(clientId) {
     document.getElementById('cd-company-name').innerText = client.companyName || '-';
     document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
     document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
+    const profileText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value || '-'; };
+    profileText('cd-company-email', client.email);
+    profileText('cd-company-whatsapp', client.whatsapp);
+    profileText('cd-trade-license-expiry', client.tradeLicenseExpiry);
+    profileText('cd-establishment-expiry', client.establishmentCardExpiry);
+    profileText('cd-labour-card-expiry', client.immigrationLabourCardExpiry);
+    profileText('cd-tenancy-expiry', client.tenancyContractExpiry);
+    profileText('cd-other-document', client.otherDocumentName);
+    profileText('cd-other-document-expiry', client.otherDocumentExpiry);
 
     const clientDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Without Company') === normalizeCompanyFolderKey(client.companyName));
     const tbody = document.getElementById('client-detail-records-body');
