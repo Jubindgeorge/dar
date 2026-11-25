@@ -13,7 +13,7 @@
   const invoiceDate = doc => window.darDates ? window.darDates.normalize(doc.transactionDate || doc.createdDate || doc.date) : String(doc.transactionDate || doc.createdDate || doc.date || '').slice(0,10);
   const today = () => window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10);
   const money = value => 'AED ' + (Number(value) || 0).toLocaleString('en-AE',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const isInvoice = doc => norm(doc.type || 'invoice') !== 'quotation' && norm(doc.status) !== 'cancelled' && doc.cancelled !== true;
+  const isInvoice = doc => norm(doc.type || 'invoice') !== 'quotation' && norm(doc.status) !== 'cancelled' && norm(doc.status) !== 'draft' && doc.cancelled !== true;
   const status = doc => window.getDarDocumentPaymentStatus ? window.getDarDocumentPaymentStatus(doc) : (paid(doc) >= amount(doc) ? 'paid' : paid(doc) > 0 ? 'partial' : 'unpaid');
   const workStatus = doc => {
     const raw = norm(doc.proStatus || doc.workStatus || doc.operationalStatus || '');
