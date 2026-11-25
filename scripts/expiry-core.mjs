@@ -1,6 +1,6 @@
 export const REMINDER_OFFSETS=[30,15,7,1];
 export const COMPANY_EXPIRY_FIELDS=[['tradeLicenseExpiry','Trade Licence'],['establishmentCardExpiry','Establishment Card'],['immigrationLabourCardExpiry','Immigration / Labour Card'],['tenancyContractExpiry','Tenancy Contract'],['otherDocumentExpiry','Other Company Document']];
-export const STAFF_EXPIRY_FIELDS=[['passportExpiry','Passport'],['labourCardExpiry','Labour Card'],['visaExpiry','Visa'],['emiratesIdExpiry','Emirates ID']];
+export const STAFF_EXPIRY_FIELDS=[['passportExpiry','Passport'],['labourCardExpiry','Labour Card'],['visaExpiry','Visa'],['emiratesIdExpiry','Emirates ID'],['otherStaffDocumentExpiry','Other Staff Document']];
 export function parseISODate(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;const d=new Date(value+'T00:00:00Z');return Number.isFinite(+d)&&d.toISOString().slice(0,10)===value?d:null;}
 export function daysUntil(expiry,today){const a=parseISODate(expiry),b=parseISODate(today);return a&&b?Math.round((a-b)/86400000):null;}
 export function reminderKey(days){if(REMINDER_OFFSETS.includes(days))return 'before-'+days;if(days<0&&(days===-1||Math.abs(days)%7===0))return 'overdue-'+Math.abs(days);return null;}
