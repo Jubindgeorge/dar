@@ -30,6 +30,19 @@ function snapshot(){
  const outstanding=ds.reduce((s,d)=>s+Math.max(0,total(d)-paid(d)),0);
  return {r,ds,es,pd,pe,revenue,govt,direct,operating,collections,outstanding,profit:revenue-govt-direct-operating};
 }
+function setRangePreset(key){
+ const from=$('finance-date-from'),to=$('finance-date-to');if(!from||!to)return;
+ const current=new Date(today()+'T12:00:00'),year=current.getFullYear();
+ const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+ if(key==='all'){from.value='';to.value='';}
+ else{
+  const start=new Date(year,current.getMonth(),1);
+  if(key==='quarter')start.setMonth(Math.floor(current.getMonth()/3)*3);
+  if(key==='year')start.setMonth(0);
+  from.value=iso(start);to.value=today();
+ }
+ render();
+}
 function show(name){
  const root=$('finance-centre');if(!root)return;
  root.querySelectorAll('[data-finance-tab]').forEach(b=>b.classList.toggle('active',b.dataset.financeTab===name));
@@ -42,7 +55,7 @@ function createShell(){
  const root=$('tab-accounts-ledger');if(!root||$('finance-centre'))return;
  const intro=root.querySelector('div[style*="margin-bottom: 20px"]');
  const shell=document.createElement('div');shell.id='finance-centre';
- shell.innerHTML='<div class="finance-heading"><div><div class="finance-eyebrow">DAR AL SHAMS · FINANCIAL MANAGEMENT</div><h2>Finance Management Centre</h2><p>Connected invoices, receipts, customer accounts, expenses and financial reporting.</p></div><div class="finance-period"><label>Reporting period</label><div><input id="finance-date-from" type="date" aria-label="Reporting start date"><span>to</span><input id="finance-date-to" type="date" aria-label="Reporting end date"><button class="btn btn-secondary" type="button" id="finance-apply">Apply</button></div></div></div>'+
+ shell.innerHTML='<div class="finance-heading"><div><div class="finance-eyebrow">DAR AL SHAMS · FINANCIAL MANAGEMENT</div><h2>Finance Management Centre</h2><p>Connected invoices, receipts, customer accounts, expenses and financial reporting.</p></div><div class="finance-period"><label>Reporting period</label><div><input id="finance-date-from" type="date" aria-label="Reporting start date"><span>to</span><input id="finance-date-to" type="date" aria-label="Reporting end date"><button class="btn btn-secondary" type="button" id="finance-apply">Apply</button></div><div class="finance-presets"><button type="button" data-finance-range="month">This month</button><button type="button" data-finance-range="quarter">This quarter</button><button type="button" data-finance-range="year">This year</button><button type="button" data-finance-range="all">All time</button></div></div></div>'+
  '<nav class="finance-nav" aria-label="Finance sections">'+
  '<button class="active" data-finance-tab="overview">Overview</button><button data-finance-tab="invoices">Invoices</button><button data-finance-tab="payments">Payments</button><button data-finance-tab="customers">Customers</button><button data-finance-tab="expenses">Expenses</button><button data-finance-tab="reports">Reports</button><button data-finance-tab="reconcile">Reconciliation</button><button data-finance-tab="staff">Staff Register</button></nav>'+
  '<section class="finance-panel active" data-finance-panel="overview"><div class="finance-kpis" id="finance-kpis"></div><div class="finance-grid-two"><article class="finance-card"><h3>Invoice-based Profit &amp; Loss</h3><p>Revenue is recognised on invoice date. Collections are shown separately.</p><div id="finance-pl"></div></article><article class="finance-card"><h3>Cash collections &amp; receivables</h3><p>Receipts in the selected period and all current unpaid balances.</p><div id="finance-cash"></div></article></div><article class="finance-card"><h3>Outstanding ageing</h3><p>Current unpaid invoice balances by invoice age.</p><div id="finance-ageing"></div></article><article class="finance-card"><h3>Recent invoices</h3><div id="finance-recent"></div></article></section>'+
@@ -60,6 +73,7 @@ function createShell(){
  if(toolbar)$('finance-invoices').appendChild(toolbar);if(master)$('finance-invoices').appendChild(master);
  if(selector)$('finance-payments').appendChild(selector);if(cards)$('finance-payments').appendChild(cards);if(payments)$('finance-payments').appendChild(payments);
  shell.querySelectorAll('[data-finance-tab]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.financeTab)));
+ shell.querySelectorAll('[data-finance-range]').forEach(b=>b.addEventListener('click',()=>setRangePreset(b.dataset.financeRange)));
  $('finance-apply').addEventListener('click',render);$('finance-customer-search').addEventListener('input',renderCustomers);
  $('finance-audit-refresh').addEventListener('click',renderAudit);$('finance-export-pl').addEventListener('click',exportPL);
  $('finance-export-customer').addEventListener('click',exportCustomers);$('finance-export-collections').addEventListener('click',exportCollections);$('finance-export-expenses').addEventListener('click',exportExpenses);$('finance-export-ageing').addEventListener('click',exportAgeing);$('finance-print').addEventListener('click',()=>{show('reports');window.print();});
