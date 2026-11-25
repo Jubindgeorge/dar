@@ -68,7 +68,7 @@
     }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
-        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry].filter(Boolean).map(value => {
+        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry, record.emiratesIdExpiry, record.otherStaffDocumentExpiry].filter(Boolean).map(value => {
             const date = new Date(value + 'T00:00:00');
             return Number.isNaN(date.getTime()) ? null : Math.ceil((date.getTime() - new Date().setHours(0,0,0,0)) / 86400000);
         }).filter(value => value !== null);
