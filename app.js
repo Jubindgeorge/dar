@@ -771,6 +771,8 @@ window.clearDocumentFilters = function() {
     }
     const branch = document.getElementById('doc-branch-filter');
     if (branch) branch.value = 'all';
+    const paymentStatus = document.getElementById('doc-payment-status-filter');
+    if (paymentStatus) paymentStatus.value = '';
     renderDocumentsTable();
 };
 function darEscapeHTML(value) {
