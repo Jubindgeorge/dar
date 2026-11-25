@@ -28,6 +28,7 @@ jobs:
           mkdir -p dist
           cp index.html ledger.html styles.css dist/
           cp ./*.js dist/
+          rm -f dist/translation-route.example.js
           cp ./*.png ./*.PNG ./*.jpeg ./*.jpg ./*.webp dist/ 2>/dev/null || true
           test -s dist/index.html
           test -s dist/ledger.html
