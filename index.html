@@ -511,7 +511,7 @@
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
                             <div>
-                                <h3 style="color: var(--primary); font-size: 1.1rem;"><i class="fa-solid fa-receipt"></i> Monthly Operating Expenses</h3>
+                                <h3 style="color: var(--primary); font-size: 1.1rem;"><i class="fa-solid fa-receipt"></i> Operating Expenses</h3>
                                 <p style="font-size: 0.8rem; color: var(--text-muted);">Expenses are counted once by expense date. Link invoice-specific costs directly; unlinked costs are treated as operating expenses.</p>
                             </div>
                             <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Expense</button>
@@ -853,12 +853,12 @@
         </div>
     </div>
 
-    <!-- Add Monthly Expense Modal -->
+    <!-- Add Expense Modal -->
     <div id="monthly-expense-modal" class="custom-modal-backdrop" style="display:none;">
         <div class="custom-modal-content" style="text-align: left; max-width: 420px;">
             <h3 style="text-align: center; margin-bottom: 20px;">Add Monthly Operating Expense</h3>
             <div class="form-group">
-                <label>Target Month & Year</label>
+                <label>Expense Month (automatic)</label>
                 <input type="month" id="exp-input-month">
                 <label>Expense Date</label>
                 <input type="date" id="exp-input-date">
