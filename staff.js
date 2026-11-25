@@ -342,6 +342,10 @@
         byId('cc-input-name').value = clean(byId('st-client-name')?.value);
         byId('cc-input-phone').value = '';
         byId('cc-input-email').value = '';
+        byId('cc-input-whatsapp').value = '';
+        byId('cc-input-passport-expiry').value = '';
+        byId('cc-input-emirates-id-expiry').value = '';
+        byId('cc-input-visa-expiry').value = '';
         byId('company-client-modal').style.display = 'flex';
         byId('cc-input-name').focus();
     };
@@ -361,7 +365,16 @@
             return;
         }
         const id = db.ref('companyClients').push().key;
-        const record = {companyId, companyName, name, phone:clean(byId('cc-input-phone').value), email:clean(byId('cc-input-email').value), createdAt:new Date().toISOString()};
+        const record = {
+            companyId, companyName, name,
+            phone:clean(byId('cc-input-phone').value),
+            email:clean(byId('cc-input-email').value),
+            whatsapp:clean(byId('cc-input-whatsapp').value),
+            passportExpiry:clean(byId('cc-input-passport-expiry').value),
+            emiratesIdExpiry:clean(byId('cc-input-emirates-id-expiry').value),
+            visaExpiry:clean(byId('cc-input-visa-expiry').value),
+            createdAt:new Date().toISOString()
+        };
         db.ref('companyClients/' + id).set(record, error => {
             if (error) { showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection.'); return; }
             record.id = id;
