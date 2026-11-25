@@ -200,7 +200,7 @@ window.openMonthlyExpenseModal=function(){
 };
 window.saveMonthlyExpenseData=async function(){
  addExpenseControls();
- const dt=$('exp-input-date')?.value||today(),month=$('exp-input-month')?.value||dt.slice(0,7),title=$('exp-input-title')?.value.trim()||'',value=Number($('exp-input-amount')?.value),id=$('finance-expense-edit-id')?.value||'',category=$('finance-expense-category')?.value||'Other',linked=$('finance-expense-invoice')?.value||'';
+ const dt=$('exp-input-date')?.value||today(),month=dt.slice(0,7),title=$('exp-input-title')?.value.trim()||'',value=Number($('exp-input-amount')?.value),id=$('finance-expense-edit-id')?.value||'',category=$('finance-expense-category')?.value||'Other',linked=$('finance-expense-invoice')?.value||'';
  if(!title){alert('Please enter an expense description.');return;}if(!dt||!month){alert('Please select the expense date and month.');return;}
  if(!Number.isFinite(value)||value<=0){alert('Please enter an expense amount greater than zero.');return;}
  if(linked&&!allDocs().some(d=>d.refCode===linked)){alert('The selected invoice is unavailable. Refresh and retry.');return;}
