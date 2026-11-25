@@ -556,31 +556,55 @@ const assert = require('node:assert/strict');
     assert.match(staffLedgerSmoke.filtered,/Test Staff/,'Company filter shows selected company staff');
     assert.doesNotMatch(staffLedgerSmoke.filtered,/Other Staff/,'Company filter excludes other companies');
     assert.equal(staffLedgerSmoke.count,'1 staff','Company staff count follows selected company');
-    const companyClientSmoke = await page.evaluate(() => {
+    const directClientSmoke = await page.evaluate(() => {
       state.clients=[{id:'client-flow-company',companyName:'Client Flow Company'}];
       state.companyClients=[{id:'saved-client-1',companyId:'client-flow-company',companyName:'Client Flow Company',name:'Saved Account Holder'}];
       state.documents=[{refCode:'INV-HISTORY-1',type:'Invoice',companyName:'Client Flow Company',clientName:'Historical Account Holder'}];
       state.selectedCompanyClientId='';
       document.getElementById('st-company-name').value='Client Flow Company';
-      document.getElementById('st-client-name').value='Saved Account Holder';
       populateCompanyClients();
       const options=[...document.getElementById('st-company-client-selector').options].map(option=>option.textContent);
-      const unlinkedValue=document.getElementById('st-company-client-selector').value;
       selectCompanyClient('saved-client-1');
-      const linkedId=state.selectedCompanyClientId;
-      populateCompanyClients();
-      const linkedValue=document.getElementById('st-company-client-selector').value;
+      const selectedId=state.selectedCompanyClientId;
       document.getElementById('st-company-name').value='Another Company';
       populateCompanyClients();
-      const changedCompanyValue=document.getElementById('st-company-client-selector').value;
-      return {options,unlinkedValue,linkedId,linkedValue,changedCompanyValue};
+      const stillAvailable=[...document.getElementById('st-company-client-selector').options].some(option=>option.value==='saved-client-1');
+      const stillSelected=document.getElementById('st-company-client-selector').value;
+      const oldOpen=window.openStaffModal;
+      let staffDefaults=null;
+      window.openStaffModal=(id,defaults)=>{staffDefaults=defaults;};
+      document.getElementById('st-company-name').value='Client Flow Company';
+      openStaffModalFromStudio();
+      window.openStaffModal=oldOpen;
+      return {options,selectedId,stillAvailable,stillSelected,staffDefaults,addButton:document.querySelector('#st-staff-selector + button')?.textContent || document.querySelector('#st-staff-selector')?.parentElement?.querySelector('button')?.textContent};
     });
-    assert.ok(companyClientSmoke.options.includes('Saved Account Holder'),'Studio lists saved clients for the selected company');
-    assert.ok(companyClientSmoke.options.includes('Historical Account Holder'),'Studio lists clients found in historical invoices');
-    assert.equal(companyClientSmoke.unlinkedValue,'','Matching display name does not falsely imply a saved-client link');
-    assert.equal(companyClientSmoke.linkedId,'saved-client-1','Explicit saved-client selection stores the linked ID');
-    assert.equal(companyClientSmoke.linkedValue,'saved-client-1','Explicit saved-client selection remains selected after refresh');
-    assert.equal(companyClientSmoke.changedCompanyValue,'','Changing company clears the previous company client selection');
+    assert.ok(directClientSmoke.options.includes('Saved Account Holder'),'Studio lists independent direct clients');
+    assert.ok(!directClientSmoke.options.includes('Historical Account Holder'),'Historical invoice names do not become direct-client profile records');
+    assert.equal(directClientSmoke.selectedId,'saved-client-1','Selecting a direct client stores its profile ID');
+    assert.equal(directClientSmoke.stillAvailable,true,'Direct client remains available when the selected company changes');
+    assert.equal(directClientSmoke.stillSelected,'saved-client-1','Company changes do not clear the independent direct-client selection');
+    assert.equal(directClientSmoke.staffDefaults.companyId,'client-flow-company','Inline staff creation is scoped to the selected registered company');
+    assert.equal(directClientSmoke.staffDefaults.returnToStudio,true,'Inline staff creation returns to the document editor');
+    const quotationDeleteSmoke = await page.evaluate(async () => {
+      const originalConfirm=window.confirm, originalDelete=window.safeDeleteDarRecord;
+      const calls=[];
+      window.confirm=()=>true;
+      window.safeDeleteDarRecord=async (collection,key)=>{calls.push({collection,key});};
+      try {
+        state.documents=[{refCode:'QTN-DELETE-TEST',type:'Quotation',totalAmount:50,invoicedAmount:0}];
+        await deleteQuotation('QTN-DELETE-TEST');
+        const removed=state.documents.some(doc=>doc.refCode==='QTN-DELETE-TEST');
+        state.documents=[
+          {refCode:'QTN-LINKED-TEST',type:'Quotation',totalAmount:50,invoicedAmount:10},
+          {refCode:'INV-LINKED-TEST',type:'Invoice',sourceQuotationRef:'QTN-LINKED-TEST',totalAmount:10}
+        ];
+        await deleteQuotation('QTN-LINKED-TEST');
+        return {calls,removed,linkedRetained:state.documents.some(doc=>doc.refCode==='QTN-LINKED-TEST')};
+      } finally {window.confirm=originalConfirm;window.safeDeleteDarRecord=originalDelete;}
+    });
+    assert.deepEqual(quotationDeleteSmoke.calls,[{collection:'documents',key:'QTN-DELETE-TEST'}],'Quotation deletion uses the recoverable data-protection path');
+    assert.equal(quotationDeleteSmoke.removed,true,'Successfully recovered quotation is removed from the active list');
+    assert.equal(quotationDeleteSmoke.linkedRetained,true,'A quotation with invoiced value remains protected');
     const paymentCompatibilitySmoke = await page.evaluate(() => {
       const legacyObjectLogs={ '0':{amount:100,date:'2026-11-01'}, '1':{amount:20,date:'2026-11-02'} };
       const legacyIncluded={totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:100}}};
