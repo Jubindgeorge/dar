@@ -95,8 +95,8 @@
     const items=[];
     allExpiryRecords().forEach(item=>items.push(item));
     docs().forEach(d=>{
-      if(status(d)==='overdue' && amount(d)-paid(d)>0.005)items.push({kind:'Overdue invoice',label:(d.refCode||'Invoice')+' · '+(d.clientName||d.companyName||'Client'),detail:money(amount(d)-paid(d)),action:()=>window.switchTab('documents')});
-      if(workStatus(d)==='completed' && amount(d)-paid(d)>0.005)items.push({kind:'Completed – balance pending',label:(d.refCode||'Invoice')+' · '+(d.clientName||d.companyName||'Client'),detail:money(amount(d)-paid(d)),action:()=>window.switchTab('documents')});
+      if(status(d)==='overdue' && amount(d)-paid(d)>0.005)items.push({kind:'Overdue invoice',label:(d.refCode||'Invoice')+' · '+(d.clientName||d.companyName||'Client'),detail:money(amount(d)-paid(d)),action:()=>window.darDashboardOpen('invoices','overdue')});
+      if(workStatus(d)==='completed' && amount(d)-paid(d)>0.005)items.push({kind:'Completed – balance pending',label:(d.refCode||'Invoice')+' · '+(d.clientName||d.companyName||'Client'),detail:money(amount(d)-paid(d)),action:()=>window.darDashboardOpen('invoices','completed-balance')});
       if(norm(d.proStatus)==='waiting for client' || norm(d.proStatus)==='waiting for government' || norm(d.proStatus)==='on hold')items.push({kind:'Work follow-up',label:(d.refCode||'Work')+' · '+(d.clientName||d.companyName||'Client'),detail:d.proStatus,action:()=>window.switchTab('work-tracking')});
     });
     root.replaceChildren();
@@ -113,8 +113,9 @@
     const todayDate=new Date(today()+'T00:00:00');const out=[];
     const companyFields=['tradeLicenseExpiry','tradeLicenceExpiry','establishmentCardExpiry','immigrationLabourCardExpiry','labourCardExpiry','tenancyContractExpiry','otherDocumentExpiry'];
     const staffFields=['passportExpiry','emiratesIdExpiry','labourCardExpiry','visaExpiry','otherStaffDocumentExpiry'];
-    companies().forEach(c=>companyFields.forEach(key=>{const value=c[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Company expiry',label:(c.companyName||'Company')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>c.id&&window.viewClientDetail?window.viewClientDetail(c.id):window.switchTab('clients')});}));
-    staff().forEach(s=>staffFields.forEach(key=>{const value=s[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Staff expiry',label:(s.fullName||'Staff')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>s.id&&window.openStaffProfile?window.openStaffProfile(s.id):window.switchTab('staff')});}));
+    companies().forEach(c=>companyFields.forEach(key=>{const value=c[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Company expiry',label:(c.companyName||'Company')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>window.darDashboardOpen('expiry')});}));
+    staff().forEach(s=>staffFields.forEach(key=>{const value=s[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Staff expiry',label:(s.fullName||'Staff')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>window.darDashboardOpen('expiry')});}));
+    companyClients().forEach(p=>['passportExpiry','emiratesIdExpiry','visaExpiry'].forEach(key=>{const value=p[key];if(!value)return;const date=window.darDates?window.darDates.normalize(value):String(value).slice(0,10);if(!date)return;const days=Math.ceil((new Date(date+'T00:00:00')-todayDate)/86400000);if(days<=30)out.push({kind:'Client expiry',label:(p.name||'Client')+' · '+key.replace(/([A-Z])/g,' $1'),detail:days<0?'Expired '+(-days)+'d':days+' days left',action:()=>window.darDashboardOpen('expiry')});}));
     return out;
   }
   function renderRecentActivity(){
@@ -125,7 +126,7 @@
       const row=document.createElement('button');row.type='button';row.className='dash-recent-row';
       const name=document.createElement('span');const title=document.createElement('strong');title.textContent=(d.type||'Invoice')+' · '+(d.refCode||'');const sub=document.createElement('small');sub.textContent=(d.clientName||d.companyName||'Client')+' · '+dateText(invoiceDate(d));name.append(title,sub);
       const value=document.createElement('b');value.textContent=money(amount(d));row.append(name,value);
-      row.addEventListener('click',()=>{if(typeof window.viewDocumentHistory==='function')window.viewDocumentHistory(d.refCode);else window.switchTab('documents');});root.append(row);
+      row.addEventListener('click',()=>{if(norm(d.type)==='quotation'){window.darDashboardOpen('quotations',d.refCode);}else if(typeof window.viewDocumentHistory==='function')window.viewDocumentHistory(d.refCode);else window.darDashboardOpen('invoices');});root.append(row);
     });
   }
   function openSearchResult(item){
@@ -154,9 +155,17 @@
     });
     input.addEventListener('keydown',e=>{if(e.key==='Escape'){input.value='';root.replaceChildren();}});
   }
-  window.darDashboardOpen = function(kind){
-    const tabs={companies:'clients',staff:'staff',invoices:'documents',quotations:'quotations',works:'work-tracking',expiry:'expiry-notifications',ledger:'accounts-ledger'};
+  window.darDashboardOpen = function(kind,filter){
+    const tabs={companies:'clients',staff:'staff',invoices:'documents',quotations:'quotations',works:'work-tracking',expiry:'expiry-notifications',ledger:'accounts-ledger',directory:'works'};
+    if(kind==='invoices'){
+      const select=byId('doc-payment-status-filter');if(select)select.value=filter||'';
+    }else if(kind==='works'){
+      const select=byId('dar-work-status-filter');if(select)select.value=filter||'';
+    }else if(kind==='quotations'){
+      const search=byId('quotation-search');if(search)search.value=filter||'';
+    }
     window.switchTab(tabs[kind]||'dashboard');
+    if(kind==='quotations'&&typeof window.renderQuotationTable==='function')window.renderQuotationTable();
   };
   window.renderDashboardStats = renderDashboardStats;
   document.addEventListener('DOMContentLoaded',()=>{setupSearch();renderDashboardStats();});
