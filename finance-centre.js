@@ -16,8 +16,8 @@ const logs=d=>window.getDarDocumentPaymentLogs?window.getDarDocumentPaymentLogs(
 function receipts(d){
  const ls=logs(d), sum=ls.reduce((s,p)=>s+Math.max(0,num(p.amount)),0), p=paid(d);
  let advance=d.advanceIncludedInPaymentLogs===true?0:(d.advanceIncludedInPaymentLogs===false?Math.max(0,num(d.paymentAdvanceBalance??d.advanceAmount??d.advanceAmt??d.advance)):Math.max(0,p-sum));
- const out=ls.filter(x=>num(x.amount)>0).map(x=>({date:String(x.date||x.transactionDate||invDate(d)).slice(0,10),amount:Math.max(0,num(x.amount))}));
- if(advance>0)out.push({date:invDate(d),amount:advance});
+ const out=ls.filter(x=>num(x.amount)>0).map(x=>({date:String(x.date||x.transactionDate||invDate(d)).slice(0,10),amount:Math.max(0,num(x.amount)),note:[x.method,x.note].filter(Boolean).join(' · ')}));
+ if(advance>0)out.push({date:invDate(d),amount:advance,note:'Advance / legacy receipt'});
  return out;
 }
 function period(){const a=$('finance-date-from')?.value||'',b=$('finance-date-to')?.value||'';return {a,b,has:d=>!!d&&(!a||d>=a)&&(!b||d<=b)};}
@@ -137,17 +137,19 @@ function updateInvoiceTable(){
  const body=$('acc-full-ledger-tbody');if(!body)return;
  const q=($('ledger-search')?.value||'').trim().toLowerCase(),from=$('ledger-date-from')?.value||'',to=$('ledger-date-to')?.value||'';
  const rows=allDocs().filter(d=>{const dt=invDate(d);return(!from||(dt&&dt>=from))&&(!to||(dt&&dt<=to))&&[d.refCode,d.clientName,d.companyName,d.packageName,d.serviceName,d.title].some(v=>String(v||'').toLowerCase().includes(q));});
- body.innerHTML=rows.length?rows.map(d=>{const direct=allExpenses().filter(e=>(e.linkedInvoiceRef||e.invoiceRef)===d.refCode).reduce((s,e)=>s+Math.max(0,num(e.amount)),0),govt=Math.max(0,num(d.govtFee??d.govtAmt)),t=total(d),p=paid(d);return '<tr><td><b>'+esc(d.refCode)+'</b></td><td>'+esc(invDate(d)||'—')+'</td><td>'+esc(d.clientName||d.companyName||'—')+'</td><td>'+fmt(govt)+'</td><td>'+fmt(direct)+'</td><td><b>'+fmt(t)+'</b></td><td>'+fmt(p)+'</td><td>'+fmt(Math.max(0,t-p))+'</td><td><b>'+fmt(t-govt-direct)+'</b></td><td><button type="button" class="btn btn-secondary finance-mini" data-finance-open="'+esc(d.refCode)+'">Open / Edit</button></td></tr>';}).join(''):'<tr><td colspan="10" class="finance-empty">No invoices match these filters.</td></tr>';
- const table=body.closest('table');if(table){const labels=['Invoice Ref','Invoice Date','Customer','Government Fees (AED)','Linked Direct Costs (AED)','Invoiced (AED)','Collected (AED)','Outstanding (AED)','Invoice Contribution (AED)','Open'];table.querySelectorAll('thead th').forEach((th,i)=>{if(labels[i])th.textContent=labels[i];});if(table.querySelectorAll('thead th').length<10){const tr=table.querySelector('thead tr');if(tr){const th=document.createElement('th');th.textContent='Open';tr.appendChild(th);}}}
+ body.innerHTML=rows.length?rows.map(d=>{
+  const direct=allExpenses().filter(e=>(e.linkedInvoiceRef||e.invoiceRef)===d.refCode).reduce((sum,e)=>sum+Math.max(0,num(e.amount)),0);
+  const govt=Math.max(0,num(d.govtFee??d.govtAmt)),t=total(d),p=paid(d),balance=Math.max(0,t-p);
+  const status=window.getDarDocumentPaymentStatus?window.getDarDocumentPaymentStatus(d):(balance<=.005?'paid':p>0?'partial':'unpaid');
+  return '<tr><td><b>'+esc(d.refCode)+'</b></td><td>'+esc(invDate(d)||'—')+'</td><td>'+esc(d.clientName||d.companyName||'—')+'</td><td>'+fmt(govt)+'</td><td>'+fmt(direct)+'</td><td><b>'+fmt(t)+'</b></td><td>'+fmt(p)+'</td><td>'+fmt(balance)+'</td><td><span class="finance-status '+esc(status)+'">'+esc(status.charAt(0).toUpperCase()+status.slice(1))+'</span></td><td><b>'+fmt(t-govt-direct)+'</b></td><td><button type="button" class="btn btn-secondary finance-mini" data-finance-open="'+esc(d.refCode)+'">Open / Edit</button></td></tr>';
+ }).join(''):'<tr><td colspan="11" class="finance-empty">No invoices match these filters.</td></tr>';
+ const table=body.closest('table');
+ if(table){
+  const labels=['Invoice Ref','Invoice Date','Customer','Government Fees (AED)','Linked Direct Costs (AED)','Invoiced (AED)','Collected (AED)','Outstanding (AED)','Payment Status','Invoice Contribution (AED)','Open'];
+  table.querySelectorAll('thead th').forEach((th,i)=>{if(labels[i])th.textContent=labels[i];});
+  const tr=table.querySelector('thead tr');while(tr&&tr.children.length<11){const th=document.createElement('th');th.textContent=labels[tr.children.length];tr.appendChild(th);}
+ }
  body.querySelectorAll('[data-finance-open]').forEach(btn=>btn.addEventListener('click',()=>{if(typeof window.openStudio==='function')window.openStudio('Invoice',btn.dataset.financeOpen);else alert('Invoice editor is not available.');}));
-}
-function render(){
- if(!$('finance-centre'))return;
- const active=$('finance-centre').dataset.activeTab||'overview';
- renderOverview();updateInvoiceTable();
- if(active==='customers')renderCustomers();
- if(active==='reports')renderReports();
- if(active==='reconcile')renderAudit();
 }
 function wrapFunctions(){
  if(window.__darFinanceWrap)return;window.__darFinanceWrap=true;
