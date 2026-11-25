@@ -49,7 +49,7 @@ function createShell(){
  '<section class="finance-panel" data-finance-panel="invoices"><div id="finance-invoices"></div></section><section class="finance-panel" data-finance-panel="payments"><div id="finance-payments"></div></section>'+
  '<section class="finance-panel" data-finance-panel="customers"><article class="finance-card"><div class="finance-card-head"><div><h3>Customer Accounts</h3><p>Invoice totals, receipts and current outstanding balances.</p></div><input id="finance-customer-search" type="search" placeholder="Search customer"></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Customer</th><th>Invoices</th><th>Invoiced</th><th>Collected</th><th>Outstanding</th><th>Actions</th></tr></thead><tbody id="finance-customers"></tbody></table></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="expenses"><div id="finance-expenses"></div></section>'+
- '<section class="finance-panel" data-finance-panel="reports"><div class="finance-report-actions"><button class="btn btn-primary" id="finance-export-pl">Export P&amp;L (Excel)</button><button class="btn btn-secondary" id="finance-export-customer">Export Customer Balances</button><button class="btn btn-secondary" id="finance-print">Print Report</button></div><article class="finance-card"><h3>Invoice-based Profit &amp; Loss Report</h3><div id="finance-report"></div></article><article class="finance-card"><h3>Outstanding by customer</h3><div id="finance-report-customers"></div></article></section>'+
+ '<section class="finance-panel" data-finance-panel="reports"><div class="finance-report-actions"><button class="btn btn-primary" id="finance-export-pl">Export P&amp;L (Excel)</button><button class="btn btn-secondary" id="finance-export-customer">Export Customer Balances</button><button class="btn btn-secondary" id="finance-export-collections">Export Collections</button><button class="btn btn-secondary" id="finance-export-expenses">Export Expenses</button><button class="btn btn-secondary" id="finance-export-ageing">Export Ageing</button><button class="btn btn-secondary" id="finance-print">Print Report</button></div><article class="finance-card"><h3>Invoice-based Profit &amp; Loss Report</h3><div id="finance-report"></div></article><article class="finance-card"><h3>Outstanding by customer</h3><div id="finance-report-customers"></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="reconcile"><article class="finance-card"><div class="finance-card-head"><div><h3>Financial Reconciliation</h3><p>Read-only checks; no financial records are changed automatically.</p></div><button class="btn btn-secondary" id="finance-audit-refresh">Run checks</button></div><div id="finance-audit-count"></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Level</th><th>Record</th><th>Finding</th></tr></thead><tbody id="finance-audit"></tbody></table></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="staff"><div id="finance-staff"></div></section>';
  if(intro)intro.insertAdjacentElement('afterend',shell);else root.prepend(shell);
@@ -62,7 +62,7 @@ function createShell(){
  shell.querySelectorAll('[data-finance-tab]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.financeTab)));
  $('finance-apply').addEventListener('click',render);$('finance-customer-search').addEventListener('input',renderCustomers);
  $('finance-audit-refresh').addEventListener('click',renderAudit);$('finance-export-pl').addEventListener('click',exportPL);
- $('finance-export-customer').addEventListener('click',exportCustomers);$('finance-print').addEventListener('click',()=>{show('reports');window.print();});
+ $('finance-export-customer').addEventListener('click',exportCustomers);$('finance-export-collections').addEventListener('click',exportCollections);$('finance-export-expenses').addEventListener('click',exportExpenses);$('finance-export-ageing').addEventListener('click',exportAgeing);$('finance-print').addEventListener('click',()=>{show('reports');window.print();});
  const t=today();$('finance-date-from').value=t.slice(0,7)+'-01';$('finance-date-to').value=t;
 }
 function movePanels(){
@@ -113,6 +113,23 @@ function audit(){
 }
 function renderAudit(){const out=audit();$('finance-audit-count').innerHTML='<p>'+allDocs().length+' invoices and '+allExpenses().length+' expenses checked · '+out.length+' findings</p>';$('finance-audit').innerHTML=out.length?out.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+esc(x[1])+'</td><td>'+esc(x[2])+'</td></tr>').join(''):'<tr><td colspan="3" class="finance-empty">No basic reconciliation issues detected. This is not a formal audit.</td></tr>';}
 function downloadCSV(name,rows){const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+
+function exportCollections(){
+ const r=period(),rows=[['Invoice Ref','Customer','Payment Date','Amount AED','Note']];
+ allDocs().forEach(d=>receipts(d).filter(p=>r.has(p.date)).forEach(p=>rows.push([d.refCode,d.clientName||d.companyName||'',p.date,p.amount,p.note||''])));
+ if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Collections');XLSX.writeFile(wb,'DAR-Collections.xlsx');}else downloadCSV('DAR-Collections.csv',rows);
+}
+function exportExpenses(){
+ const r=period(),rows=[['Expense Date','Title','Category','Type','Invoice Ref','Amount AED']];
+ allExpenses().filter(e=>r.has(expDate(e))).forEach(e=>rows.push([expDate(e),e.title||'',e.category||'Uncategorised',(e.linkedInvoiceRef||e.invoiceRef)?'Direct':'Operating',e.linkedInvoiceRef||e.invoiceRef||'',num(e.amount)]));
+ if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Expenses');XLSX.writeFile(wb,'DAR-Expenses.xlsx');}else downloadCSV('DAR-Expenses.csv',rows);
+}
+function exportAgeing(){
+ const now=new Date(today()+'T00:00:00'),rows=[['Invoice Ref','Customer','Invoice Date','Age Days','Outstanding AED']];
+ allDocs().forEach(d=>{const bal=Math.max(0,total(d)-paid(d));if(bal<=.005)return;const dt=invDate(d),age=dt?Math.max(0,Math.floor((now-new Date(dt+'T00:00:00'))/86400000)):'Undated';rows.push([d.refCode,d.clientName||d.companyName||'',dt,age,bal]);});
+ if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Ageing');XLSX.writeFile(wb,'DAR-Receivables-Ageing.xlsx');}else downloadCSV('DAR-Receivables-Ageing.csv',rows);
+}
+
 function exportPL(){const d=snapshot(),rows=[['DAR AL SHAMS — Invoice-based Profit & Loss'],['From',d.r.a,'To',d.r.b],['Basis','Revenue recognised on invoice date'],[],['Metric','AED'],['Invoice revenue',d.revenue],['Government / direct fees',d.govt],['Invoice-linked direct expenses',d.direct],['Operating expenses',d.operating],['Net profit',d.profit],['Cash collected (separate metric)',d.collections],['Current outstanding (separate metric)',d.outstanding]];
  if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Profit and Loss');XLSX.writeFile(wb,'DAR-Invoice-Based-PandL.xlsx');}else downloadCSV('DAR-Invoice-Based-PandL.csv',rows);}
 function exportCustomers(){const rows=[['Customer','Invoice Count','Invoiced AED','Collected AED','Outstanding AED'],...customerData().map(x=>[x.name,x.count,x.invoiced,x.collected,x.balance])];if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Customer Balances');XLSX.writeFile(wb,'DAR-Customer-Balances.xlsx');}else downloadCSV('DAR-Customer-Balances.csv',rows);}
@@ -120,12 +137,9 @@ function updateInvoiceTable(){
  const body=$('acc-full-ledger-tbody');if(!body)return;
  const q=($('ledger-search')?.value||'').trim().toLowerCase(),from=$('ledger-date-from')?.value||'',to=$('ledger-date-to')?.value||'';
  const rows=allDocs().filter(d=>{const dt=invDate(d);return(!from||(dt&&dt>=from))&&(!to||(dt&&dt<=to))&&[d.refCode,d.clientName,d.companyName,d.packageName,d.serviceName,d.title].some(v=>String(v||'').toLowerCase().includes(q));});
- body.innerHTML=rows.length?rows.map(d=>{const direct=allExpenses().filter(e=>(e.linkedInvoiceRef||e.invoiceRef)===d.refCode).reduce((s,e)=>s+Math.max(0,num(e.amount)),0),govt=Math.max(0,num(d.govtFee??d.govtAmt)),t=total(d),p=paid(d);return '<tr><td><b>'+esc(d.refCode)+'</b></td><td>'+esc(invDate(d)||'—')+'</td><td>'+esc(d.clientName||d.companyName||'—')+'</td><td>'+fmt(govt)+'</td><td>'+fmt(direct)+'</td><td><b>'+fmt(t)+'</b></td><td>'+fmt(p)+'</td><td>'+fmt(Math.max(0,t-p))+'</td><td><b>'+fmt(t-govt-direct)+'</b></td></tr>';}).join(''):'<tr><td colspan="9" class="finance-empty">No invoices match these filters.</td></tr>';
- const table=body.closest('table');if(table){const labels=['Invoice Ref','Invoice Date','Customer','Government Fees (AED)','Linked Direct Costs (AED)','Invoiced (AED)','Collected (AED)','Outstanding (AED)','Invoice Contribution (AED)'];table.querySelectorAll('thead th').forEach((th,i)=>{if(labels[i])th.textContent=labels[i];});}
-}
-function render(){
- if(!$('finance-centre'))return;const active=$('finance-centre').dataset.activeTab||'overview';renderOverview();updateInvoiceTable();
- if(active==='customers')renderCustomers();if(active==='reports')renderReports();if(active==='reconcile')renderAudit();
+ body.innerHTML=rows.length?rows.map(d=>{const direct=allExpenses().filter(e=>(e.linkedInvoiceRef||e.invoiceRef)===d.refCode).reduce((s,e)=>s+Math.max(0,num(e.amount)),0),govt=Math.max(0,num(d.govtFee??d.govtAmt)),t=total(d),p=paid(d);return '<tr><td><b>'+esc(d.refCode)+'</b></td><td>'+esc(invDate(d)||'—')+'</td><td>'+esc(d.clientName||d.companyName||'—')+'</td><td>'+fmt(govt)+'</td><td>'+fmt(direct)+'</td><td><b>'+fmt(t)+'</b></td><td>'+fmt(p)+'</td><td>'+fmt(Math.max(0,t-p))+'</td><td><b>'+fmt(t-govt-direct)+'</b></td><td><button type="button" class="btn btn-secondary finance-mini" data-finance-open="'+esc(d.refCode)+'">Open / Edit</button></td></tr>';}).join(''):'<tr><td colspan="10" class="finance-empty">No invoices match these filters.</td></tr>';
+ const table=body.closest('table');if(table){const labels=['Invoice Ref','Invoice Date','Customer','Government Fees (AED)','Linked Direct Costs (AED)','Invoiced (AED)','Collected (AED)','Outstanding (AED)','Invoice Contribution (AED)','Open'];table.querySelectorAll('thead th').forEach((th,i)=>{if(labels[i])th.textContent=labels[i];});if(table.querySelectorAll('thead th').length<10){const tr=table.querySelector('thead tr');if(tr){const th=document.createElement('th');th.textContent='Open';tr.appendChild(th);}}}
+ body.querySelectorAll('[data-finance-open]').forEach(btn=>btn.addEventListener('click',()=>{if(typeof window.openStudio==='function')window.openStudio('Invoice',btn.dataset.financeOpen);else alert('Invoice editor is not available.');}));
 }
 function wrapFunctions(){
  if(window.__darFinanceWrap)return;window.__darFinanceWrap=true;
