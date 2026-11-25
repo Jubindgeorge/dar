@@ -246,6 +246,8 @@
         byId('sf-last-work').value = record.lastWorkDone || defaults.lastWorkDone || '';
         byId('sf-passport').value = record.passportNumber || '';
         byId('sf-passport-expiry').value = record.passportExpiry || '';
+        byId('sf-emirates-id').value = record.emiratesIdNumber || '';
+        byId('sf-emirates-id-expiry').value = record.emiratesIdExpiry || '';
         byId('sf-labour-card-number').value = record.labourCardNumber || '';
         byId('sf-labour-card-expiry').value = record.labourCardExpiry || '';
         byId('sf-visa-number').value = record.visaNumber || '';
@@ -254,6 +256,7 @@
         byId('sf-renewal-status').value = record.renewalStatus || 'Pending';
         byId('sf-joining-date').value = record.joiningDate || '';
         byId('sf-phone').value = record.phone || '';
+        byId('sf-whatsapp').value = record.whatsapp || '';
         byId('sf-email').value = record.email || '';
         byId('sf-document-reference').value = record.documentReference || '';
         byId('sf-notes').value = record.notes || '';
@@ -286,12 +289,15 @@
             labourCardExpiry: clean(byId('sf-labour-card-expiry').value),
             passportNumber: clean(byId('sf-passport').value),
             passportExpiry: clean(byId('sf-passport-expiry').value),
+            emiratesIdNumber: clean(byId('sf-emirates-id').value),
+            emiratesIdExpiry: clean(byId('sf-emirates-id-expiry').value),
             visaNumber: clean(byId('sf-visa-number').value),
             visaExpiry: clean(byId('sf-visa-expiry').value),
             visaStatus: clean(byId('sf-visa-status').value),
             renewalStatus: clean(byId('sf-renewal-status').value),
             joiningDate: clean(byId('sf-joining-date').value),
             phone: clean(byId('sf-phone').value),
+            whatsapp: clean(byId('sf-whatsapp').value),
             email: clean(byId('sf-email').value),
             documentReference: clean(byId('sf-document-reference').value),
             notes: clean(byId('sf-notes').value),
