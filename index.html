@@ -485,7 +485,7 @@
                 <!-- Package-first operational tracking; PDF/quotation templates unchanged. -->
                 <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
                 <section id="tab-completed-files" class="view-panel"><h2>Completed Files</h2><p class="dar-hint">Fully paid invoices grouped by Company → Package, or Private → Package.</p><div id="dar-completed-files"></div></section>
-                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Expiry reminders appear here without opening popups. Automated email requires a secure server scheduler.</p><div id="dar-expiry-notifications"></div></section>
+                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Company and staff document expiry alerts. Individual email and WhatsApp reminders are scheduled automatically when provider credentials are configured. Company-group messages are manual only.</p><div id="dar-expiry-notifications"></div></section>
                 <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
                 <section id="tab-accounts-ledger" class="view-panel">
                     <div style="margin-bottom: 20px;">
@@ -829,6 +829,8 @@
                 <div class="form-group"><label for="sf-last-work">Last Work Done</label><input id="sf-last-work" type="text"></div>
                 <div class="form-group"><label for="sf-passport">Passport Number</label><input id="sf-passport" type="text"></div>
                 <div class="form-group"><label for="sf-passport-expiry">Passport Expiry</label><input id="sf-passport-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-emirates-id">Emirates ID Number</label><input id="sf-emirates-id" type="text"></div>
+                <div class="form-group"><label for="sf-emirates-id-expiry">Emirates ID Expiry</label><input id="sf-emirates-id-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-labour-card-number">Labour Card Number</label><input id="sf-labour-card-number" type="text"></div>
                 <div class="form-group"><label for="sf-labour-card-expiry">Labour Card Expiry</label><input id="sf-labour-card-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-number">Visa Number</label><input id="sf-visa-number" type="text"></div>
@@ -837,6 +839,7 @@
                 <div class="form-group"><label for="sf-renewal-status">Renewal Status</label><select id="sf-renewal-status"><option>Not Required</option><option>Pending</option><option>Due Soon</option><option>In Progress</option><option>Renewed</option></select></div>
                 <div class="form-group"><label for="sf-joining-date">Joining Date</label><input id="sf-joining-date" type="date"></div>
                 <div class="form-group"><label for="sf-phone">Contact Number</label><input id="sf-phone" type="tel"></div>
+                <div class="form-group"><label for="sf-whatsapp">WhatsApp Number (for expiry alerts)</label><input id="sf-whatsapp" type="tel" placeholder="+9715XXXXXXXX"></div>
                 <div class="form-group"><label for="sf-email">Email</label><input id="sf-email" type="email"></div>
                 <div class="form-group"><label for="sf-document-reference">Document Reference / Secure URL</label><input id="sf-document-reference" type="text" placeholder="Storage reference or secure document URL"></div>
                 <div class="form-group staff-notes-field"><label for="sf-notes">Notes</label><textarea id="sf-notes" rows="3"></textarea></div>
