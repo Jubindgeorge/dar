@@ -481,7 +481,7 @@
                 <section id="tab-accounts-ledger" class="view-panel">
                     <div style="margin-bottom: 20px;">
                         <h2 style="color: var(--primary); font-size: 1.4rem;">Accounts & Profit Management Ledger</h2>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Track balances, expense distributions, payments, and invoice profits.</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Manage invoice revenue, customer receipts, outstanding balances, expenses and financial reports.</p>
                     </div>
 
                     <!-- Saved staff register: company-scoped view inside Accounts Ledger -->
@@ -512,9 +512,9 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
                             <div>
                                 <h3 style="color: var(--primary); font-size: 1.1rem;"><i class="fa-solid fa-receipt"></i> Monthly Operating Expenses</h3>
-                                <p style="font-size: 0.8rem; color: var(--text-muted);">Expenses added here are equally distributed across all invoices created in the target month.</p>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">Expenses are counted once by expense date. Link invoice-specific costs directly; unlinked costs are treated as operating expenses.</p>
                             </div>
-                            <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Monthly Expense</button>
+                            <button onclick="openMonthlyExpenseModal()" class="btn btn-primary" style="font-size: 0.8rem;">+ Add Expense</button>
                         </div>
                         <div class="v2-filter-toolbar">
                             <input id="expense-search" type="search" placeholder="Search expense title, date or amount" aria-label="Search expenses" oninput="renderMonthlyExpensesTable()">
@@ -579,7 +579,7 @@
                             <h3 id="acc-card-remaining" style="font-size: 1.5rem; color: var(--accent-red);">AED 0.00</h3>
                         </div>
                         <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px;">
-                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Invoice Calculated Profit</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Invoice Contribution</span>
                             <h3 id="acc-card-profit" style="font-size: 1.5rem; color: var(--primary);">AED 0.00</h3>
                         </div>
                     </div>
