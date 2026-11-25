@@ -163,7 +163,20 @@
 
     function documentsForStaff(staff) {
         const refs = new Set([...(Array.isArray(staff.linkedDocumentRefs) ? staff.linkedDocumentRefs : []), staff.linkedInvoiceRef].filter(Boolean));
-        return (state.documents || []).filter(doc => doc.staffId === staff.id || (doc.staffCode && norm(doc.staffCode) === norm(staff.staffCode || staff.staffId) && norm(doc.companyName) === norm(staff.companyName || companyNameById(staff.companyId))) || refs.has(doc.refCode)).sort((a,b)=>clean(b.transactionDate || b.createdDate).localeCompare(clean(a.transactionDate || a.createdDate)));
+        const staffCode = norm(staff.staffCode || staff.staffId);
+        const staffCompany = norm(staff.companyName || companyNameById(staff.companyId));
+        const staffName = norm(staff.fullName);
+        const personNumber = norm(staff.personNumber);
+        return (state.documents || []).filter(doc => {
+            if (doc.staffId === staff.id || refs.has(doc.refCode)) return true;
+            const sameCompany = (!doc.companyId || !staff.companyId || doc.companyId === staff.companyId) &&
+                (!doc.companyName || !staffCompany || norm(doc.companyName) === staffCompany);
+            if (!sameCompany) return false;
+            if (staffCode && doc.staffCode && norm(doc.staffCode) === staffCode) return true;
+            if (staffName && doc.staffName && norm(doc.staffName) === staffName &&
+                (!personNumber || !doc.personNumber || norm(doc.personNumber) === personNumber)) return true;
+            return false;
+        }).sort((a,b)=>clean(b.transactionDate || b.createdDate || b.createdAt).localeCompare(clean(a.transactionDate || a.createdDate || a.createdAt)));
     }
     window.openStaffProfile = function (staffId) {
         const staff = (state.staff || []).find(item => item.id === staffId);
