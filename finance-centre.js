@@ -151,6 +151,14 @@ function updateInvoiceTable(){
  }
  body.querySelectorAll('[data-finance-open]').forEach(btn=>btn.addEventListener('click',()=>{if(typeof window.openStudio==='function')window.openStudio('Invoice',btn.dataset.financeOpen);else alert('Invoice editor is not available.');}));
 }
+function render(){
+ if(!$('finance-centre'))return;
+ const active=$('finance-centre').dataset.activeTab||'overview';
+ renderOverview();updateInvoiceTable();
+ if(active==='customers')renderCustomers();
+ if(active==='reports')renderReports();
+ if(active==='reconcile')renderAudit();
+}
 function wrapFunctions(){
  if(window.__darFinanceWrap)return;window.__darFinanceWrap=true;
  const oldMaster=window.renderAccountsLedgerMaster;if(oldMaster)window.renderAccountsLedgerMaster=function(){const x=oldMaster.apply(this,arguments);movePanels();render();return x;};
