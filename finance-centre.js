@@ -133,7 +133,67 @@ function wrapFunctions(){
  const oldFull=window.renderFullLedgerTableBody;if(oldFull)window.renderFullLedgerTableBody=function(){const x=oldFull.apply(this,arguments);updateInvoiceTable();render();return x;};
  const oldDetail=window.renderAccountsLedgerDetail;if(oldDetail)window.renderAccountsLedgerDetail=function(){const x=oldDetail.apply(this,arguments),d=allDocs().find(y=>y.refCode===arguments[0]);if(d&&$('acc-card-profit')){const linked=allExpenses().filter(e=>(e.linkedInvoiceRef||e.invoiceRef)===d.refCode).reduce((s,e)=>s+num(e.amount),0);$('acc-card-profit').textContent=fmt(total(d)-num(d.govtFee??d.govtAmt)-linked);const l=$('acc-card-profit').previousElementSibling;if(l)l.textContent='Invoice Contribution';}render();return x;};
 }
-function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();render();}
+
+function addExpenseControls(){
+ const modal=$('monthly-expense-modal');if(!modal||$('finance-expense-category'))return;
+ const form=modal.querySelector('.custom-modal-content'),actions=form?.querySelector('.custom-modal-actions');if(!form||!actions)return;
+ const box=document.createElement('div');
+ box.innerHTML='<div class="form-group"><label for="finance-expense-category">Expense category</label><select id="finance-expense-category"><option>Office & Administration</option><option>Rent</option><option>Salaries</option><option>Utilities</option><option>Transport</option><option>Marketing</option><option>Bank Charges</option><option>Other</option></select></div><div class="form-group"><label for="finance-expense-invoice">Link to invoice (optional direct cost)</label><select id="finance-expense-invoice"><option value="">Operating expense — not linked</option></select></div><input type="hidden" id="finance-expense-edit-id">';
+ form.insertBefore(box,actions);
+}
+function refreshExpenseInvoiceOptions(selected){
+ const s=$('finance-expense-invoice');if(!s)return;
+ s.innerHTML='<option value="">Operating expense — not linked</option>'+allDocs().map(d=>'<option value="'+esc(d.refCode)+'">'+esc(d.refCode)+' — '+esc(d.clientName||d.companyName||'Customer')+'</option>').join('');
+ s.value=selected||'';
+}
+function renderExpenses(){
+ const body=$('monthly-expenses-tbody');if(!body)return;
+ const from=$('expense-date-from')?.value||'',to=$('expense-date-to')?.value||'',q=($('expense-search')?.value||'').trim().toLowerCase();
+ const rows=allExpenses().filter(e=>{const dt=expDate(e);return(!from||(dt&&dt>=from))&&(!to||(dt&&dt<=to))&&[e.title,e.month,e.date,e.amount,e.category,e.linkedInvoiceRef,e.invoiceRef].some(v=>String(v??'').toLowerCase().includes(q));}).slice().sort((a,b)=>expDate(b).localeCompare(expDate(a)));
+ body.innerHTML=rows.length?rows.map(e=>'<tr><td>'+esc(expDate(e)||'—')+'</td><td><strong>'+esc(e.title||'—')+'</strong><small class="finance-expense-meta">'+esc(e.category||'Uncategorised')+' · '+((e.linkedInvoiceRef||e.invoiceRef)?'Direct cost: '+esc(e.linkedInvoiceRef||e.invoiceRef):'Operating expense')+'</small></td><td>'+fmt(e.amount)+'</td><td><button type="button" class="btn btn-secondary finance-mini" onclick="editDarExpense(\''+esc(e.id)+'\')">Edit</button><button type="button" class="btn btn-danger finance-mini" onclick="deleteMonthlyExpense('+allExpenses().indexOf(e)+')">Delete</button></td></tr>').join(''):'<tr><td colspan="4" class="finance-empty">No expenses match the current filters.</td></tr>';
+}
+window.editDarExpense=function(id){
+ const e=allExpenses().find(x=>x.id===id);if(!e)return;
+ addExpenseControls();
+ $('exp-input-month').value=e.month||expDate(e).slice(0,7);$('exp-input-date').value=expDate(e);
+ $('exp-input-title').value=e.title||'';$('exp-input-amount').value=num(e.amount);
+ $('finance-expense-category').value=e.category||'Other';refreshExpenseInvoiceOptions(e.linkedInvoiceRef||e.invoiceRef||'');
+ $('finance-expense-edit-id').value=id;const h=$('monthly-expense-modal').querySelector('h3');if(h)h.textContent='Edit Expense';
+ $('monthly-expense-modal').style.display='flex';
+};
+window.openMonthlyExpenseModal=function(){
+ addExpenseControls();const dt=today();$('exp-input-amount').value='';$('exp-input-title').value='';
+ if($('exp-input-date'))$('exp-input-date').value=dt;if($('exp-input-month'))$('exp-input-month').value=dt.slice(0,7);
+ $('finance-expense-category').value='Office & Administration';$('finance-expense-edit-id').value='';refreshExpenseInvoiceOptions('');
+ const h=$('monthly-expense-modal').querySelector('h3');if(h)h.textContent='Add Operating Expense';$('monthly-expense-modal').style.display='flex';
+};
+window.saveMonthlyExpenseData=async function(){
+ addExpenseControls();
+ const dt=$('exp-input-date')?.value||today(),month=$('exp-input-month')?.value||dt.slice(0,7),title=$('exp-input-title')?.value.trim()||'',value=Number($('exp-input-amount')?.value),id=$('finance-expense-edit-id')?.value||'',category=$('finance-expense-category')?.value||'Other',linked=$('finance-expense-invoice')?.value||'';
+ if(!title){alert('Please enter an expense description.');return;}if(!dt||!month){alert('Please select the expense date and month.');return;}
+ if(!Number.isFinite(value)||value<=0){alert('Please enter an expense amount greater than zero.');return;}
+ if(linked&&!allDocs().some(d=>d.refCode===linked)){alert('The selected invoice is unavailable. Refresh and retry.');return;}
+ if(!db){alert('Firebase is not connected. The expense was not saved.');return;}
+ const key=id||db.ref('monthlyExpenses').push().key,old=allExpenses().find(e=>e.id===key)||{};
+ const patch={month,date:dt,transactionDate:dt,title,amount:value,category,linkedInvoiceRef:linked||null,createdDate:old.createdDate||dt,updatedAt:new Date().toISOString(),updatedBy:firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown'};
+ try{await saveStateToFirebase('monthlyExpenses',key,patch);state.monthlyExpenses=allExpenses().filter(e=>e.id!==key).concat({...old,...patch,id:key});if(typeof closeMonthlyExpenseModal==='function')closeMonthlyExpenseModal();renderExpenses();render();}
+ catch(error){alert('Expense was not saved. Check the connection and permissions, then retry.');}
+};
+window.renderMonthlyExpensesTable=renderExpenses;
+window.editPaymentLog=async function(refCode,index){
+ const doc=allDocs().find(d=>d.refCode===refCode);if(!doc)return;const current=logs(doc);
+ if(!Number.isInteger(index)||index<0||index>=current.length)return;
+ const original=current[index],date=prompt('Payment date (YYYY-MM-DD):',original.date||original.transactionDate||invDate(doc));if(date===null)return;
+ const amountText=prompt('Payment amount (AED):',String(original.amount??''));if(amountText===null)return;
+ const value=Number(amountText);if(!date.trim()||!Number.isFinite(value)||value<=0){alert('Enter a valid payment date and amount greater than zero.');return;}
+ const note=prompt('Payment note / reference:',original.note||'');if(note===null)return;const fingerprint=JSON.stringify(original);
+ try{const result=await transactDarDocument(refCode,currentDoc=>{if(!currentDoc)return;const entries=window.getDarDocumentPaymentLogs(currentDoc),idx=entries.findIndex(x=>JSON.stringify(x)===fingerprint);if(idx<0)return;const nextPaid=paid(currentDoc)-num(entries[idx].amount)+value;if(nextPaid>total(currentDoc)+.005)return;entries[idx]={...entries[idx],date:date.trim(),transactionDate:date.trim(),amount:value,note:note.trim()};currentDoc.paymentLogs=entries;currentDoc.updatedAt=new Date().toISOString();currentDoc.updatedBy=firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown';return currentDoc;});
+ if(!result.committed){alert('Payment was not changed. It may have been edited by another user or the new amount exceeds the invoice total.');return;}
+ Object.assign(doc,result.snapshot.val()||{});window.renderAccountsLedgerDetail(refCode);window.renderFullLedgerTableBody();render();
+ }catch(error){alert('Payment edit failed. The original payment remains unchanged.');}
+};
+
+function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();addExpenseControls();renderExpenses();render();}
 window.renderFinanceCentre=render;
 document.addEventListener('DOMContentLoaded',init);
 })();
