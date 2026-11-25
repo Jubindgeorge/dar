@@ -32,7 +32,8 @@ const assert = require('node:assert/strict');
         invoiceRows:document.querySelectorAll('#acc-full-ledger-tbody tr').length,
         invoiceRowText:document.getElementById('acc-full-ledger-tbody').innerText,
         expenseControls:!!document.getElementById('finance-expense-category')&&!!document.getElementById('finance-expense-payee')&&!!document.getElementById('finance-expense-reference'),
-        paymentMethodControl:!!document.getElementById('pay-input-method')
+        paymentMethodControl:!!document.getElementById('pay-input-method'),
+        rangePresetCount:document.querySelectorAll('#finance-centre [data-finance-range]').length
       };
       showFinanceSection('customers');
       result.customerRow=document.getElementById('finance-customers').innerText;
@@ -52,6 +53,7 @@ const assert = require('node:assert/strict');
     assert.equal(financeCentreSmoke.openInvoiceAction,1,'Invoice register provides an action to open the existing invoice editor');
     assert.equal(financeCentreSmoke.expenseControls,true,'Expense category, payee and receipt-reference fields are available');
     assert.equal(financeCentreSmoke.paymentMethodControl,true,'Payment method is available when recording receipts');
+    assert.equal(financeCentreSmoke.rangePresetCount,4,'Month, quarter, year and all-time reporting presets are available');
     console.log('PASS: Finance Centre invoice-basis calculations, cash receipt separation and quotation exclusion');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
