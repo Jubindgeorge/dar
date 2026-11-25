@@ -78,6 +78,7 @@
 
     window.openCompanyStaff = function (companyId) {
         state.activeStaffCompanyId = companyId || '';
+        state.activeStaffProfileId = '';
         const filter = byId('staff-company-filter');
         if (filter) filter.value = state.activeStaffCompanyId;
         if (typeof switchTab === 'function') switchTab('staff');
@@ -127,7 +128,7 @@
         if (listView) listView.hidden = false;
         if (profileView) { profileView.hidden = true; profileView.innerHTML = ''; }
         const companyContext = byId('staff-company-context');
-        if (companyContext) companyContext.textContent = state.activeStaffCompanyId ? ('Company: ' + companyNameById(state.activeStaffCompanyId)) : 'All companies';
+        if (companyContext) companyContext.textContent = state.activeStaffCompanyId ? ('Company: ' + companyNameById(state.activeStaffCompanyId)) : 'Select a company';
         const search = norm(byId('staff-search')?.value);
         const renewal = clean(byId('staff-renewal-filter')?.value);
         const fromDate = clean(byId('staff-date-from')?.value);
@@ -155,7 +156,7 @@
             '<td>'+html(staff.labourCardExpiry || '-')+'</td>'+
             '<td>'+html(staff.passportNumber || '-')+'</td>'+
             '<td>'+statusPill(dueStatus(staff))+'</td>'+
-            '<td class="staff-actions"><button type="button" class="btn btn-primary" onclick="openStaffProfile(\\''+html(staff.id)+'\\')">View Profile</button></td>'+
+            '<td class="staff-actions"><button type="button" class="btn btn-primary" onclick="openStaffProfile(\''+html(staff.id)+'\')">View Profile</button></td>'+
             '</tr>').join('');
         if (window.applyDarLanguage) window.applyDarLanguage();
     };
@@ -183,9 +184,9 @@
             const amount = Number(doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount) || 0;
             const date = doc.transactionDate || doc.createdDate || doc.createdAt || '';
             const ref = html(doc.refCode || '');
-            return '<tr><td>'+ref+'</td><td>'+html(date)+'</td><td>'+html(doc.packageName || doc.serviceName || doc.title || '-')+'</td><td>AED '+amount.toFixed(2)+'</td><td>'+kind+'</td><td><button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\\''+ref+'\\')">View / Print</button> <button type="button" class="btn btn-secondary" onclick="openStudio(\\''+kind+'\\',\\''+ref+'\\')">Edit</button></td></tr>';
+            return '<tr><td>'+ref+'</td><td>'+html(date)+'</td><td>'+html(doc.packageName || doc.serviceName || doc.title || '-')+'</td><td>AED '+amount.toFixed(2)+'</td><td>'+kind+'</td><td><button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+ref+'\')">View / Print</button> <button type="button" class="btn btn-secondary" onclick="openStudio(\''+kind+'\',\''+ref+'\')">Edit</button></td></tr>';
         }).join('') : '<tr><td colspan="6" class="staff-empty">No linked documents yet.</td></tr>';
-        root.innerHTML = '<div class="staff-profile-heading"><div><button type="button" class="btn btn-secondary" onclick="closeStaffProfile()">← Back to Staff List</button><h2>'+html(staff.fullName || 'Staff Profile')+'</h2><p class="dar-hint">'+html(staff.staffCode || staff.staffId || '')+' · '+html(staff.companyName || companyNameById(staff.companyId))+'</p></div><button type="button" class="btn btn-primary" onclick="openStaffModal(\\''+html(staff.id)+'\\')">Edit Staff Profile</button></div>' +
+        root.innerHTML = '<div class="staff-profile-heading"><div><button type="button" class="btn btn-secondary" onclick="closeStaffProfile()">← Back to Staff List</button><h2>'+html(staff.fullName || 'Staff Profile')+'</h2><p class="dar-hint">'+html(staff.staffCode || staff.staffId || '')+' · '+html(staff.companyName || companyNameById(staff.companyId))+'</p></div><button type="button" class="btn btn-primary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit Staff Profile</button></div>' +
         '<div class="staff-profile-card"><h3>Personal & Employment Details</h3><div class="staff-profile-grid">'+info('Staff ID',staff.staffCode || staff.staffId)+info('Person Labour No.',staff.personNumber)+info('Full Name',staff.fullName)+info('Company',staff.companyName || companyNameById(staff.companyId))+info('Nationality',staff.nationality)+info('Designation',staff.designation)+info('Joining Date',staff.joiningDate)+info('Last Work Done',staff.lastWorkDone)+'</div></div>' +
         '<div class="staff-profile-card"><h3>Identity & Labour Details</h3><div class="staff-profile-grid">'+info('Passport Number',staff.passportNumber)+info('Passport Expiry',staff.passportExpiry)+info('Labour Card Number',staff.labourCardNumber)+info('Labour Card Expiry',staff.labourCardExpiry)+info('Visa Number',staff.visaNumber)+info('Visa Expiry',staff.visaExpiry)+info('Visa Status',staff.visaStatus)+info('Renewal Status',dueStatus(staff))+'</div></div>' +
         '<div class="staff-profile-card"><h3>Invoices <span class="staff-doc-count">'+invoices.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Invoice No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(invoices)+'</tbody></table></div></div>' +
