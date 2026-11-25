@@ -37,6 +37,7 @@ function initFirebaseListeners() {
         if (typeof renderClientsTable === 'function') renderClientsTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
         if (typeof renderStaffTable === 'function') renderStaffTable();
+        if (typeof window.darRenderExpiryNotifications === 'function') window.darRenderExpiryNotifications();
     }, error => showFirebaseReadError('clients', error));
 
     db.ref('documents').on('value', snapshot => {
@@ -61,6 +62,7 @@ function initFirebaseListeners() {
         state.staff = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderStaffTable === 'function') renderStaffTable();
         if (typeof renderCompanyStaffLedger === 'function') renderCompanyStaffLedger();
+        if (typeof window.darRenderExpiryNotifications === 'function') window.darRenderExpiryNotifications();
     }, error => showFirebaseReadError('staff', error));
 
     db.ref('companyClients').on('value', snapshot => {
