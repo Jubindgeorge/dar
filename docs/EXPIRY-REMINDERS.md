@@ -24,6 +24,8 @@ Email (Gmail SMTP — preferred for the requested Gmail delivery):
 - `GMAIL_APP_PASSWORD`: a Google App Password for that mailbox (requires 2-Step Verification; never use the normal Gmail password).
 - `REMINDER_FROM_EMAIL`: optional sender display address; defaults to `GMAIL_USER`.
 
+Create the App Password in the sending Google Account under Security → 2-Step Verification → App Passwords, then add it directly as the GitHub Actions secret. Do not paste it into the ERP or a chat message.
+
 Resend is supported as an alternative if Gmail SMTP is not used:
 - `RESEND_API_KEY`
 - `REMINDER_FROM_EMAIL`: verified sender address.
