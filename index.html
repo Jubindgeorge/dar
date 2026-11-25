@@ -889,8 +889,9 @@
 
     <!-- Company-linked client modal; does not alter printed document templates. -->
     <div id="company-client-modal" class="custom-modal-backdrop" style="display:none;">
-        <div class="custom-modal-content" style="text-align:left;max-width:480px;">
-            <h3 style="margin-bottom:16px;">Add Client to Company</h3>
+        <div class="custom-modal-content" style="text-align:left;max-width:560px;max-height:calc(100vh - 32px);overflow-y:auto;">
+            <h3 id="cc-modal-title" style="margin-bottom:16px;">Add Client to Company</h3>
+            <input id="cc-record-id" type="hidden">
             <p id="company-client-parent" class="dar-hint"></p>
             <div class="form-group"><label for="cc-input-name">Client Full Name *</label><input id="cc-input-name" type="text" required></div>
             <div class="form-group"><label for="cc-input-phone">Phone</label><input id="cc-input-phone" type="tel"></div>
@@ -899,7 +900,7 @@
             <div class="form-group"><label for="cc-input-passport-expiry">Passport Expiry (if applicable)</label><input id="cc-input-passport-expiry" type="date"></div>
             <div class="form-group"><label for="cc-input-emirates-id-expiry">Emirates ID Expiry (if applicable)</label><input id="cc-input-emirates-id-expiry" type="date"></div>
             <div class="form-group"><label for="cc-input-visa-expiry">Visa Expiry (if applicable)</label><input id="cc-input-visa-expiry" type="date"></div>
-            <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
+            <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button id="cc-save-button" type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
         </div>
     </div>
 
