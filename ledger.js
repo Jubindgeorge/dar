@@ -365,6 +365,7 @@ window.savePaymentLogData = async function() {
 };
 
 window.deletePaymentLog = async function(refCode, index) {
+    if (!confirm('Delete this payment entry? The invoice balance will be recalculated.')) return;
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
     const selectedLogs = window.getDarDocumentPaymentLogs(doc);
