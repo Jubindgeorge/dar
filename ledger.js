@@ -270,7 +270,7 @@ window.printPaymentStatusStatement = function() {
     paymentLogs.forEach((log, idx) => {
         pTbody.innerHTML += `
             <tr>
-                <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${escapeHtml(log.note || 'Direct')}</td>
+                <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${escapeHtml([log.method, log.note].filter(Boolean).join(' · ') || 'Direct')}</td>
                 <td colspan="2" style="padding: 12px; text-align: right; color: #22c55e; border-bottom: 1px solid #cbd5e1;">AED ${Number(log.amount).toFixed(2)}</td>
             </tr>
         `;
@@ -375,8 +375,8 @@ window.deletePaymentLog = async function(refCode, index) {
         const result = await transactDarDocument(refCode, current => {
             if (!current) return;
             const logs = window.getDarDocumentPaymentLogs(current);
-            const currentIndex = logs.findIndex(entry => JSON.stringify(entry) === targetFingerprint);
-            if (currentIndex < 0) return;
+            const currentIndex = index;
+            if (currentIndex < 0 || currentIndex >= logs.length || JSON.stringify(logs[currentIndex]) !== targetFingerprint) return;
             logs.splice(currentIndex, 1);
             current.paymentLogs = logs;
             current.updatedAt = new Date().toISOString();
