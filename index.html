@@ -761,9 +761,26 @@
                 <input type="text" id="cl-input-name-ar" placeholder="Arabic Translation" style="direction: rtl; font-family: 'Amiri', serif;">
             </div>
             <div class="form-group">
-                <label>Contact Person / Phone</label>
-                <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
+                <label>Contact Person</label>
+                <input type="text" id="cl-input-contact-person" placeholder="Contact person name">
             </div>
+            <div class="form-group"><label for="cl-input-phone">Company Phone</label><input type="tel" id="cl-input-phone" placeholder="+971..."></div>
+            <div class="form-group"><label for="cl-input-email">Company Email</label><input type="email" id="cl-input-email" placeholder="office@example.com"></div>
+            <div class="form-group"><label for="cl-input-whatsapp">Company WhatsApp</label><input type="tel" id="cl-input-whatsapp" placeholder="+971..."></div>
+            <div class="form-group"><label for="cl-input-address">Company Address</label><textarea id="cl-input-address" rows="2"></textarea></div>
+            <h4>Company Documents &amp; Expiry Dates</h4>
+            <div class="form-group"><label for="cl-input-trade-license-number">Trade Licence Number</label><input id="cl-input-trade-license-number" type="text"></div>
+            <div class="form-group"><label for="cl-input-trade-license-expiry">Trade Licence Expiry</label><input id="cl-input-trade-license-expiry" type="date"></div>
+            <div class="form-group"><label for="cl-input-establishment-card-number">Establishment Card Number</label><input id="cl-input-establishment-card-number" type="text"></div>
+            <div class="form-group"><label for="cl-input-establishment-card-expiry">Establishment Card Expiry</label><input id="cl-input-establishment-card-expiry" type="date"></div>
+            <div class="form-group"><label for="cl-input-labour-card-number">Immigration / Labour Card Number</label><input id="cl-input-labour-card-number" type="text"></div>
+            <div class="form-group"><label for="cl-input-labour-card-expiry">Immigration / Labour Card Expiry</label><input id="cl-input-labour-card-expiry" type="date"></div>
+            <div class="form-group"><label for="cl-input-tenancy-contract-number">Tenancy Contract Number</label><input id="cl-input-tenancy-contract-number" type="text"></div>
+            <div class="form-group"><label for="cl-input-tenancy-contract-expiry">Tenancy Contract Expiry</label><input id="cl-input-tenancy-contract-expiry" type="date"></div>
+            <div class="form-group"><label for="cl-input-other-document-name">Other Document Name</label><input id="cl-input-other-document-name" type="text"></div>
+            <div class="form-group"><label for="cl-input-other-document-expiry">Other Document Expiry</label><input id="cl-input-other-document-expiry" type="date"></div>
+            <div class="form-group"><label for="cl-input-notify-email">Expiry Notification Email</label><input id="cl-input-notify-email" type="email"></div>
+            <div class="form-group"><label for="cl-input-notify-whatsapp">Expiry Notification WhatsApp</label><input id="cl-input-notify-whatsapp" type="tel"></div>
             <div class="custom-modal-actions">
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
                 <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
@@ -784,6 +801,10 @@
             <div class="form-group"><label for="cc-input-name">Client Full Name *</label><input id="cc-input-name" type="text" required></div>
             <div class="form-group"><label for="cc-input-phone">Phone</label><input id="cc-input-phone" type="tel"></div>
             <div class="form-group"><label for="cc-input-email">Email</label><input id="cc-input-email" type="email"></div>
+            <div class="form-group"><label for="cc-input-whatsapp">WhatsApp</label><input id="cc-input-whatsapp" type="tel" placeholder="+971..."></div>
+            <div class="form-group"><label for="cc-input-passport-expiry">Passport Expiry (if applicable)</label><input id="cc-input-passport-expiry" type="date"></div>
+            <div class="form-group"><label for="cc-input-emirates-id-expiry">Emirates ID Expiry (if applicable)</label><input id="cc-input-emirates-id-expiry" type="date"></div>
+            <div class="form-group"><label for="cc-input-visa-expiry">Visa Expiry (if applicable)</label><input id="cc-input-visa-expiry" type="date"></div>
             <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
         </div>
     </div>
