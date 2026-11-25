@@ -79,6 +79,7 @@ assert.match(app, /Dis\. %/, 'PDF summary displays discount percentage');
 
 // Executive dashboard checks: additive UI, read-only state calculations, navigation, and mobile layout.
 const dashboard = fs.readFileSync('dashboard.js', 'utf8');
+const stateSource = fs.readFileSync('state.js', 'utf8');
 for (const id of [
   'dash-exec-search','dash-exec-search-results','dash-exec-invoiced','dash-exec-received',
   'dash-exec-outstanding','dash-exec-unpaid','dash-exec-partial','dash-exec-paid',
@@ -99,6 +100,8 @@ assert.match(dashboard, /window\.viewClientDetail/, 'company search opens compan
 assert.match(dashboard, /window\.openStaffProfile/, 'staff search opens staff profile');
 assert.match(dashboard, /window\.previewInvoiceDocument/, 'invoice search opens the selected invoice preview');
 assert.match(dashboard, /window\.openCompanyClientModal/, 'company-client search opens the exact client profile');
+assert.ok((stateSource.match(/darRenderExpiryNotifications/g)||[]).length >= 4, 'expiry centre refreshes after company, invoice, staff and company-client Firebase records load');
+assert.match(stateSource, /renderDashboardStats\(\)/, 'dashboard refreshes after profile records load');
 assert.match(html, /onclick="openStudio\('Invoice'\)"/, 'quick action opens invoice creation');
 assert.match(html, /onclick="openStudio\('Quotation'\)"/, 'quick action opens quotation creation');
 assert.match(html, /darDashboardOpen\('record-payment'\)/, 'quick action opens the payment entry destination');
