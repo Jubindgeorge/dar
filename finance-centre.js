@@ -171,6 +171,7 @@ function addExpenseControls(){
  const box=document.createElement('div');
  box.innerHTML='<div class="form-group"><label for="finance-expense-category">Expense category</label><select id="finance-expense-category"><option>Office & Administration</option><option>Rent</option><option>Salaries</option><option>Utilities</option><option>Transport</option><option>Marketing</option><option>Bank Charges</option><option>Other</option></select></div><div class="form-group"><label for="finance-expense-invoice">Link to invoice (optional direct cost)</label><select id="finance-expense-invoice"><option value="">Operating expense — not linked</option></select></div><input type="hidden" id="finance-expense-edit-id">';
  form.insertBefore(box,actions);
+ const monthInput=$('exp-input-month'),dateInput=$('exp-input-date');if(monthInput)monthInput.disabled=true;if(dateInput)dateInput.addEventListener('change',()=>{if(monthInput)monthInput.value=dateInput.value.slice(0,7);});
 }
 function refreshExpenseInvoiceOptions(selected){
  const s=$('finance-expense-invoice');if(!s)return;
