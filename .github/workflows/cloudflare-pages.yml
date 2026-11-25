@@ -1,0 +1,50 @@
+name: Deploy DAR ERP to Cloudflare Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy static ERP portal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare public site files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp index.html ledger.html styles.css dist/
+          cp ./*.js dist/
+          cp ./*.png ./*.PNG ./*.jpeg ./*.jpg ./*.webp dist/ 2>/dev/null || true
+          test -s dist/index.html
+          test -s dist/ledger.html
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_BRANCH: ${{ github.head_ref || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN}" || -z "${CLOUDFLARE_ACCOUNT_ID}" ]]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in GitHub Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          SAFE_BRANCH="${DEPLOY_BRANCH//\//-}"
+          npx --yes wrangler@4 pages deploy ./dist \
+            --project-name=dar-al-shams-erp \
+            --branch="${SAFE_BRANCH}"
