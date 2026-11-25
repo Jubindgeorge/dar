@@ -258,7 +258,7 @@
         byId('sf-notes').value = record.notes || '';
         byId('staff-modal').style.display = 'flex';
     };
-    window.closeStaffModal = function () { byId('staff-modal').style.display = 'none'; };
+    window.closeStaffModal = function () { byId('staff-modal').style.display = 'none'; state.addingStaffFromStudio = false; };
 
     window.saveStaffRecord = function () {
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. Staff details were not saved.'); return; }
