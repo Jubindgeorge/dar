@@ -30,8 +30,15 @@ const assert = require('node:assert/strict');
         profit:document.getElementById('finance-pl').innerText,
         collections:document.getElementById('finance-cash').innerText,
         invoiceRows:document.querySelectorAll('#acc-full-ledger-tbody tr').length,
-        invoiceRowText:document.getElementById('acc-full-ledger-tbody').innerText
+        invoiceRowText:document.getElementById('acc-full-ledger-tbody').innerText,
+        expenseControls:!!document.getElementById('finance-expense-category')&&!!document.getElementById('finance-expense-payee')&&!!document.getElementById('finance-expense-reference'),
+        paymentMethodControl:!!document.getElementById('pay-input-method')
       };
+      showFinanceSection('customers');
+      result.customerRow=document.getElementById('finance-customers').innerText;
+      showFinanceSection('invoices');
+      result.openInvoiceAction=document.querySelectorAll('#acc-full-ledger-tbody [data-finance-open]').length;
+      showFinanceSection('overview');
       state.documents=savedDocs;state.monthlyExpenses=savedExpenses;renderFinanceCentre();
       return result;
     });
@@ -40,6 +47,11 @@ const assert = require('node:assert/strict');
     assert.match(financeCentreSmoke.collections,/AED 300\.00/,'Cash collections are reported separately from invoice revenue');
     assert.equal(financeCentreSmoke.invoiceRows,1,'Quotation records are excluded from the invoice ledger');
     assert.doesNotMatch(financeCentreSmoke.invoiceRowText,/FINANCE-SMOKE-QTN/,'Quotation does not appear in the financial invoice register');
+    assert.match(financeCentreSmoke.invoiceRowText,/Partial/,'Invoice register displays the derived payment status');
+    assert.match(financeCentreSmoke.customerRow,/Finance Smoke Customer/,'Customer account navigation renders linked invoice balances');
+    assert.equal(financeCentreSmoke.openInvoiceAction,1,'Invoice register provides an action to open the existing invoice editor');
+    assert.equal(financeCentreSmoke.expenseControls,true,'Expense category, payee and receipt-reference fields are available');
+    assert.equal(financeCentreSmoke.paymentMethodControl,true,'Payment method is available when recording receipts');
     console.log('PASS: Finance Centre invoice-basis calculations, cash receipt separation and quotation exclusion');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
