@@ -523,7 +523,18 @@ window.openClientModal = function(id) {
     document.getElementById('cl-modal-id').value = id || '';
     document.getElementById('cl-input-company-name').value = cl ? cl.companyName : '';
     document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
-    document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
+    document.getElementById('cl-input-contact-person').value = cl ? (cl.contactPerson || '') : '';
+    const companyFields = {
+        'cl-input-phone':'phone','cl-input-email':'email','cl-input-whatsapp':'whatsapp',
+        'cl-input-address':'address','cl-input-trade-license-number':'tradeLicenseNumber',
+        'cl-input-trade-license-expiry':'tradeLicenseExpiry','cl-input-establishment-card-number':'establishmentCardNumber',
+        'cl-input-establishment-card-expiry':'establishmentCardExpiry','cl-input-labour-card-number':'immigrationLabourCardNumber',
+        'cl-input-labour-card-expiry':'immigrationLabourCardExpiry','cl-input-tenancy-contract-number':'tenancyContractNumber',
+        'cl-input-tenancy-contract-expiry':'tenancyContractExpiry','cl-input-other-document-name':'otherDocumentName',
+        'cl-input-other-document-expiry':'otherDocumentExpiry','cl-input-notify-email':'notificationEmail',
+        'cl-input-notify-whatsapp':'notificationWhatsapp'
+    };
+    Object.entries(companyFields).forEach(([field,key]) => { const el=document.getElementById(field); if(el) el.value=cl ? (cl[key] || '') : ''; });
     document.getElementById('client-modal').style.display = 'flex';
 };
 
@@ -537,6 +548,17 @@ window.saveClientModalData = async function() {
     const companyName = document.getElementById('cl-input-company-name').value.trim();
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
     const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
+    const companyFields = {
+        phone:'cl-input-phone', email:'cl-input-email', whatsapp:'cl-input-whatsapp', address:'cl-input-address',
+        tradeLicenseNumber:'cl-input-trade-license-number', tradeLicenseExpiry:'cl-input-trade-license-expiry',
+        establishmentCardNumber:'cl-input-establishment-card-number', establishmentCardExpiry:'cl-input-establishment-card-expiry',
+        immigrationLabourCardNumber:'cl-input-labour-card-number', immigrationLabourCardExpiry:'cl-input-labour-card-expiry',
+        tenancyContractNumber:'cl-input-tenancy-contract-number', tenancyContractExpiry:'cl-input-tenancy-contract-expiry',
+        otherDocumentName:'cl-input-other-document-name', otherDocumentExpiry:'cl-input-other-document-expiry',
+        notificationEmail:'cl-input-notify-email', notificationWhatsapp:'cl-input-notify-whatsapp'
+    };
+    const profileDetails = {};
+    Object.entries(companyFields).forEach(([key,field]) => { const el=document.getElementById(field); profileDetails[key]=el ? el.value.trim() : ''; });
     if (!id && companyName) {
         const normalized = companyName.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
         const duplicate = (state.clients || []).find(c => (c.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim() === normalized);
@@ -555,7 +577,7 @@ window.saveClientModalData = async function() {
 
     const previous = (state.clients || []).find(item => item.id === id) || {};
     const audit = window.darDates ? window.darDates.audit(previous) : { createdDate: previous.createdDate || localISODate(), updatedAt: new Date().toISOString() };
-    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...audit }, (err) => {
+    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...profileDetails, ...audit }, (err) => {
         if (!err) { closeClientModal(); }
         else showCustomModal('Save failed', 'Client details could not be saved. Check Firebase permissions and your connection.');
     });
