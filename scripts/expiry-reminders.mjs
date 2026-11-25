@@ -11,7 +11,7 @@ if(!getApps().length)initializeApp({credential:cert(credentials),databaseURL});
 const db=getDatabase(),dryRun=env.REMINDER_DRY_RUN==='true';
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const email=v=>typeof v==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())?v.trim():'';
-const phone=v=>{if(typeof v!=='string')return'';const raw=v.replace(/[\\s()-]/g,'');return /^\\+?[1-9]\\d{7,14}$/.test(raw)?raw.replace(/\\D/g,''):'';}
+const phone=v=>{if(typeof v!=='string')return'';const raw=v.replace(/[ ()-]/g,'');const digits=raw.startsWith('+')?raw.slice(1):raw;return digits.length>=8&&digits.length<=15&&digits[0]>='1'&&digits[0]<='9'&&Array.from(digits).every(c=>c>='0'&&c<='9')?digits:'';}
 const safe=v=>String(v||'').replace(/[<>\r\n]/g,' ').slice(0,180);
 const hash=v=>{let h=2166136261;for(const c of String(v)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return(h>>>0).toString(16);};
 async function deliver(ref,send){const tx=await ref.transaction(old=>{if(old?.status==='sent')return;if(old?.status==='sending'&&Date.now()-Date.parse(old.startedAt||0)<3600000)return;return{status:'sending',startedAt:new Date().toISOString()};},undefined,false);if(!tx.committed)return'already-sent-or-in-progress';try{const providerId=await send();await ref.update({status:'sent',sentAt:new Date().toISOString(),providerId:providerId||null});return'sent';}catch(e){await ref.update({status:'failed',failedAt:new Date().toISOString(),error:String(e?.message||e).slice(0,220)});throw e;}}
