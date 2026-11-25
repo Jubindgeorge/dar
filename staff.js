@@ -51,14 +51,20 @@
     function nextStaffCode(companyId, reserved) {
         const company = companyById(companyId);
         const companyName = company?.companyName || '';
-        const used = new Set([...(state.staff || []).filter(item => item.companyId === companyId || (companyName && norm(item.companyName) === norm(companyName))).map(item => clean(item.staffCode || item.staffId)), ...(reserved || [])].map(norm));
-        let sequence = 1;
-        let candidate = '';
-        do {
-            candidate = 'STAFF-' + String(sequence).padStart(4, '0');
-            sequence++;
-        } while (used.has(norm(candidate)));
-        return candidate;
+        const companyStaff = (state.staff || []).filter(item =>
+            item.companyId === companyId ||
+            (companyName && norm(item.companyName) === norm(companyName))
+        );
+        const reservedCodes = Array.from(reserved || []);
+        const existingCodes = [
+            ...companyStaff.map(item => clean(item.staffCode || item.staffId)),
+            ...reservedCodes.map(item => typeof item === 'string' ? item : clean(item?.staffCode || item?.staffId))
+        ];
+        const highestSequence = existingCodes.reduce((highest, code) => {
+            const match = /^STAFF-(\d+)$/i.exec(clean(code));
+            return match ? Math.max(highest, Number(match[1])) : highest;
+        }, 0);
+        return 'STAFF-' + String(highestSequence + 1).padStart(4, '0');
     }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
