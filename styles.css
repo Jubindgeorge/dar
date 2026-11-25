@@ -745,3 +745,10 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 .dash-age-row{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border:0;border-bottom:1px solid var(--border-color);background:transparent;color:var(--text-main);text-align:left;cursor:pointer;font-size:.82rem}
 .dash-age-row:hover{color:var(--primary);background:rgba(203,163,88,.06)}
 .dash-age-row:last-child{border-bottom:0}
+
+.dash-module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.dash-module-grid button{display:flex;align-items:center;gap:9px;min-width:0;padding:11px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-dark);color:var(--text-main);text-align:left;font-size:.76rem;cursor:pointer}
+.dash-module-grid button i{color:var(--primary);width:16px;text-align:center;flex:0 0 16px}
+.dash-module-grid button:hover{border-color:var(--primary);background:rgba(203,163,88,.08)}
+@media(max-width:900px){.dash-module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.dash-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
