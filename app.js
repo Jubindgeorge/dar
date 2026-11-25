@@ -521,6 +521,10 @@ window.openClientModal = function(id) {
     if (id && state.clients) cl = state.clients.find(c => c.id === id);
 
     document.getElementById('cl-modal-id').value = id || '';
+    const title = document.getElementById('client-modal-title');
+    if (title) title.textContent = cl ? 'Edit Company Profile' : 'Add New Company';
+    const saveButton = document.getElementById('cl-save-button');
+    if (saveButton) saveButton.textContent = cl ? 'Save Changes' : 'Save Account';
     document.getElementById('cl-input-company-name').value = cl ? cl.companyName : '';
     document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
     document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
@@ -541,7 +545,10 @@ window.openClientModal = function(id) {
 };
 
 window.closeClientModal = function() {
-    document.getElementById('client-modal').style.display = 'none';
+    const modal = document.getElementById('client-modal');
+    if (modal) modal.style.display = 'none';
+    const saveButton = document.getElementById('cl-save-button');
+    if (saveButton) { saveButton.disabled = false; saveButton.textContent = 'Save Account'; }
 };
 
 window.saveClientModalData = async function() {
