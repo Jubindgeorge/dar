@@ -166,7 +166,11 @@
     }
     window.switchTab(tabs[kind]||'dashboard');
     if(kind==='quotations'&&typeof window.renderQuotationTable==='function')window.renderQuotationTable();
-    if(kind==='record-payment'&&typeof window.openAddPaymentModal==='function')window.openAddPaymentModal();
+    if(kind==='record-payment'){
+      const invoiceSelect=byId('acc-invoice-select');
+      if(invoiceSelect&&!invoiceSelect.value){invoiceSelect.focus();invoiceSelect.scrollIntoView({behavior:'smooth',block:'center'});}
+      else if(typeof window.openAddPaymentModal==='function')window.openAddPaymentModal();
+    }
   };
   window.renderDashboardStats = renderDashboardStats;
   document.addEventListener('DOMContentLoaded',()=>{setupSearch();renderDashboardStats();});
