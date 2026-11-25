@@ -73,6 +73,11 @@ const assert = require('node:assert/strict');
       const expiryText=document.getElementById('dar-expiry-notifications').innerText;
       const expiryRows=document.querySelectorAll('#dar-expiry-notifications tbody tr').length;
       const expiryTabActive=document.getElementById('tab-expiry-notifications').classList.contains('active');
+      const oldClientOpen=window.openCompanyClientModal;let openedClientId='';
+      window.openCompanyClientModal=id=>{openedClientId=id;};
+      const clientExpiryRow=[...document.querySelectorAll('#dar-expiry-notifications tbody tr')].find(row=>row.cells[0]?.textContent==='Company Client');
+      clientExpiryRow?.querySelector('button')?.click();
+      window.openCompanyClientModal=oldClientOpen;
       state.documents=[
         {refCode:'FILTER-PARTIAL',type:'Invoice',totalAmount:100,advanceAmount:25,proStatus:'In Progress'},
         {refCode:'FILTER-PAID',type:'Invoice',totalAmount:80,advanceAmount:80,proStatus:'Completed'},
@@ -86,7 +91,7 @@ const assert = require('node:assert/strict');
       const workRows=[...document.querySelectorAll('#dar-work-tracking tbody tr')].map(row=>row.innerText).join(' ');
       state.documents=previous.documents;state.clients=previous.clients;state.staff=previous.staff;state.companyClients=previous.companyClients;
       window.renderDashboardStats();
-      return {expiryText,expiryRows,invoiceRows,workRows,expiryTabActive};
+      return {expiryText,expiryRows,invoiceRows,workRows,expiryTabActive,openedClientId};
     });
     assert.match(destinationSmoke.expiryText,/Expiry Company/,'Notification Center shows company profile expiry dates');
     assert.match(destinationSmoke.expiryText,/Expiry Staff/,'Notification Center shows staff profile expiry dates');
@@ -97,6 +102,7 @@ const assert = require('node:assert/strict');
     assert.doesNotMatch(destinationSmoke.invoiceRows,/FILTER-PAID/,'Invoice status shortcut excludes unrelated paid records');
     assert.match(destinationSmoke.workRows,/FILTER-PAID/,'Work lifecycle shortcut filters PRO Work Tracking to manually completed records');
     assert.equal(destinationSmoke.expiryTabActive,true,'Expiry dashboard shortcut opens the Notification Center destination');
+    assert.equal(destinationSmoke.openedClientId,'expiry-person','Expiry row opens the exact company-client profile, not its parent company');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
