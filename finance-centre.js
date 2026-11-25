@@ -52,7 +52,7 @@ function createShell(){
  '<section class="finance-panel" data-finance-panel="reports"><div class="finance-report-actions"><button class="btn btn-primary" id="finance-export-pl">Export P&amp;L (Excel)</button><button class="btn btn-secondary" id="finance-export-customer">Export Customer Balances</button><button class="btn btn-secondary" id="finance-export-collections">Export Collections</button><button class="btn btn-secondary" id="finance-export-expenses">Export Expenses</button><button class="btn btn-secondary" id="finance-export-ageing">Export Ageing</button><button class="btn btn-secondary" id="finance-print">Print Report</button></div><article class="finance-card"><h3>Invoice-based Profit &amp; Loss Report</h3><div id="finance-report"></div></article><article class="finance-card"><h3>Outstanding by customer</h3><div id="finance-report-customers"></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="reconcile"><article class="finance-card"><div class="finance-card-head"><div><h3>Financial Reconciliation</h3><p>Read-only checks; no financial records are changed automatically.</p></div><button class="btn btn-secondary" id="finance-audit-refresh">Run checks</button></div><div id="finance-audit-count"></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Level</th><th>Record</th><th>Finding</th></tr></thead><tbody id="finance-audit"></tbody></table></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="staff"><div id="finance-staff"></div></section>';
- if(intro)intro.insertAdjacentElement('afterend',shell);else root.prepend(shell);
+ if(intro){intro.insertAdjacentElement('afterend',shell);intro.style.display='none';}else root.prepend(shell);
  const find=id=>$(id)?.closest('.table-responsive')?.parentElement;
  const staff=find('ledger-company-staff-tbody'),expense=find('monthly-expenses-tbody'),master=find('acc-full-ledger-tbody'),payments=find('acc-payment-logs-tbody');
  const toolbar=$('ledger-search')?.parentElement,selector=$('acc-invoice-select')?.closest('div[style*="background: var(--panel-bg)"]'),cards=$('acc-selected-summary-card');
@@ -148,6 +148,15 @@ function wrapFunctions(){
  const oldDetail=window.renderAccountsLedgerDetail;if(oldDetail)window.renderAccountsLedgerDetail=function(){const x=oldDetail.apply(this,arguments),d=allDocs().find(y=>y.refCode===arguments[0]);if(d&&$('acc-card-profit')){const linked=allExpenses().filter(e=>(e.linkedInvoiceRef||e.invoiceRef)===d.refCode).reduce((s,e)=>s+num(e.amount),0);$('acc-card-profit').textContent=fmt(total(d)-num(d.govtFee??d.govtAmt)-linked);const l=$('acc-card-profit').previousElementSibling;if(l)l.textContent='Invoice Contribution';}render();return x;};
 }
 
+
+function addPaymentMethodControl(){
+ const modal=$('payment-modal');if(!modal||$('pay-input-method'))return;
+ const amountInput=$('pay-input-amount')?.closest('.form-group');if(!amountInput)return;
+ const group=document.createElement('div');group.className='form-group';
+ group.innerHTML='<label for="pay-input-method">Payment Method</label><select id="pay-input-method"><option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option><option value="Card">Card</option><option value="Cheque">Cheque</option><option value="Other">Other</option></select>';
+ amountInput.insertAdjacentElement('afterend',group);
+}
+
 function addExpenseControls(){
  const modal=$('monthly-expense-modal');if(!modal||$('finance-expense-category'))return;
  const form=modal.querySelector('.custom-modal-content'),actions=form?.querySelector('.custom-modal-actions');if(!form||!actions)return;
@@ -200,14 +209,14 @@ window.editPaymentLog=async function(refCode,index){
  const original=current[index],date=prompt('Payment date (YYYY-MM-DD):',original.date||original.transactionDate||invDate(doc));if(date===null)return;
  const amountText=prompt('Payment amount (AED):',String(original.amount??''));if(amountText===null)return;
  const value=Number(amountText);if(!date.trim()||!Number.isFinite(value)||value<=0){alert('Enter a valid payment date and amount greater than zero.');return;}
- const note=prompt('Payment note / reference:',original.note||'');if(note===null)return;const fingerprint=JSON.stringify(original);
- try{const result=await transactDarDocument(refCode,currentDoc=>{if(!currentDoc)return;const entries=window.getDarDocumentPaymentLogs(currentDoc),idx=entries.findIndex(x=>JSON.stringify(x)===fingerprint);if(idx<0)return;const nextPaid=paid(currentDoc)-num(entries[idx].amount)+value;if(nextPaid>total(currentDoc)+.005)return;entries[idx]={...entries[idx],date:date.trim(),transactionDate:date.trim(),amount:value,note:note.trim()};currentDoc.paymentLogs=entries;currentDoc.updatedAt=new Date().toISOString();currentDoc.updatedBy=firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown';return currentDoc;});
+ const note=prompt('Payment note / reference:',original.note||'');if(note===null)return;const method=prompt('Payment method:',original.method||'Other');if(method===null)return;const fingerprint=JSON.stringify(original);
+ try{const result=await transactDarDocument(refCode,currentDoc=>{if(!currentDoc)return;const entries=window.getDarDocumentPaymentLogs(currentDoc),idx=entries.findIndex(x=>JSON.stringify(x)===fingerprint);if(idx<0)return;const nextPaid=paid(currentDoc)-num(entries[idx].amount)+value;if(nextPaid>total(currentDoc)+.005)return;entries[idx]={...entries[idx],date:date.trim(),transactionDate:date.trim(),amount:value,note:note.trim(),method:method.trim()};currentDoc.paymentLogs=entries;currentDoc.updatedAt=new Date().toISOString();currentDoc.updatedBy=firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown';return currentDoc;});
  if(!result.committed){alert('Payment was not changed. It may have been edited by another user or the new amount exceeds the invoice total.');return;}
  Object.assign(doc,result.snapshot.val()||{});window.renderAccountsLedgerDetail(refCode);window.renderFullLedgerTableBody();render();
  }catch(error){alert('Payment edit failed. The original payment remains unchanged.');}
 };
 
-function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();addExpenseControls();renderExpenses();render();}
+function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();addExpenseControls();addPaymentMethodControl();renderExpenses();render();}
 window.renderFinanceCentre=render;
 document.addEventListener('DOMContentLoaded',init);
 })();
