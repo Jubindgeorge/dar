@@ -776,10 +776,13 @@
                                 </div>
                                 <input type="text" id="st-client-name" placeholder="Primary Account Holder" autocomplete="off">
                                 <label for="st-staff-selector" style="margin-top:8px;">Link Imported Company Staff</label>
-                                <select id="st-staff-selector" onchange="selectStudioStaff(this.value)" aria-label="Select imported staff belonging to the selected company">
-                                    <option value="">-- No staff selected --</option>
-                                </select>
-                                <small class="dar-hint">Select an imported employee to link this invoice to their staff profile. Only staff from the selected company are listed.</small>
+                                <div class="client-select-line">
+                                    <select id="st-staff-selector" onchange="selectStudioStaff(this.value)" aria-label="Select company staff belonging to the selected company">
+                                        <option value="">-- No staff selected --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-secondary" onclick="openStaffModalFromStudio()" style="white-space:nowrap;">+ Add New Staff</button>
+                                </div>
+                                <small class="dar-hint">Only staff belonging to the selected registered company are listed. Newly added staff will be selected automatically.</small>
                                 <small class="dar-hint">Choose a client linked to the selected company, or add a new one.</small>
                             </div>
                             <div>
