@@ -387,7 +387,7 @@ const assert = require('node:assert/strict');
     assert.match(saveFlow.modal?.actions||'',/Create Next/);
     assert.match(saveFlow.modal?.actions||'',/Back to Invoices/);
     assert.equal(await page.locator('#doc-table-body').count(),1);
-    await page.evaluate(() => renderDocumentsTable());
+    await page.evaluate(() => { clearDocumentFilters(); renderDocumentsTable(); });
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
     assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),9,'Invoice register rows have 9 cells including Invoice Date');
     assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),9,'Invoice register headings have 9 cells including Invoice Date');
