@@ -92,6 +92,7 @@ for (const id of [
 assert.match(html, /dashboard\.js/, 'executive dashboard module is loaded');
 assert.match(dashboard, /getDarDocumentPaymentStatus/, 'dashboard reuses the shared payment status rules');
 assert.match(dashboard, /getDarDocumentPaidAmount/, 'dashboard reuses the shared legacy-safe payment total');
+assert.match(dashboard, /norm\(doc\.status\) !== 'draft'/, 'draft invoices are excluded from executive financial totals');
 assert.match(dashboard, /tradeLicenseExpiry/, 'dashboard reads company expiry profile fields');
 assert.match(dashboard, /otherStaffDocumentExpiry/, 'dashboard reads staff expiry profile fields');
 assert.match(dashboard, /window\.viewClientDetail/, 'company search opens company profile');
