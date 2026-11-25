@@ -345,55 +345,70 @@
             if (byId('st-contact-person') && !byId('st-contact-person').value) byId('st-contact-person').value = client.phone || '';
         }
     };
-    window.openCompanyClientModal = function () {
-        const companyName = clean(byId('st-company-name')?.value);
+    window.openCompanyClientModal = function (clientId) {
+        const existing = clientId ? (state.companyClients || []).find(item => item.id === clientId) : null;
+        const companyName = existing ? existing.companyName : clean(byId('st-company-name')?.value);
         if (!companyName) { showCustomModal('Select company first','Choose an existing company or enter the company name before adding its client.'); return; }
+        if (existing && byId('st-company-name')) byId('st-company-name').value = companyName;
+        byId('cc-record-id').value = existing?.id || '';
+        byId('cc-modal-title').textContent = existing ? 'Edit Company Client Profile' : 'Add Client to Company';
+        byId('cc-save-button').textContent = existing ? 'Save Changes' : 'Save Client';
         byId('company-client-parent').textContent = 'Company: ' + companyName;
-        byId('cc-input-name').value = clean(byId('st-client-name')?.value);
-        byId('cc-input-phone').value = '';
-        byId('cc-input-email').value = '';
-        byId('cc-input-whatsapp').value = '';
-        byId('cc-input-passport-expiry').value = '';
-        byId('cc-input-emirates-id-expiry').value = '';
-        byId('cc-input-visa-expiry').value = '';
+        byId('cc-input-name').value = existing ? clean(existing.name) : clean(byId('st-client-name')?.value);
+        byId('cc-input-phone').value = existing ? clean(existing.phone) : '';
+        byId('cc-input-email').value = existing ? clean(existing.email) : '';
+        byId('cc-input-whatsapp').value = existing ? clean(existing.whatsapp) : '';
+        byId('cc-input-passport-expiry').value = existing ? clean(existing.passportExpiry) : '';
+        byId('cc-input-emirates-id-expiry').value = existing ? clean(existing.emiratesIdExpiry) : '';
+        byId('cc-input-visa-expiry').value = existing ? clean(existing.visaExpiry) : '';
         byId('company-client-modal').style.display = 'flex';
         byId('cc-input-name').focus();
     };
-    window.closeCompanyClientModal = function () { byId('company-client-modal').style.display = 'none'; };
+    window.viewCompanyClientProfile = function(clientId){ window.openCompanyClientModal(clientId); };
+    window.closeCompanyClientModal = function () {
+        byId('company-client-modal').style.display = 'none';
+        byId('cc-record-id').value = '';
+    };
     window.saveCompanyClient = function () {
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. Client was not saved.'); return; }
-        const companyName = clean(byId('st-company-name')?.value);
-        const companyId = companyIdByName(companyName);
+        const editingId = clean(byId('cc-record-id').value);
+        const previous = editingId ? (state.companyClients || []).find(item => item.id === editingId) : null;
+        const companyName = previous ? previous.companyName : clean(byId('st-company-name')?.value);
+        const companyId = previous ? previous.companyId : companyIdByName(companyName);
         const name = clean(byId('cc-input-name').value);
         if (!companyName || !name) { showCustomModal('Required fields','Company and Client Name are required.'); return; }
-        const duplicate = (state.companyClients || []).find(item => norm(item.companyName) === norm(companyName) && norm(item.name) === norm(name));
+        const duplicate = (state.companyClients || []).find(item => item.id !== editingId && norm(item.companyName) === norm(companyName) && norm(item.name) === norm(name));
         if (duplicate) {
             state.selectedCompanyClientId = duplicate.id;
-            byId('st-client-name').value = duplicate.name;
+            if(byId('st-client-name'))byId('st-client-name').value = duplicate.name;
             populateCompanyClients(); closeCompanyClientModal();
             showCustomModal('Client already exists','The existing client was selected for this company.');
             return;
         }
-        const id = db.ref('companyClients').push().key;
+        const id = editingId || db.ref('companyClients').push().key;
         const record = {
-            companyId, companyName, name,
+            ...(previous || {}), companyId, companyName, name,
             phone:clean(byId('cc-input-phone').value),
             email:clean(byId('cc-input-email').value),
             whatsapp:clean(byId('cc-input-whatsapp').value),
             passportExpiry:clean(byId('cc-input-passport-expiry').value),
             emiratesIdExpiry:clean(byId('cc-input-emirates-id-expiry').value),
             visaExpiry:clean(byId('cc-input-visa-expiry').value),
-            createdAt:new Date().toISOString()
+            createdAt:previous?.createdAt||new Date().toISOString(),
+            updatedAt:new Date().toISOString()
         };
-        db.ref('companyClients/' + id).set(record, error => {
-            if (error) { showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection.'); return; }
+        const ref = db.ref('companyClients/' + id);
+        const save = editingId ? ref.update(record) : ref.set(record);
+        Promise.resolve(save).then(() => {
             record.id = id;
-            state.companyClients = state.companyClients || []; state.companyClients.push(record);
+            state.companyClients = state.companyClients || [];
+            const index = state.companyClients.findIndex(item => item.id === id);
+            if(index>=0)state.companyClients[index]=record;else state.companyClients.push(record);
             state.selectedCompanyClientId = id;
-            byId('st-client-name').value = name;
+            if(byId('st-client-name'))byId('st-client-name').value = name;
             populateCompanyClients(); closeCompanyClientModal();
-            showCustomModal('Client Saved','New client saved and linked to ' + companyName + '.');
-        });
+            showCustomModal(editingId?'Client Updated':'Client Saved',(editingId?'Client profile updated for ':'New client saved and linked to ') + companyName + '.');
+        }).catch(error => showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection. ' + error.message));
     };
     window.refreshStaffCompanyClients = function () { /* Reserved for dependent fields; all clients remain company-linked. */ };
 
