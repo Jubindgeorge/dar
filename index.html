@@ -312,6 +312,13 @@
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Arabic Title</span><strong id="cd-name-ar" style="font-size: 1rem; direction: rtl; display: block;">-</strong></div>
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Phone</span><strong id="cd-phone" style="font-size: 1rem;">-</strong></div>
                     </div>
+                    <h3 style="color:var(--primary);margin:18px 0 10px;font-size:1.1rem;">Company Documents & Expiry Details</h3>
+                    <div style="background:var(--panel-bg);border:1px solid var(--border-color);padding:16px;border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px;">
+                        <div><small>Company Email</small><strong id="cd-company-email">-</strong></div><div><small>WhatsApp</small><strong id="cd-company-whatsapp">-</strong></div>
+                        <div><small>Trade Licence Expiry</small><strong id="cd-trade-license-expiry">-</strong></div><div><small>Establishment Card Expiry</small><strong id="cd-establishment-expiry">-</strong></div>
+                        <div><small>Immigration / Labour Card Expiry</small><strong id="cd-labour-card-expiry">-</strong></div><div><small>Tenancy Contract Expiry</small><strong id="cd-tenancy-expiry">-</strong></div>
+                        <div><small>Other Document</small><strong id="cd-other-document">-</strong></div><div><small>Other Document Expiry</small><strong id="cd-other-document-expiry">-</strong></div>
+                    </div>
                     <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 1.1rem;">Associated Records</h3>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -764,6 +771,21 @@
                 <label>Contact Person / Phone</label>
                 <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
             </div>
+            <h4 style="margin:18px 0 10px;color:var(--primary);">Company Contact & Notification Details</h4>
+            <div class="form-group"><label for="cl-input-email">Company Email</label><input type="email" id="cl-input-email" placeholder="accounts@company.com"></div>
+            <div class="form-group"><label for="cl-input-whatsapp">Company WhatsApp Number</label><input type="tel" id="cl-input-whatsapp" placeholder="+9715XXXXXXXX"></div>
+            <div class="form-group"><label for="cl-input-group-link">Company WhatsApp Group Link (manual sharing only)</label><input type="url" id="cl-input-group-link" placeholder="https://chat.whatsapp.com/..."></div>
+            <h4 style="margin:18px 0 10px;color:var(--primary);">Company Documents & Expiry Dates</h4>
+            <div class="form-group"><label for="cl-input-trade-license-no">Trade Licence Number</label><input type="text" id="cl-input-trade-license-no"></div>
+            <div class="form-group"><label for="cl-input-trade-license-expiry">Trade Licence Expiry</label><input type="date" id="cl-input-trade-license-expiry"></div>
+            <div class="form-group"><label for="cl-input-establishment-no">Establishment Card Number</label><input type="text" id="cl-input-establishment-no"></div>
+            <div class="form-group"><label for="cl-input-establishment-expiry">Establishment Card Expiry</label><input type="date" id="cl-input-establishment-expiry"></div>
+            <div class="form-group"><label for="cl-input-labour-card-no">Immigration / Labour Card Number</label><input type="text" id="cl-input-labour-card-no"></div>
+            <div class="form-group"><label for="cl-input-labour-card-expiry">Immigration / Labour Card Expiry</label><input type="date" id="cl-input-labour-card-expiry"></div>
+            <div class="form-group"><label for="cl-input-tenancy-no">Tenancy Contract Number</label><input type="text" id="cl-input-tenancy-no"></div>
+            <div class="form-group"><label for="cl-input-tenancy-expiry">Tenancy Contract Expiry</label><input type="date" id="cl-input-tenancy-expiry"></div>
+            <div class="form-group"><label for="cl-input-other-doc-name">Other Document Name</label><input type="text" id="cl-input-other-doc-name"></div>
+            <div class="form-group"><label for="cl-input-other-doc-expiry">Other Document Expiry</label><input type="date" id="cl-input-other-doc-expiry"></div>
             <div class="custom-modal-actions">
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
                 <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
