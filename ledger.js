@@ -165,7 +165,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
                             <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
                             <td>${pay.note}</td>
-                            <td style="text-align: center;"><button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
+                            <td style="text-align: center;"><button onclick="editPaymentLog('${doc.refCode}',${pay.index})" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">Edit</button> <button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
                         </tr>
                     `;
                 }
