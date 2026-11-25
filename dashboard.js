@@ -28,10 +28,10 @@
     const days = Math.floor((new Date(today()+'T00:00:00').getTime() - new Date(date+'T00:00:00').getTime()) / 86400000);
     return Number.isFinite(days) ? Math.max(0, days) : null;
   };
-  const docs = () => list(window.state && state.documents).filter(isInvoice);
-  const expenses = () => list(window.state && state.monthlyExpenses);
-  const companies = () => list(window.state && state.clients);
-  const staff = () => list(window.state && state.staff);
+  const docs = () => list(typeof state !== 'undefined' ? state.documents : []).filter(isInvoice);
+  const expenses = () => list(typeof state !== 'undefined' ? state.monthlyExpenses : []);
+  const companies = () => list(typeof state !== 'undefined' ? state.clients : []);
+  const staff = () => list(typeof state !== 'undefined' ? state.staff : []);
   const dateText = value => window.darDates ? window.darDates.format(value) : (value || '-');
   function setText(id,value){const node=byId(id);if(node)node.textContent=String(value);}
   function renderLegacyStats(){
