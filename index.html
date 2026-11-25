@@ -350,8 +350,7 @@
                             <p id="staff-company-context" class="staff-context">All companies</p>
                         </div>
                         <div class="staff-toolbar">
-                            <button type="button" class="btn btn-secondary" onclick="clearStaffCompanyFilter()">All Companies</button>
-                            <button type="button" class="btn btn-primary" onclick="openStaffModal()">+ Add Staff</button>
+                            <button type="button" class="btn btn-primary" id="staff-add-button" disabled onclick="openStaffModalForSelectedCompany()">+ Add Staff</button>
                         </div>
                     </div>
                     <div class="staff-import-panel">
@@ -367,17 +366,20 @@
                     </div>
                     <div class="staff-filter-row">
                         <input id="staff-search" type="search" placeholder="Search staff ID, Person Labour No., name, company, labour card or passport..." oninput="renderStaffTable()" aria-label="Search staff">
-                        <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Filter staff by company"><option value="">All companies</option></select>
+                        <label for="staff-company-filter">Select company *</label>
+                        <select id="staff-company-filter" onchange="setStaffCompanyFilter(this.value)" aria-label="Select company to view staff"><option value="">Select existing company</option></select>
                         <label class="v2-filter-date">From <input type="date" id="staff-date-from" onchange="renderStaffTable()" aria-label="Staff joined from date"></label><label class="v2-filter-date">To <input type="date" id="staff-date-to" onchange="renderStaffTable()" aria-label="Staff joined through date"></label><select id="staff-renewal-filter" onchange="renderStaffTable()" aria-label="Filter renewal status">
                             <option value="">All renewal statuses</option><option value="Due Soon">Due Soon</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Renewed">Renewed</option><option value="Not Required">Not Required</option>
                         </select>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table staff-table">
-                            <thead><tr><th>Staff ID</th><th>Name / Person Labour No.</th><th>Company</th><th>Nationality</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th><th>Renewal Status</th><th>Actions</th></tr></thead>
-                            <tbody id="staff-table-body"><tr><td colspan="9">Loading staff records…</td></tr></tbody>
+                    <div id="staff-list-view">
+                        <div class="table-responsive">
+                            <table class="data-table staff-table">
+                                <thead><tr><th>Staff ID</th><th>Name / Person Labour No.</th><th>Company</th><th>Nationality</th><th>Labour Card No.</th><th>Labour Card Expiry</th><th>Passport No.</th><th>Renewal Status</th><th>Actions</th></tr></thead>
+                            <tbody id="staff-table-body"><tr><td colspan="9">Select a company to view its staff.</td></tr></tbody>
                         </table>
                     </div>
+                    <div id="staff-profile-view" hidden></div>
                 </section>
 
                 <!-- TAB 3: SERVICES & TARIFFS -->
