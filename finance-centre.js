@@ -218,5 +218,5 @@ window.editPaymentLog=async function(refCode,index){
 
 function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();addExpenseControls();addPaymentMethodControl();renderExpenses();render();}
 window.renderFinanceCentre=render;
-document.addEventListener('DOMContentLoaded',init);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
