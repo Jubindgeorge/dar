@@ -55,7 +55,7 @@ window.renderAccountsLedgerMaster = function() {
     const currentSelected = select.value;
     select.innerHTML = '<option value="">-- Choose Invoice Reference --</option>';
 
-    const docs = (state.documents || []).filter(doc => (doc.type || 'Invoice') !== 'Quotation');
+    const docs = (state.documents || []).filter(doc => String(doc.type || 'Invoice').toLowerCase() !== 'quotation');
     docs.forEach(doc => {
         const opt = document.createElement('option');
         opt.value = doc.refCode;
@@ -164,7 +164,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
                         <tr>
                             <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
-                            <td>${pay.note}</td>
+                            <td>${escapeHtml(pay.note || '')}</td>
                             <td style="text-align: center;"><button onclick="editPaymentLog('${doc.refCode}',${pay.index})" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">Edit</button> <button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
                         </tr>
                     `;
@@ -270,7 +270,7 @@ window.printPaymentStatusStatement = function() {
     paymentLogs.forEach((log, idx) => {
         pTbody.innerHTML += `
             <tr>
-                <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${log.note || 'Direct'}</td>
+                <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${escapeHtml(log.note || 'Direct')}</td>
                 <td colspan="2" style="padding: 12px; text-align: right; color: #22c55e; border-bottom: 1px solid #cbd5e1;">AED ${Number(log.amount).toFixed(2)}</td>
             </tr>
         `;
