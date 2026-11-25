@@ -532,14 +532,29 @@ function commitDocumentToMemory() {
             try {
                 if (previousStaffId && previousStaffId !== nextStaffId) {
                     await db.ref('staff/' + previousStaffId).transaction(current => {
-                        if (!current || current.linkedInvoiceRef !== refCode) return;
-                        return { ...current, linkedInvoiceRef: '' };
+                        if (!current) return current;
+                        const refs = (Array.isArray(current.linkedDocumentRefs) ? current.linkedDocumentRefs : []).filter(ref => ref !== refCode);
+                        return { ...current, linkedDocumentRefs: refs, linkedInvoiceRef: current.linkedInvoiceRef === refCode ? (refs[0] || '') : (current.linkedInvoiceRef || '') };
                     });
                 }
-                if (nextStaffId) await db.ref('staff/' + nextStaffId).update({ linkedInvoiceRef: refCode });
+                if (nextStaffId) {
+                    await db.ref('staff/' + nextStaffId).transaction(current => {
+                        if (!current) return current;
+                        const refs = Array.isArray(current.linkedDocumentRefs) ? current.linkedDocumentRefs.slice() : [];
+                        if (!refs.includes(refCode)) refs.push(refCode);
+                        return { ...current, linkedDocumentRefs: refs, linkedInvoiceRef: refCode };
+                    });
+                }
                 (state.staff || []).forEach(item => {
-                    if (item.id === previousStaffId && previousStaffId !== nextStaffId && item.linkedInvoiceRef === refCode) item.linkedInvoiceRef = '';
-                    if (item.id === nextStaffId) item.linkedInvoiceRef = refCode;
+                    if (item.id === previousStaffId && previousStaffId !== nextStaffId) {
+                        item.linkedDocumentRefs = (Array.isArray(item.linkedDocumentRefs) ? item.linkedDocumentRefs : []).filter(ref => ref !== refCode);
+                        if (item.linkedInvoiceRef === refCode) item.linkedInvoiceRef = item.linkedDocumentRefs[0] || '';
+                    }
+                    if (item.id === nextStaffId) {
+                        item.linkedDocumentRefs = Array.isArray(item.linkedDocumentRefs) ? item.linkedDocumentRefs : [];
+                        if (!item.linkedDocumentRefs.includes(refCode)) item.linkedDocumentRefs.push(refCode);
+                        item.linkedInvoiceRef = refCode;
+                    }
                 });
             } catch (linkError) { console.error('Invoice saved, but staff back-link could not be synchronized:', linkError); }
             if (committedDocuments) {
