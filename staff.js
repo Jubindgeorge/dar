@@ -248,6 +248,8 @@
         byId('sf-passport-expiry').value = record.passportExpiry || '';
         byId('sf-emirates-id').value = record.emiratesIdNumber || '';
         byId('sf-emirates-id-expiry').value = record.emiratesIdExpiry || '';
+        byId('sf-emirates-id').value = record.emiratesIdNumber || '';
+        byId('sf-emirates-id-expiry').value = record.emiratesIdExpiry || '';
         byId('sf-labour-card-number').value = record.labourCardNumber || '';
         byId('sf-labour-card-expiry').value = record.labourCardExpiry || '';
         byId('sf-visa-number').value = record.visaNumber || '';
@@ -289,6 +291,8 @@
             labourCardExpiry: clean(byId('sf-labour-card-expiry').value),
             passportNumber: clean(byId('sf-passport').value),
             passportExpiry: clean(byId('sf-passport-expiry').value),
+            emiratesIdNumber: clean(byId('sf-emirates-id').value),
+            emiratesIdExpiry: clean(byId('sf-emirates-id-expiry').value),
             emiratesIdNumber: clean(byId('sf-emirates-id').value),
             emiratesIdExpiry: clean(byId('sf-emirates-id-expiry').value),
             visaNumber: clean(byId('sf-visa-number').value),
