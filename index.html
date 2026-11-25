@@ -769,10 +769,10 @@
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
                             <div>
-                                <label>Client Name</label>
+                                <label>Direct Client Name</label>
                                 <div class="client-select-line">
-                                    <select id="st-company-client-selector" onchange="selectCompanyClient(this.value)" aria-label="Select a client belonging to the selected company"><option value="">-- Select existing company client --</option></select>
-                                    <button type="button" class="btn btn-secondary" onclick="openCompanyClientModal()" style="white-space:nowrap;">+ New Client</button>
+                                    <select id="st-company-client-selector" onchange="selectCompanyClient(this.value)" aria-label="Select an independent direct client"><option value="">-- Select Direct Client --</option></select>
+                                    <button type="button" class="btn btn-secondary" onclick="openCompanyClientModal()" style="white-space:nowrap;">+ Add Direct Client</button>
                                 </div>
                                 <input type="text" id="st-client-name" placeholder="Primary Account Holder" autocomplete="off">
                                 <label for="st-staff-selector" style="margin-top:8px;">Link Imported Company Staff</label>
@@ -783,7 +783,7 @@
                                     <button type="button" class="btn btn-secondary" onclick="openStaffModalFromStudio()" style="white-space:nowrap;">+ Add New Staff</button>
                                 </div>
                                 <small class="dar-hint">Only staff belonging to the selected registered company are listed. Newly added staff will be selected automatically.</small>
-                                <small class="dar-hint">Choose a client linked to the selected company, or add a new one.</small>
+                                <small class="dar-hint">Direct clients are independent records and are not linked to companies.</small>
                             </div>
                             <div>
                                 <label>Company Name</label>
