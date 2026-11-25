@@ -740,3 +740,8 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 .dash-reports-section .v2-report-toolbar select{max-width:180px}
 @media(max-width:900px){.dash-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:640px){.dash-two-column{grid-template-columns:1fr;gap:0}.dash-section{padding:13px}.dash-exec-heading h2{font-size:1.3rem}.dash-search-result{align-items:flex-start;flex-direction:column}.dash-search-result small{text-align:left}.dash-profile-shortcuts{grid-template-columns:1fr 1fr}.dash-alert-row,.dash-recent-row{align-items:flex-start}.dash-alert-detail{white-space:normal}}
+
+/* Dashboard ageing rows are real navigation controls. */
+.dash-age-row{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border:0;border-bottom:1px solid var(--border-color);background:transparent;color:var(--text-main);text-align:left;cursor:pointer;font-size:.82rem}
+.dash-age-row:hover{color:var(--primary);background:rgba(203,163,88,.06)}
+.dash-age-row:last-child{border-bottom:0}
