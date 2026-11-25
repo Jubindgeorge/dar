@@ -97,18 +97,18 @@ function renderCustomers(){
 }
 window.openDarCustomerInvoices=function(encoded){show('invoices');const input=$('ledger-search');if(input){input.value=decodeURIComponent(encoded);input.dispatchEvent(new Event('input',{bubbles:true}));}};
 window.printDarCustomerStatement=function(encoded){
- const name=decodeURIComponent(encoded||''),rows=allDocs().filter(d=>(d.clientName||d.companyName||'Unassigned customer')===name).sort((a,b)=>invDate(a).localeCompare(invDate(b)));
+ const name=decodeURIComponent(encoded||''),r=period(),rows=allDocs().filter(d=>(d.clientName||d.companyName||'Unassigned customer')===name&&r.has(invDate(d))).sort((a,b)=>invDate(a).localeCompare(invDate(b)));
  const body=rows.map(d=>'<tr><td>'+esc(invDate(d))+'</td><td>'+esc(d.refCode)+'</td><td>'+fmt(total(d))+'</td><td>'+fmt(paid(d))+'</td><td>'+fmt(Math.max(0,total(d)-paid(d)))+'</td></tr>').join('');
  const sum=rows.reduce((s,d)=>s+total(d),0),rec=rows.reduce((s,d)=>s+paid(d),0),w=window.open('','_blank');if(!w){alert('Allow pop-ups to print the customer statement.');return;}
- w.document.write('<!doctype html><html><head><title>Customer Statement</title><style>body{font:14px Arial;padding:28px;color:#172033}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}</style></head><body><h2>DAR AL SHAMS — Customer Statement</h2><h3>'+esc(name)+'</h3><p>Generated: '+today()+'</p><table><thead><tr><th>Date</th><th>Invoice</th><th>Invoiced</th><th>Collected</th><th>Outstanding</th></tr></thead><tbody>'+body+'</tbody></table><p><b>Total invoiced:</b> '+fmt(sum)+'<br><b>Collected:</b> '+fmt(rec)+'<br><b>Outstanding:</b> '+fmt(Math.max(0,sum-rec))+'</p><script>onload=()=>print()<\/script></body></html>');w.document.close();
+ w.document.write('<!doctype html><html><head><title>Customer Statement</title><style>body{font:14px Arial;padding:28px;color:#172033}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}</style></head><body><h2>DAR AL SHAMS — Customer Statement</h2><h3>'+esc(name)+'</h3><p>Statement period: '+(r.a||'All dates')+' to '+(r.b||'Present')+' · Generated: '+today()+'</p><table><thead><tr><th>Date</th><th>Invoice</th><th>Invoiced</th><th>Collected</th><th>Outstanding</th></tr></thead><tbody>'+body+'</tbody></table><p><b>Total invoiced:</b> '+fmt(sum)+'<br><b>Collected:</b> '+fmt(rec)+'<br><b>Outstanding:</b> '+fmt(Math.max(0,sum-rec))+'</p><script>onload=()=>print()<\/script></body></html>');w.document.close();
 };
 function renderReports(){
  const d=snapshot();$('finance-report').innerHTML='<div class="finance-report-grid">'+[['Invoice revenue',d.revenue],['Government / direct fees',d.govt],['Invoice-linked direct expenses',d.direct],['Operating expenses',d.operating],['Net profit',d.profit],['Cash collected (separate)',d.collections],['Current outstanding',d.outstanding],['Invoices',d.pd.length]].map(x=>'<div><span>'+x[0]+'</span><b>'+(typeof x[1]==='number'&&x[0]==='Invoices'?x[1]:fmt(x[1]))+'</b></div>').join('')+'</div>';
  const rows=customerData().filter(x=>x.balance>.005);$('finance-report-customers').innerHTML=rows.length?'<div class="table-responsive"><table class="data-table"><thead><tr><th>Customer</th><th>Invoices</th><th>Outstanding</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+x.count+'</td><td>'+fmt(x.balance)+'</td></tr>').join('')+'</tbody></table></div>':'<p class="finance-empty">No outstanding balances.</p>';
 }
 function audit(){
- const out=[];allDocs().forEach(d=>{const ref=d.refCode||'(missing invoice reference)',t=total(d),p=paid(d);if(!d.refCode)out.push(['High',ref,'Invoice reference is missing.']);if(!invDate(d))out.push(['Review',ref,'Invoice date is missing; period reporting may omit it.']);if(t<0)out.push(['High',ref,'Invoice total is negative.']);if(p>t+.005)out.push(['High',ref,'Payments exceed invoice total.']);logs(d).forEach((x,i)=>{if(!(num(x.amount)>0))out.push(['Review',ref,'Payment log '+(i+1)+' has an invalid amount.']);});});
- allExpenses().forEach(e=>{const ref=e.id||e.title||'Expense';if(!expDate(e))out.push(['Review',ref,'Expense date is missing.']);if(!(num(e.amount)>0))out.push(['High',ref,'Expense amount is invalid.']);const linked=e.linkedInvoiceRef||e.invoiceRef;if(linked&&!allDocs().some(d=>d.refCode===linked))out.push(['High',ref,'Linked invoice does not exist.']);});
+ const out=[];allDocs().forEach(d=>{const ref=d.refCode||'(missing invoice reference)',t=total(d),p=paid(d);if(!d.refCode)out.push(['High',ref,'Invoice reference is missing.']);if(!invDate(d))out.push(['Review',ref,'Invoice date is missing; period reporting may omit it.']);if(!d.clientName&&!d.companyName)out.push(['Review',ref,'Customer / company link is missing.']);if(t<0)out.push(['High',ref,'Invoice total is negative.']);if(p>t+.005)out.push(['High',ref,'Payments exceed invoice total.']);logs(d).forEach((x,i)=>{if(!(num(x.amount)>0))out.push(['Review',ref,'Payment log '+(i+1)+' has an invalid amount.']);});});
+ allExpenses().forEach(e=>{const ref=e.id||e.title||'Expense';if(!expDate(e))out.push(['Review',ref,'Expense date is missing.']);if(!(num(e.amount)>0))out.push(['High',ref,'Expense amount is invalid.']);if(!e.category)out.push(['Review',ref,'Expense category is missing.']);const linked=e.linkedInvoiceRef||e.invoiceRef;if(linked&&!allDocs().some(d=>d.refCode===linked))out.push(['High',ref,'Linked invoice does not exist.']);});
  return out;
 }
 function renderAudit(){const out=audit();$('finance-audit-count').innerHTML='<p>'+allDocs().length+' invoices and '+allExpenses().length+' expenses checked · '+out.length+' findings</p>';$('finance-audit').innerHTML=out.length?out.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+esc(x[1])+'</td><td>'+esc(x[2])+'</td></tr>').join(''):'<tr><td colspan="3" class="finance-empty">No basic reconciliation issues detected. This is not a formal audit.</td></tr>';}
@@ -120,8 +120,8 @@ function exportCollections(){
  if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Collections');XLSX.writeFile(wb,'DAR-Collections.xlsx');}else downloadCSV('DAR-Collections.csv',rows);
 }
 function exportExpenses(){
- const r=period(),rows=[['Expense Date','Title','Category','Type','Invoice Ref','Amount AED']];
- allExpenses().filter(e=>r.has(expDate(e))).forEach(e=>rows.push([expDate(e),e.title||'',e.category||'Uncategorised',(e.linkedInvoiceRef||e.invoiceRef)?'Direct':'Operating',e.linkedInvoiceRef||e.invoiceRef||'',num(e.amount)]));
+ const r=period(),rows=[['Expense Date','Title','Category','Supplier / Payee','Type','Invoice Ref','Receipt Reference','Amount AED']];
+ allExpenses().filter(e=>r.has(expDate(e))).forEach(e=>rows.push([expDate(e),e.title||'',e.category||'Uncategorised',e.payee||'',(e.linkedInvoiceRef||e.invoiceRef)?'Direct':'Operating',e.linkedInvoiceRef||e.invoiceRef||'',e.reference||e.documentReference||'',num(e.amount)]));
  if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Expenses');XLSX.writeFile(wb,'DAR-Expenses.xlsx');}else downloadCSV('DAR-Expenses.csv',rows);
 }
 function exportAgeing(){
@@ -169,7 +169,7 @@ function addExpenseControls(){
  const modal=$('monthly-expense-modal');if(!modal||$('finance-expense-category'))return;
  const form=modal.querySelector('.custom-modal-content'),actions=form?.querySelector('.custom-modal-actions');if(!form||!actions)return;
  const box=document.createElement('div');
- box.innerHTML='<div class="form-group"><label for="finance-expense-category">Expense category</label><select id="finance-expense-category"><option>Office & Administration</option><option>Rent</option><option>Salaries</option><option>Utilities</option><option>Transport</option><option>Marketing</option><option>Bank Charges</option><option>Other</option></select></div><div class="form-group"><label for="finance-expense-invoice">Link to invoice (optional direct cost)</label><select id="finance-expense-invoice"><option value="">Operating expense — not linked</option></select></div><input type="hidden" id="finance-expense-edit-id">';
+ box.innerHTML='<div class="form-group"><label for="finance-expense-category">Expense category</label><select id="finance-expense-category"><option>Office & Administration</option><option>Rent</option><option>Salaries</option><option>Utilities</option><option>Transport</option><option>Marketing</option><option>Bank Charges</option><option>Other</option></select></div><div class="form-group"><label for="finance-expense-invoice">Link to invoice (optional direct cost)</label><select id="finance-expense-invoice"><option value="">Operating expense — not linked</option></select></div><div class="form-group"><label for="finance-expense-payee">Supplier / Payee (optional)</label><input id="finance-expense-payee" type="text" placeholder="Supplier or recipient"></div><div class="form-group"><label for="finance-expense-reference">Receipt / Document Reference (optional)</label><input id="finance-expense-reference" type="text" placeholder="Receipt number or secure file reference"></div><input type="hidden" id="finance-expense-edit-id">';
  form.insertBefore(box,actions);
  const monthInput=$('exp-input-month'),dateInput=$('exp-input-date');if(monthInput)monthInput.disabled=true;if(dateInput)dateInput.addEventListener('change',()=>{if(monthInput)monthInput.value=dateInput.value.slice(0,7);});
 }
@@ -182,32 +182,32 @@ function renderExpenses(){
  const body=$('monthly-expenses-tbody');if(!body)return;
  const from=$('expense-date-from')?.value||'',to=$('expense-date-to')?.value||'',q=($('expense-search')?.value||'').trim().toLowerCase();
  const rows=allExpenses().filter(e=>{const dt=expDate(e);return(!from||(dt&&dt>=from))&&(!to||(dt&&dt<=to))&&[e.title,e.month,e.date,e.amount,e.category,e.linkedInvoiceRef,e.invoiceRef].some(v=>String(v??'').toLowerCase().includes(q));}).slice().sort((a,b)=>expDate(b).localeCompare(expDate(a)));
- body.innerHTML=rows.length?rows.map(e=>'<tr><td>'+esc(expDate(e)||'—')+'</td><td><strong>'+esc(e.title||'—')+'</strong><small class="finance-expense-meta">'+esc(e.category||'Uncategorised')+' · '+((e.linkedInvoiceRef||e.invoiceRef)?'Direct cost: '+esc(e.linkedInvoiceRef||e.invoiceRef):'Operating expense')+'</small></td><td>'+fmt(e.amount)+'</td><td><button type="button" class="btn btn-secondary finance-mini" onclick="editDarExpense(\''+esc(e.id)+'\')">Edit</button><button type="button" class="btn btn-danger finance-mini" onclick="deleteMonthlyExpense('+allExpenses().indexOf(e)+')">Delete</button></td></tr>').join(''):'<tr><td colspan="4" class="finance-empty">No expenses match the current filters.</td></tr>';
+ body.innerHTML=rows.length?rows.map(e=>'<tr><td>'+esc(expDate(e)||'—')+'</td><td><strong>'+esc(e.title||'—')+'</strong><small class="finance-expense-meta">'+esc(e.category||'Uncategorised')+(e.payee?' · '+esc(e.payee):'')+' · '+((e.linkedInvoiceRef||e.invoiceRef)?'Direct cost: '+esc(e.linkedInvoiceRef||e.invoiceRef):'Operating expense')+'</small></td><td>'+fmt(e.amount)+'</td><td><button type="button" class="btn btn-secondary finance-mini" onclick="editDarExpense(\''+esc(e.id)+'\')">Edit</button><button type="button" class="btn btn-danger finance-mini" onclick="deleteMonthlyExpense('+allExpenses().indexOf(e)+')">Delete</button></td></tr>').join(''):'<tr><td colspan="4" class="finance-empty">No expenses match the current filters.</td></tr>';
 }
 window.editDarExpense=function(id){
  const e=allExpenses().find(x=>x.id===id);if(!e)return;
  addExpenseControls();
  $('exp-input-month').value=e.month||expDate(e).slice(0,7);$('exp-input-date').value=expDate(e);
  $('exp-input-title').value=e.title||'';$('exp-input-amount').value=num(e.amount);
- $('finance-expense-category').value=e.category||'Other';refreshExpenseInvoiceOptions(e.linkedInvoiceRef||e.invoiceRef||'');
+ $('finance-expense-category').value=e.category||'Other';$('finance-expense-payee').value=e.payee||'';$('finance-expense-reference').value=e.reference||e.documentReference||'';refreshExpenseInvoiceOptions(e.linkedInvoiceRef||e.invoiceRef||'');
  $('finance-expense-edit-id').value=id;const h=$('monthly-expense-modal').querySelector('h3');if(h)h.textContent='Edit Expense';
  $('monthly-expense-modal').style.display='flex';
 };
 window.openMonthlyExpenseModal=function(){
  addExpenseControls();const dt=today();$('exp-input-amount').value='';$('exp-input-title').value='';
  if($('exp-input-date'))$('exp-input-date').value=dt;if($('exp-input-month'))$('exp-input-month').value=dt.slice(0,7);
- $('finance-expense-category').value='Office & Administration';$('finance-expense-edit-id').value='';refreshExpenseInvoiceOptions('');
+ $('finance-expense-category').value='Office & Administration';$('finance-expense-payee').value='';$('finance-expense-reference').value='';$('finance-expense-edit-id').value='';refreshExpenseInvoiceOptions('');
  const h=$('monthly-expense-modal').querySelector('h3');if(h)h.textContent='Add Operating Expense';$('monthly-expense-modal').style.display='flex';
 };
 window.saveMonthlyExpenseData=async function(){
  addExpenseControls();
- const dt=$('exp-input-date')?.value||today(),month=dt.slice(0,7),title=$('exp-input-title')?.value.trim()||'',value=Number($('exp-input-amount')?.value),id=$('finance-expense-edit-id')?.value||'',category=$('finance-expense-category')?.value||'Other',linked=$('finance-expense-invoice')?.value||'';
+ const dt=$('exp-input-date')?.value||today(),month=dt.slice(0,7),title=$('exp-input-title')?.value.trim()||'',value=Number($('exp-input-amount')?.value),id=$('finance-expense-edit-id')?.value||'',category=$('finance-expense-category')?.value||'Other',linked=$('finance-expense-invoice')?.value||'',payee=$('finance-expense-payee')?.value.trim()||'',reference=$('finance-expense-reference')?.value.trim()||'';
  if(!title){alert('Please enter an expense description.');return;}if(!dt||!month){alert('Please select the expense date and month.');return;}
  if(!Number.isFinite(value)||value<=0){alert('Please enter an expense amount greater than zero.');return;}
  if(linked&&!allDocs().some(d=>d.refCode===linked)){alert('The selected invoice is unavailable. Refresh and retry.');return;}
  if(!db){alert('Firebase is not connected. The expense was not saved.');return;}
  const key=id||db.ref('monthlyExpenses').push().key,old=allExpenses().find(e=>e.id===key)||{};
- const patch={month,date:dt,transactionDate:dt,title,amount:value,category,linkedInvoiceRef:linked||null,createdDate:old.createdDate||dt,updatedAt:new Date().toISOString(),updatedBy:firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown'};
+ const patch={month,date:dt,transactionDate:dt,title,amount:value,category,linkedInvoiceRef:linked||null,payee,reference,createdDate:old.createdDate||dt,updatedAt:new Date().toISOString(),updatedBy:firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown'};
  try{await saveStateToFirebase('monthlyExpenses',key,patch);state.monthlyExpenses=allExpenses().filter(e=>e.id!==key).concat({...old,...patch,id:key});if(typeof closeMonthlyExpenseModal==='function')closeMonthlyExpenseModal();renderExpenses();render();}
  catch(error){alert('Expense was not saved. Check the connection and permissions, then retry.');}
 };
