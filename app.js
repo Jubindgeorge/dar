@@ -1482,9 +1482,35 @@ window.renderQuotationTable = function() {
                 <button type="button" class="btn btn-secondary" onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' title="Preview"><i class="fa-solid fa-eye"></i></button>
                 <button type="button" class="btn btn-secondary" onclick='openStudio("Quotation",${darSafeDocumentKey(d.refCode)})' title="Edit"><i class="fa-solid fa-pen"></i></button>
                 <button type="button" class="btn btn-primary" ${balance <= 0.005 ? 'disabled title="Quotation fully invoiced"' : 'onclick=\'openQuotationConversion(' + darSafeDocumentKey(d.refCode) + ')\' title="Convert to invoice"'}>${balance <= 0.005 ? 'Fully Invoiced' : 'Convert'}</button>
+                <button type="button" class="btn btn-danger" onclick='deleteQuotation(${darSafeDocumentKey(d.refCode)})' title="Move quotation to recovery"><i class="fa-solid fa-trash"></i> Delete</button>
             </td>
         </tr>`;
     }).join('');
+};
+
+window.deleteQuotation = async function(refCode) {
+    const quote = (state.documents || []).find(doc => doc.refCode === refCode && doc.type === 'Quotation');
+    if (!quote) { showCustomModal('Quotation not found', 'This quotation is no longer available. Refresh the list and try again.'); return; }
+    const invoicedAmount = Math.max(0, Number(quote.invoicedAmount) || 0);
+    const linkedInvoices = (state.documents || []).filter(doc => doc.type !== 'Quotation' && doc.sourceQuotationRef === refCode);
+    if (invoicedAmount > 0.005 || linkedInvoices.length) {
+        showCustomModal('Quotation cannot be deleted', 'This quotation has invoice(s) linked to it. Keep it to preserve invoice conversion and billing history.');
+        return;
+    }
+    if (typeof window.safeDeleteDarRecord !== 'function') {
+        showCustomModal('Delete unavailable', 'The recovery and audit service is not available. No record was deleted.');
+        return;
+    }
+    if (!window.confirm('Move quotation ' + refCode + ' to Data Protection recovery? This will not delete invoices or payment records.')) return;
+    try {
+        await window.safeDeleteDarRecord('documents', refCode);
+        state.documents = (state.documents || []).filter(doc => doc.refCode !== refCode);
+        if (typeof window.renderQuotationTable === 'function') window.renderQuotationTable();
+        if (typeof renderDashboardStats === 'function') renderDashboardStats();
+    } catch (error) {
+        console.error('Quotation deletion failed:', error);
+        showCustomModal('Delete failed', 'The quotation was not removed from the list because the recovery operation failed.');
+    }
 };
 
 window.openQuotationConversion = function(refCode) {
