@@ -33,6 +33,10 @@ const assert = require('node:assert/strict');
         invoiceRowText:document.getElementById('acc-full-ledger-tbody').innerText,
         expenseControls:!!document.getElementById('finance-expense-category')&&!!document.getElementById('finance-expense-payee')&&!!document.getElementById('finance-expense-reference'),
         paymentMethodControl:!!document.getElementById('pay-input-method'),
+        staffControlsInsidePanel:!!document.querySelector('#finance-staff #ledger-staff-company')&&!!document.querySelector('#finance-staff #ledger-staff-search'),
+        expenseActionsInsidePanel:!!document.querySelector('#finance-expenses button[onclick="openMonthlyExpenseModal()"]')&&!!document.querySelector('#finance-expenses #expense-search')&&!!document.querySelector('#finance-expenses #monthly-expenses-tbody'),
+        invoiceMasterInsidePanel:!!document.querySelector('#finance-invoices #acc-full-ledger-tbody')&&!!document.querySelector('#finance-invoices h3'),
+        paymentLogsInsidePanel:!!document.querySelector('#finance-payments #acc-payment-logs-tbody')&&!!document.querySelector('#finance-payments h3'),
         rangePresetCount:document.querySelectorAll('#finance-centre [data-finance-range]').length
       };
       showFinanceSection('customers');
@@ -53,6 +57,10 @@ const assert = require('node:assert/strict');
     assert.equal(financeCentreSmoke.openInvoiceAction,1,'Invoice register provides an action to open the existing invoice editor');
     assert.equal(financeCentreSmoke.expenseControls,true,'Expense category, payee and receipt-reference fields are available');
     assert.equal(financeCentreSmoke.paymentMethodControl,true,'Payment method is available when recording receipts');
+    assert.equal(financeCentreSmoke.staffControlsInsidePanel,true,'Staff company filter and search remain available inside the Staff Register section');
+    assert.equal(financeCentreSmoke.expenseActionsInsidePanel,true,'Add Expense and expense filters remain available inside the Expenses section');
+    assert.equal(financeCentreSmoke.invoiceMasterInsidePanel,true,'Invoice ledger heading and table remain together inside the Invoices section');
+    assert.equal(financeCentreSmoke.paymentLogsInsidePanel,true,'Payment log heading and table remain together inside the Payments section');
     assert.equal(financeCentreSmoke.rangePresetCount,4,'Month, quarter, year and all-time reporting presets are available');
     console.log('PASS: Finance Centre invoice-basis calculations, cash receipt separation and quotation exclusion');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
