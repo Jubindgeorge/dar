@@ -7,7 +7,7 @@ function stopEvents(){if(eventsRef)eventsRef.off('value',onEvents);eventsRef=nul
 if(typeof firebase!=='undefined'&&firebase.auth)firebase.auth().onAuthStateChanged(user=>{const uid=user?.uid||'';if(uid!==activeUid){stopEvents();activeUid=uid;if(uid)window.darRenderExpiryNotifications?.();}});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const days=(a,b)=>{if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(a||'')||!/^\\d{4}-\\d{2}-\\d{2}$/.test(b||''))return null;const x=new Date(a+'T00:00:00Z'),y=new Date(b+'T00:00:00Z');return Number.isNaN(+x)||Number.isNaN(+y)?null:Math.round((x-y)/86400000);};
+const days=(a,b)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(a||'')||!/^\d{4}-\d{2}-\d{2}$/.test(b||''))return null;const x=new Date(a+'T00:00:00Z'),y=new Date(b+'T00:00:00Z');return Number.isNaN(+x)||Number.isNaN(+y)?null:Math.round((x-y)/86400000);};
 function collect(){
  const companies=Array.isArray(state.clients)?state.clients:[],staff=Array.isArray(state.staff)?state.staff:[],clients=Array.isArray(state.companyClients)?state.companyClients:[],byId=new Map(companies.map(c=>[String(c.id),c])),out=[];
  for(const c of companies)for(const [field,label] of [['tradeLicenseExpiry','Trade Licence'],['establishmentCardExpiry','Establishment Card'],['immigrationLabourCardExpiry','Immigration / Labour Card'],['tenancyContractExpiry','Tenancy Contract'],['otherDocumentExpiry',c.otherDocumentName||'Other Company Document']])if(c[field])out.push({kind:'Company',id:c.id,name:c.companyName,company:c.companyName,field,label,expiry:c[field],group:c.whatsappGroupLink||''});
