@@ -2,6 +2,17 @@ name = "dar"
 main = "worker.js"
 compatibility_date = "2026-11-26"
 
+[build]
+command = """mkdir -p dist &&
+cp index.html ledger.html ./*.css dist/ &&
+cp ./*.js dist/ &&
+rm -f dist/translation-route.example.js &&
+for file in *.png *.PNG *.jpeg *.jpg *.webp; do
+  if [ -f "$file" ]; then cp "$file" dist/; fi
+done &&
+test -s dist/config.js &&
+test -s dist/finance-centre.css"""
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
