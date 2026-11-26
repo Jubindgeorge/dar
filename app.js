@@ -1190,9 +1190,9 @@ window.saveAsPDF = async function() {
         const pdf = new window.jspdf.jsPDF({orientation: 'portrait', unit: 'mm', format: 'a4'});
         const margin = 5, pageW = 210 - margin * 2, pageH = 297 - margin * 2;
         const drawFixedGoldFrame = () => {
-            pdf.setDrawColor(184, 134, 11);
+            pdf.setDrawColor(197, 155, 39);
             pdf.setLineWidth(0.25);
-            pdf.rect(1, 1, 208, 295);
+            pdf.rect(0.25, 0.25, 209.5, 296.5);
         };
         const rowCount = element.querySelectorAll('#p-table-body > tr:not(.dar-summary-host-row)').length;
         if (rowCount <= 16) {
