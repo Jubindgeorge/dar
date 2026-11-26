@@ -1,10 +1,9 @@
-name: Deploy DAR ERP to Cloudflare Worker
+name: Deploy DAR ERP preview to Cloudflare Worker
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
       - feature/executive-dashboard-control-centre
       - feature/accounts-finance-management-centre
 
@@ -12,12 +11,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: cloudflare-worker-${{ github.ref }}
+  group: cloudflare-worker-preview-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Deploy DAR ERP static assets to Worker
+    name: Deploy DAR ERP preview static assets to Worker
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -39,7 +38,7 @@ jobs:
           test -s dist/config.js
           test -s dist/finance-centre.css
 
-      - name: Deploy preview to Cloudflare Worker
+      - name: Deploy preview only to Cloudflare Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -51,10 +50,4 @@ jobs:
             exit 1
           fi
 
-          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            WORKER_NAME="dar"
-          else
-            WORKER_NAME="dar-preview"
-          fi
-
-          npx --yes wrangler@4 deploy --config wrangler.toml --name "${WORKER_NAME}"
+          npx --yes wrangler@4 deploy --config wrangler.toml --name "dar-preview"
