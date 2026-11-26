@@ -55,7 +55,7 @@ window.renderAccountsLedgerMaster = function() {
     const currentSelected = select.value;
     select.innerHTML = '<option value="">-- Choose Invoice Reference --</option>';
 
-    const docs = (state.documents || []).filter(doc => String(doc.type || 'Invoice').toLowerCase() !== 'quotation');
+    const docs = state.documents || [];
     docs.forEach(doc => {
         const opt = document.createElement('option');
         opt.value = doc.refCode;
@@ -164,8 +164,8 @@ window.renderAccountsLedgerDetail = function(refCode) {
                         <tr>
                             <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
-                            <td>${escapeHtml([pay.method, pay.note].filter(Boolean).join(' · ') || '')}</td>
-                            <td style="text-align: center;"><button onclick="editPaymentLog('${doc.refCode}',${pay.index})" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">Edit</button> <button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
+                            <td>${pay.note}</td>
+                            <td style="text-align: center;"><button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
                         </tr>
                     `;
                 }
@@ -270,7 +270,7 @@ window.printPaymentStatusStatement = function() {
     paymentLogs.forEach((log, idx) => {
         pTbody.innerHTML += `
             <tr>
-                <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${escapeHtml([log.method, log.note].filter(Boolean).join(' · ') || 'Direct')}</td>
+                <td colspan="2" style="padding: 12px; border-bottom: 1px solid #cbd5e1;">Payment Log #${idx + 1} (${log.date}) - ${log.note || 'Direct'}</td>
                 <td colspan="2" style="padding: 12px; text-align: right; color: #22c55e; border-bottom: 1px solid #cbd5e1;">AED ${Number(log.amount).toFixed(2)}</td>
             </tr>
         `;
@@ -324,10 +324,8 @@ window.savePaymentLogData = async function() {
     const date = document.getElementById('pay-input-date').value;
     const amount = Number(document.getElementById('pay-input-amount').value);
     const note = document.getElementById('pay-input-note').value;
-    const method = document.getElementById('pay-input-method')?.value || '';
-    if (!date) { alert('Please select the payment date.'); return; }
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter a valid payment amount.'); return; }
-    const payment = {date, transactionDate: date, amount, note, method, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
+    const payment = {date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
     let validationError = '';
     try {
         const result = await transactDarDocument(doc.refCode, current => {
@@ -365,7 +363,6 @@ window.savePaymentLogData = async function() {
 };
 
 window.deletePaymentLog = async function(refCode, index) {
-    if (!confirm('Delete this payment entry? The invoice balance will be recalculated.')) return;
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
     const selectedLogs = window.getDarDocumentPaymentLogs(doc);
@@ -375,8 +372,8 @@ window.deletePaymentLog = async function(refCode, index) {
         const result = await transactDarDocument(refCode, current => {
             if (!current) return;
             const logs = window.getDarDocumentPaymentLogs(current);
-            const currentIndex = index;
-            if (currentIndex < 0 || currentIndex >= logs.length || JSON.stringify(logs[currentIndex]) !== targetFingerprint) return;
+            const currentIndex = logs.findIndex(entry => JSON.stringify(entry) === targetFingerprint);
+            if (currentIndex < 0) return;
             logs.splice(currentIndex, 1);
             current.paymentLogs = logs;
             current.updatedAt = new Date().toISOString();

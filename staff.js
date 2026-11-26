@@ -23,30 +23,13 @@
         const company = (state.clients || []).find(c => norm(c.companyName) === norm(name));
         return company?.id || '';
     }
-    function companyClientsFor(name) {
-        const companyKey = norm(name);
-        if (!companyKey) return [];
-        const saved = (state.companyClients || [])
-            .filter(client => norm(client.companyName) === companyKey)
-            .map(client => ({...client, source: 'saved'}));
-        const seen = new Set(saved.map(client => norm(client.name)));
-        const fromDocuments = (state.documents || [])
-            .filter(doc => norm(doc.companyName) === companyKey && clean(doc.clientName))
-            .map(doc => ({
-                id: 'document-client:' + norm(doc.clientName),
-                name: clean(doc.clientName),
-                companyName: clean(doc.companyName),
-                phone: clean(doc.contactPerson),
-                email: clean(doc.email),
-                source: 'document'
-            }))
-            .filter(client => {
-                const key = norm(client.name);
-                if (!key || seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        return [...saved, ...fromDocuments].sort((a, b) => clean(a.name).localeCompare(clean(b.name)));
+    // Direct clients are independent records. Legacy companyId/companyName values
+    // are ignored for selection; they remain untouched until a separately approved migration.
+    function companyClientsFor(_companyName) {
+        return (state.companyClients || [])
+            .filter(client => clean(client.name))
+            .map(client => ({...client, source: 'saved'}))
+            .sort((a, b) => clean(a.name).localeCompare(clean(b.name)));
     }
     function nextStaffCode(companyId, reserved) {
         const company = companyById(companyId);
@@ -68,7 +51,7 @@
     }
     function dueStatus(record) {
         const stored = clean(record.renewalStatus);
-        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry].filter(Boolean).map(value => {
+        const dates = [record.labourCardExpiry, record.visaExpiry, record.passportExpiry, record.emiratesIdExpiry, record.otherStaffDocumentExpiry].filter(Boolean).map(value => {
             const date = new Date(value + 'T00:00:00');
             return Number.isNaN(date.getTime()) ? null : Math.ceil((date.getTime() - new Date().setHours(0,0,0,0)) / 86400000);
         }).filter(value => value !== null);
@@ -206,11 +189,22 @@
             return '<tr><td>'+ref+'</td><td>'+html(date)+'</td><td>'+html(doc.packageName || doc.serviceName || doc.title || '-')+'</td><td>AED '+amount.toFixed(2)+'</td><td>'+kind+'</td><td><button type="button" class="btn btn-secondary" onclick="previewInvoiceDocument(\''+ref+'\')">View / Print</button> <button type="button" class="btn btn-secondary" onclick="openStudio(\''+kind+'\',\''+ref+'\')">Edit</button></td></tr>';
         }).join('') : '<tr><td colspan="6" class="staff-empty">No linked documents yet.</td></tr>';
         root.innerHTML = '<div class="staff-profile-heading"><div><button type="button" class="btn btn-secondary" onclick="closeStaffProfile()">← Back to Staff List</button><h2>'+html(staff.fullName || 'Staff Profile')+'</h2><p class="dar-hint">'+html(staff.staffCode || staff.staffId || '')+' · '+html(staff.companyName || companyNameById(staff.companyId))+'</p></div><button type="button" class="btn btn-primary" onclick="openStaffModal(\''+html(staff.id)+'\')">Edit Staff Profile</button></div>' +
-        '<div class="staff-profile-card"><h3>Personal & Employment Details</h3><div class="staff-profile-grid">'+info('Staff ID',staff.staffCode || staff.staffId)+info('Person Labour No.',staff.personNumber)+info('Full Name',staff.fullName)+info('Company',staff.companyName || companyNameById(staff.companyId))+info('Nationality',staff.nationality)+info('Designation',staff.designation)+info('Joining Date',staff.joiningDate)+info('Last Work Done',staff.lastWorkDone)+info('Phone',staff.phone)+info('Email',staff.email)+'</div></div>' +
-        '<div class="staff-profile-card"><h3>Identity & Labour Details</h3><div class="staff-profile-grid">'+info('Passport Number',staff.passportNumber)+info('Passport Expiry',staff.passportExpiry)+info('Labour Card Number',staff.labourCardNumber)+info('Labour Card Expiry',staff.labourCardExpiry)+info('Visa Number',staff.visaNumber)+info('Visa Expiry',staff.visaExpiry)+info('Visa Status',staff.visaStatus)+info('Renewal Status',dueStatus(staff))+info('Document Reference',staff.documentReference)+info('Notes',staff.notes)+'</div></div>' +
+        '<div class="staff-profile-card"><h3>Personal & Employment Details</h3><div class="staff-profile-grid">'+info('Staff ID',staff.staffCode || staff.staffId)+info('Person Labour No.',staff.personNumber)+info('Full Name',staff.fullName)+info('Company',staff.companyName || companyNameById(staff.companyId))+info('Nationality',staff.nationality)+info('Designation',staff.designation)+info('Joining Date',staff.joiningDate)+info('Last Work Done',staff.lastWorkDone)+info('Phone',staff.phone)+info('WhatsApp',staff.whatsapp)+info('Email',staff.email)+'</div></div>' +
+        '<div class="staff-profile-card"><h3>Identity & Labour Details</h3><div class="staff-profile-grid">'+info('Passport Number',staff.passportNumber)+info('Passport Expiry',staff.passportExpiry)+info('Emirates ID Number',staff.emiratesIdNumber)+info('Emirates ID Expiry',staff.emiratesIdExpiry)+info('Other Staff Document',staff.otherStaffDocumentName)+info('Other Staff Document Expiry',staff.otherStaffDocumentExpiry)+info('Labour Card Number',staff.labourCardNumber)+info('Labour Card Expiry',staff.labourCardExpiry)+info('Visa Number',staff.visaNumber)+info('Visa Expiry',staff.visaExpiry)+info('Visa Status',staff.visaStatus)+info('Renewal Status',dueStatus(staff))+info('Document Reference',staff.documentReference)+info('Notes',staff.notes)+'</div></div>' +
         '<div class="staff-profile-card"><h3>Invoices <span class="staff-doc-count">'+invoices.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Invoice No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(invoices)+'</tbody></table></div></div>' +
         '<div class="staff-profile-card"><h3>Quotations <span class="staff-doc-count">'+quotations.length+'</span></h3><div class="table-responsive"><table class="data-table staff-table"><thead><tr><th>Quotation No.</th><th>Date</th><th>Service</th><th>Amount</th><th>Type</th><th>Actions</th></tr></thead><tbody>'+rows(quotations)+'</tbody></table></div></div>';
     };
+    window.openStaffModalFromStudio = function () {
+        const companyName = clean(byId('st-company-name')?.value);
+        const companyId = companyIdByName(companyName);
+        if (!companyId || !companyName) {
+            showCustomModal('Select a registered company', 'Choose an existing company before adding company staff. Direct clients cannot have staff records.');
+            return;
+        }
+        state.addingStaffFromStudio = true;
+        window.openStaffModal('', { companyId, companyName, returnToStudio: true });
+    };
+
     window.openStaffModalFromInvoice = function (refCode) {
         const doc = (state.documents || []).find(item => item.refCode === refCode);
         if (!doc) { showCustomModal('Invoice not found','The saved invoice could not be found in the current session.'); return; }
@@ -246,6 +240,10 @@
         byId('sf-last-work').value = record.lastWorkDone || defaults.lastWorkDone || '';
         byId('sf-passport').value = record.passportNumber || '';
         byId('sf-passport-expiry').value = record.passportExpiry || '';
+        byId('sf-emirates-id').value = record.emiratesIdNumber || '';
+        byId('sf-emirates-id-expiry').value = record.emiratesIdExpiry || '';
+        byId('sf-other-document-name').value = record.otherStaffDocumentName || '';
+        byId('sf-other-document-expiry').value = record.otherStaffDocumentExpiry || '';
         byId('sf-labour-card-number').value = record.labourCardNumber || '';
         byId('sf-labour-card-expiry').value = record.labourCardExpiry || '';
         byId('sf-visa-number').value = record.visaNumber || '';
@@ -254,12 +252,13 @@
         byId('sf-renewal-status').value = record.renewalStatus || 'Pending';
         byId('sf-joining-date').value = record.joiningDate || '';
         byId('sf-phone').value = record.phone || '';
+        byId('sf-whatsapp').value = record.whatsapp || '';
         byId('sf-email').value = record.email || '';
         byId('sf-document-reference').value = record.documentReference || '';
         byId('sf-notes').value = record.notes || '';
         byId('staff-modal').style.display = 'flex';
     };
-    window.closeStaffModal = function () { byId('staff-modal').style.display = 'none'; };
+    window.closeStaffModal = function () { byId('staff-modal').style.display = 'none'; state.addingStaffFromStudio = false; };
 
     window.saveStaffRecord = function () {
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. Staff details were not saved.'); return; }
@@ -286,12 +285,17 @@
             labourCardExpiry: clean(byId('sf-labour-card-expiry').value),
             passportNumber: clean(byId('sf-passport').value),
             passportExpiry: clean(byId('sf-passport-expiry').value),
+            emiratesIdNumber: clean(byId('sf-emirates-id').value),
+            emiratesIdExpiry: clean(byId('sf-emirates-id-expiry').value),
+            otherStaffDocumentName: clean(byId('sf-other-document-name').value),
+            otherStaffDocumentExpiry: clean(byId('sf-other-document-expiry').value),
             visaNumber: clean(byId('sf-visa-number').value),
             visaExpiry: clean(byId('sf-visa-expiry').value),
             visaStatus: clean(byId('sf-visa-status').value),
             renewalStatus: clean(byId('sf-renewal-status').value),
             joiningDate: clean(byId('sf-joining-date').value),
             phone: clean(byId('sf-phone').value),
+            whatsapp: clean(byId('sf-whatsapp').value),
             email: clean(byId('sf-email').value),
             documentReference: clean(byId('sf-document-reference').value),
             notes: clean(byId('sf-notes').value),
@@ -303,7 +307,22 @@
             if (error) { showCustomModal('Save failed','Staff details could not be saved. Check Firebase permissions and connection.'); return; }
             const index = (state.staff || []).findIndex(item => item.id === id);
             if (index >= 0) state.staff[index] = record; else state.staff.push(record);
-            const finish = () => { closeStaffModal(); renderStaffTable(); if (typeof showCustomModal === 'function') showCustomModal('Staff Saved','Staff profile saved successfully.'); };
+            const finish = () => {
+                const returnToStudio = !!state.addingStaffFromStudio;
+                state.addingStaffFromStudio = false;
+                closeStaffModal();
+                renderStaffTable();
+                if (returnToStudio) {
+                    state.selectedStudioStaffId = id;
+                    if (typeof populateStudioStaffDropdown === 'function') populateStudioStaffDropdown();
+                    const staffSelect = byId('st-staff-selector');
+                    if (staffSelect) staffSelect.value = id;
+                    if (byId('st-client-name')) byId('st-client-name').value = fullName;
+                    if (byId('st-company-name')) byId('st-company-name').value = companyName;
+                    if (byId('st-contact-person')) byId('st-contact-person').value = '';
+                    if (typeof showCustomModal === 'function') showCustomModal('Staff Added','New staff profile saved and selected for this document.');
+                } else if (typeof showCustomModal === 'function') showCustomModal('Staff Saved','Staff profile saved successfully.');
+            };
             if (linkedInvoiceRef) {
                 db.ref('documents/' + linkedInvoiceRef).update({staffId:id, staffCode, staffName:fullName, companyId, companyName}, invoiceError => {
                     if (invoiceError) console.warn('Staff saved but invoice link could not be updated:', invoiceError);
@@ -335,44 +354,68 @@
             if (byId('st-contact-person') && !byId('st-contact-person').value) byId('st-contact-person').value = client.phone || '';
         }
     };
-    window.openCompanyClientModal = function () {
-        const companyName = clean(byId('st-company-name')?.value);
-        if (!companyName) { showCustomModal('Select company first','Choose an existing company or enter the company name before adding its client.'); return; }
-        byId('company-client-parent').textContent = 'Company: ' + companyName;
-        byId('cc-input-name').value = clean(byId('st-client-name')?.value);
-        byId('cc-input-phone').value = '';
-        byId('cc-input-email').value = '';
+    window.openCompanyClientModal = function (clientId) {
+        const existing = clientId ? (state.companyClients || []).find(item => item.id === clientId) : null;
+        byId('cc-record-id').value = existing?.id || '';
+        byId('cc-modal-title').textContent = existing ? 'Edit Direct Client Profile' : 'Add Direct Client';
+        byId('cc-save-button').textContent = existing ? 'Save Changes' : 'Save Direct Client';
+        byId('company-client-parent').textContent = 'Independent direct-client record — not linked to a company.';
+        byId('cc-input-name').value = existing ? clean(existing.name) : clean(byId('st-client-name')?.value);
+        byId('cc-input-phone').value = existing ? clean(existing.phone) : '';
+        byId('cc-input-email').value = existing ? clean(existing.email) : '';
+        byId('cc-input-whatsapp').value = existing ? clean(existing.whatsapp) : '';
+        byId('cc-input-passport-expiry').value = existing ? clean(existing.passportExpiry) : '';
+        byId('cc-input-emirates-id-expiry').value = existing ? clean(existing.emiratesIdExpiry) : '';
+        byId('cc-input-visa-expiry').value = existing ? clean(existing.visaExpiry) : '';
         byId('company-client-modal').style.display = 'flex';
         byId('cc-input-name').focus();
     };
-    window.closeCompanyClientModal = function () { byId('company-client-modal').style.display = 'none'; };
+    window.viewCompanyClientProfile = function(clientId){ window.openCompanyClientModal(clientId); };
+    window.closeCompanyClientModal = function () {
+        byId('company-client-modal').style.display = 'none';
+        byId('cc-record-id').value = '';
+    };
     window.saveCompanyClient = function () {
         if (!db) { showCustomModal('Connection unavailable','Firebase is not connected. Client was not saved.'); return; }
-        const companyName = clean(byId('st-company-name')?.value);
-        const companyId = companyIdByName(companyName);
+        const editingId = clean(byId('cc-record-id').value);
+        const previous = editingId ? (state.companyClients || []).find(item => item.id === editingId) : null;
         const name = clean(byId('cc-input-name').value);
-        if (!companyName || !name) { showCustomModal('Required fields','Company and Client Name are required.'); return; }
-        const duplicate = (state.companyClients || []).find(item => norm(item.companyName) === norm(companyName) && norm(item.name) === norm(name));
+        if (!name) { showCustomModal('Required field','Direct Client Name is required.'); return; }
+        const duplicate = (state.companyClients || []).find(item => item.id !== editingId && norm(item.name) === norm(name));
         if (duplicate) {
             state.selectedCompanyClientId = duplicate.id;
-            byId('st-client-name').value = duplicate.name;
+            if(byId('st-client-name'))byId('st-client-name').value = duplicate.name;
             populateCompanyClients(); closeCompanyClientModal();
-            showCustomModal('Client already exists','The existing client was selected for this company.');
+            showCustomModal('Direct client already exists','The existing independent direct-client record was selected.');
             return;
         }
-        const id = db.ref('companyClients').push().key;
-        const record = {companyId, companyName, name, phone:clean(byId('cc-input-phone').value), email:clean(byId('cc-input-email').value), createdAt:new Date().toISOString()};
-        db.ref('companyClients/' + id).set(record, error => {
-            if (error) { showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection.'); return; }
+        const id = editingId || db.ref('companyClients').push().key;
+        const record = {
+            name,
+            phone:clean(byId('cc-input-phone').value),
+            email:clean(byId('cc-input-email').value),
+            whatsapp:clean(byId('cc-input-whatsapp').value),
+            passportExpiry:clean(byId('cc-input-passport-expiry').value),
+            emiratesIdExpiry:clean(byId('cc-input-emirates-id-expiry').value),
+            visaExpiry:clean(byId('cc-input-visa-expiry').value),
+            createdAt:previous?.createdAt||new Date().toISOString(),
+            updatedAt:new Date().toISOString()
+        };
+        // Replace the legacy record so newly saved direct clients no longer carry company links.
+        const ref = db.ref('companyClients/' + id);
+        const save = ref.set(record);
+        Promise.resolve(save).then(() => {
             record.id = id;
-            state.companyClients = state.companyClients || []; state.companyClients.push(record);
+            state.companyClients = state.companyClients || [];
+            const index = state.companyClients.findIndex(item => item.id === id);
+            if(index>=0)state.companyClients[index]=record;else state.companyClients.push(record);
             state.selectedCompanyClientId = id;
-            byId('st-client-name').value = name;
+            if(byId('st-client-name'))byId('st-client-name').value = name;
             populateCompanyClients(); closeCompanyClientModal();
-            showCustomModal('Client Saved','New client saved and linked to ' + companyName + '.');
-        });
+            showCustomModal(editingId?'Direct Client Updated':'Direct Client Saved','Independent direct-client profile saved successfully.');
+        }).catch(error => showCustomModal('Save failed','Client could not be saved. Check Firebase permissions and connection. ' + error.message));
     };
-    window.refreshStaffCompanyClients = function () { /* Reserved for dependent fields; all clients remain company-linked. */ };
+    window.refreshStaffCompanyClients = function () { /* Direct clients are independent of company selection. */ };
 
     // Bulk import: both Excel and PDF require one existing company selection.
     let staffImportRows = [];
