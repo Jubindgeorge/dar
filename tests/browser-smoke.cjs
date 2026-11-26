@@ -443,7 +443,7 @@ const assert = require('node:assert/strict');
     assert.equal(printLayout.toolbarDisplay,'none','Print layout hides preview toolbar controls');
     const fixedFrame = await page.evaluate(() => ({position:getComputedStyle(document.getElementById('document-preview-modal'),'::after').position,inset:getComputedStyle(document.getElementById('document-preview-modal'),'::after').inset,border:getComputedStyle(document.getElementById('document-preview-modal'),'::after').borderTopWidth}));
     assert.equal(fixedFrame.position,'fixed','Print gold frame is fixed to the physical sheet, not the content height');
-    assert.ok(Math.abs(parseFloat(fixedFrame.inset)-3.77953)<0.01,'Print gold frame is inset exactly 1mm (3.77953 CSS px) from all four paper edges');
+    assert.ok(Math.abs(parseFloat(fixedFrame.inset)-0.94488)<0.01,'Print gold frame is inset approximately 1 CSS pixel from all four paper edges');
     assert.equal(fixedFrame.border,'1px','Print gold frame is exactly 1px');
     assert.ok(printLayout.pageWidth>0,'A4 document retains a printable width');
     await page.emulateMedia({media:'screen'});
@@ -871,6 +871,41 @@ const assert = require('node:assert/strict');
     assert.match(expiryCenterSmoke,/Open Company Group/,'Saved group link is used for manual group opening');
     assert.doesNotMatch(expiryCenterSmoke,/SENSITIVE-PASSPORT|SENSITIVE-CLIENT-PASSPORT/,'Expiry center never exposes identity document numbers');
     console.log('PASS: company, staff and linked-client expiry center; manual group messages protect identity data');
+    await page.emulateMedia({media:'print'});
+    const printFrameSmoke = await page.evaluate(async () => {
+      const modal=document.getElementById('document-preview-modal');
+      const oldDisplay=modal.style.display, oldCanvas=window.html2canvas, oldJspdf=window.jspdf;
+      const calls={color:null,width:null,rect:null,saved:false};
+      class MockPdf {
+        setDrawColor(...value){calls.color=value;}
+        setLineWidth(value){calls.width=value;}
+        rect(...value){calls.rect=value;}
+        addImage(){}
+        addPage(){}
+        save(){calls.saved=true;}
+      }
+      window.html2canvas=async()=>({width:800,height:1000,toDataURL:()=> 'data:image/jpeg;base64,AAAA'});
+      window.jspdf={jsPDF:MockPdf};
+      modal.style.display='block';
+      try {
+        await window.saveAsPDF();
+        const frame=getComputedStyle(modal,'::after');
+        return {...calls,printFrameColor:frame.borderTopColor,printFrameTop:frame.top,modalDisplay:getComputedStyle(modal).display};
+      } finally {
+        modal.style.display=oldDisplay;
+        window.html2canvas=oldCanvas;
+        window.jspdf=oldJspdf;
+      }
+    });
+    await page.emulateMedia({media:'screen'});
+    assert.deepEqual(printFrameSmoke.color,[197,155,39],'PDF export uses the approved gold frame color');
+    assert.equal(printFrameSmoke.width,0.25,'PDF frame line width is 1px');
+    assert.deepEqual(printFrameSmoke.rect,[0.25,0.25,209.5,296.5],'PDF frame is inset by 1px from all A4 paper edges');
+    assert.equal(printFrameSmoke.saved,true,'PDF export reaches the save call with a non-empty canvas');
+    assert.equal(printFrameSmoke.printFrameColor,'rgb(197, 155, 39)','Browser print frame uses the same approved gold color');
+    assert.ok(parseFloat(printFrameSmoke.printFrameTop)<1,'Browser print frame is inset by approximately one CSS pixel');
+    assert.equal(printFrameSmoke.modalDisplay,'block','Print preview remains visible to the browser print engine');
+    console.log('PASS: A4 print and PDF export use the fixed 1px gold page-edge frame');
     console.log('PASS: company staff table and purchase/supplier module rendering');
     if (errors.length) console.log('Browser page errors (external dependencies may be unavailable):',errors.slice(0,6));
   } finally { await browser.close(); }
