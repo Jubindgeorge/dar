@@ -1028,6 +1028,21 @@ window.previewInvoiceDocument = async function(refCode) {
         docTitle.innerHTML = `${(doc.type || 'INVOICE').toUpperCase()} / <span style="font-family: 'Amiri', serif;">${doc.type === 'Quotation' ? 'عرض سعر' : 'فاتورة'}</span>`;
     }
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
+    const quotationSourceLine = document.getElementById('p-quotation-source');
+    if (quotationSourceLine) {
+        if (doc.type !== 'Quotation' && (doc.sourceQuotationRef || doc.quotationRef)) {
+            const sourceRef = String(doc.sourceQuotationRef || doc.quotationRef);
+            const originalTotal = Number(doc.originalQuotationTotal ?? 0);
+            const completedAmount = Number(doc.completedWorkAmount ?? getDarDocumentAmount(doc));
+            const completedPercent = Number(doc.completedWorkPercent ?? (originalTotal > 0 ? completedAmount / originalTotal * 100 : 0));
+            const remainingAmount = Number(doc.remainingQuotationAmount ?? Math.max(0, originalTotal - (Number(doc.quotationPreviouslyInvoiced) || 0) - completedAmount));
+            quotationSourceLine.textContent = `Against Quotation ${sourceRef} | Original Quotation Total: AED ${originalTotal.toFixed(2)} | Amount for Completed Work: AED ${completedAmount.toFixed(2)} (${completedPercent.toFixed(2)}%) | Remaining Quotation Amount: AED ${remainingAmount.toFixed(2)}`;
+            quotationSourceLine.style.display = 'block';
+        } else {
+            quotationSourceLine.textContent = '';
+            quotationSourceLine.style.display = 'none';
+        }
+    }
     
     const companyValue = String(doc.companyName || '').trim();
     const clientValue = String(doc.clientName || '').trim();
@@ -1537,6 +1552,11 @@ window.openQuotationConversion = function(refCode) {
     if (!modal) { showCustomModal('Conversion unavailable','Reload the page to open quotation conversion.'); return; }
     const remaining = Math.max(0, getDarDocumentAmount(quote) - (Number(quote.invoicedAmount) || 0));
     document.getElementById('qc-ref').textContent = quote.refCode;
+    const previouslyInvoiced = Math.min(getDarDocumentAmount(quote), Math.max(0, Number(quote.invoicedAmount) || 0));
+    const originalTotalLabel = document.getElementById('qc-original-total');
+    const alreadyInvoicedLabel = document.getElementById('qc-already-invoiced');
+    if (originalTotalLabel) originalTotalLabel.textContent = 'AED ' + getDarDocumentAmount(quote).toFixed(2);
+    if (alreadyInvoicedLabel) alreadyInvoicedLabel.textContent = 'AED ' + previouslyInvoiced.toFixed(2);
     document.getElementById('qc-remaining').textContent = 'AED ' + remaining.toFixed(2);
     document.getElementById('qc-source-ref').value = quote.refCode;
     document.getElementById('qc-mode').value = 'amount';
@@ -1573,6 +1593,7 @@ window.submitQuotationConversion = function() {
     const remaining = Math.max(0, quoteTotal - alreadyInvoiced);
     let items = [], amount = 0, description = '';
     let invoiceSubtotal = 0, invoiceProcessing = 0, invoiceDiscount = 0, invoiceDiscountPercent = 0;
+    let completedWorkPercent = 0;
     let selectedStageIndexes = [];
     if (mode === 'stage') {
         selectedStageIndexes = [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked:not(:disabled)')].map(el => Number(el.value));
@@ -1600,8 +1621,10 @@ window.submitQuotationConversion = function() {
         items = [{packageName:description,serviceName:description,title:description,q:1,p:amount}];
         invoiceSubtotal = amount;
     }
+    completedWorkPercent = quoteTotal > 0 ? Math.min(100, amount / quoteTotal * 100) : 0;
     amount = Math.round(amount * 100) / 100;
-    if (![amount, invoiceSubtotal, invoiceProcessing, invoiceDiscount].every(Number.isFinite) ||
+    completedWorkPercent = Math.round(completedWorkPercent * 100) / 100;
+    if (![amount, invoiceSubtotal, invoiceProcessing, invoiceDiscount, completedWorkPercent].every(Number.isFinite) ||
         [amount, invoiceSubtotal, invoiceProcessing, invoiceDiscount].some(value => value < 0)) {
         showCustomModal('Invalid quotation values','The quotation contains an invalid service or amount. Review the quotation before converting it.');
         return;
@@ -1630,7 +1653,11 @@ window.submitQuotationConversion = function() {
         while (docs[invoiceRef] && seq < 999999) { seq++; invoiceRef = 'DAS-' + year + '-' + String(seq).padStart(4,'0'); }
         const invoice = {
             ...liveQuote, refCode:invoiceRef, type:'Invoice', createdDate, transactionDate:createdDate,
-            sourceQuotationRef:quoteRef, billingMode:mode, stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],
+            sourceQuotationRef:quoteRef, quotationRef:quoteRef,
+            originalQuotationTotal:liveTotal, quotationPreviouslyInvoiced:liveInvoiced,
+            completedWorkAmount:amount, completedWorkPercent:completedWorkPercent,
+            remainingQuotationAmount:Math.max(0, Math.round((liveRemaining - amount) * 100) / 100),
+            billingMode:mode, stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],
             packageName:liveQuote.packageName || description, serviceName:liveQuote.serviceName || description,
             items, subtotalAmount:invoiceSubtotal, subTotal:invoiceSubtotal,
             processingCharges:invoiceProcessing, processingCharge:invoiceProcessing,
@@ -1643,7 +1670,7 @@ window.submitQuotationConversion = function() {
         docs[invoiceRef] = invoice;
         docs[quoteRef] = {...liveQuote, invoicedAmount:Math.round((liveInvoiced + amount)*100)/100,
             invoicedStageIndexes:[...new Set([...liveBilledStages,...(mode === 'stage' ? selectedStageIndexes : [])])],
-            conversionHistory:[...(Array.isArray(liveQuote.conversionHistory)?liveQuote.conversionHistory:[]),{invoiceRef,amount,mode,stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],createdAt:new Date().toISOString()}],
+            conversionHistory:[...(Array.isArray(liveQuote.conversionHistory)?liveQuote.conversionHistory:[]),{invoiceRef,amount,mode,stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],completedWorkPercent,createdAt:new Date().toISOString()}],
             updatedAt:new Date().toISOString()};
         return docs;
     }, (error, committed, snapshot) => {
