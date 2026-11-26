@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
     page.on('pageerror', error => pageErrors.push(error.message));
     await page.goto('http://127.0.0.1:8765/index.html', {waitUntil:'domcontentloaded'});
     await page.waitForFunction(() => typeof window.previewInvoiceDocument === 'function' && typeof window.previewStaffImportFile === 'function');
+    pageErrors.length=0;
 
     const invoice = await page.evaluate(async () => {
       const oldDocs = state.documents;
