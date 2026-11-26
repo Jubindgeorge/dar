@@ -518,26 +518,26 @@
             // This avoids fixed X coordinates, which break when a PDF is exported
             // with different margins, paper sizes, or scaling.
             const passportPattern=/^[A-Z0-9]{6,12}$/i;
-            const personPattern=/^\\d{10,18}$/;
-            const cardPattern=/^\\d{6,12}$/;
-            const datePattern=/^(?:\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{4}|\\d{4}-\\d{1,2}-\\d{1,2})$/;
+            const personPattern=/^\d{10,18}$/;
+            const cardPattern=/^\d{6,12}$/;
+            const datePattern=/^(?:\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}|\d{4}-\d{1,2}-\d{1,2})$/;
             const headerPatterns={
-                passportNumber:/\\bpassport\\b/i,
-                personName:/\\bperson\\b|\\bname\\b/i,
-                cardType:/\\bcard\\s*type\\b/i,
-                designation:/\\bjob\\b/i,
-                nationality:/\\bnationality\\b/i,
-                cardNumber:/\\bcard\\s*(?:number|no)\\b/i,
-                contractType:/\\bcontract\\b/i
+                passportNumber:/\bpassport\b/i,
+                personName:/\bperson\b|\bname\b/i,
+                cardType:/\bcard\s*type\b/i,
+                designation:/\bjob\b/i,
+                nationality:/\bnationality\b/i,
+                cardNumber:/\bcard\s*(?:number|no)\b/i,
+                contractType:/\bcontract\b/i
             };
             const latinText=(items)=>items.map(item=>item.text)
                 .filter(value=>/[A-Za-z]/.test(value))
-                .map(value=>value.replace(/[^A-Za-z0-9 .&'()\\/-]/g,' ').replace(/\\s+/g,' ').trim())
-                .filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+                .map(value=>value.replace(/[^A-Za-z0-9 .&'()\/-]/g,' ').replace(/\s+/g,' ').trim())
+                .filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
             const detectHeaderMap=(items)=>{
                 const hits=[];
                 items.forEach(item=>{
-                    const value=item.text.replace(/[^A-Za-z ]/g,' ').replace(/\\s+/g,' ').trim();
+                    const value=item.text.replace(/[^A-Za-z ]/g,' ').replace(/\s+/g,' ').trim();
                     Object.entries(headerPatterns).forEach(([field,pattern])=>{
                         if(pattern.test(value))hits.push({field,x:item.x,y:item.y});
                     });
@@ -622,7 +622,7 @@
                 });
             });
             if(records.length){
-                const declaredTotal=(combined.match(/total\\s+number\\s+of\\s+employees\\s*[:：]?\\s*(\\d+)/i)||[])[1];
+                const declaredTotal=(combined.match(/total\s+number\s+of\s+employees\s*[:：]?\s*(\d+)/i)||[])[1];
                 if(declaredTotal&&Number(declaredTotal)!==records.length){
                     throw new Error('MOHRE employee rows were partially identified ('+records.length+' of '+declaredTotal+'). No records have been imported.');
                 }
