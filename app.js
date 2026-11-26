@@ -1116,10 +1116,11 @@ window.previewInvoiceDocument = async function(refCode) {
             const originalQuotationTotal = Math.max(0, Number(doc.originalQuotationTotal) || 0);
             const previouslyInvoiced = Math.max(0, Number(doc.quotationPreviouslyInvoiced) || 0);
             const remainingQuotationBalance = Math.max(0, Number(doc.remainingQuotationAmount ?? (originalQuotationTotal - previouslyInvoiced - docTotal)) || 0);
+            const quotationSummaryRow = (label, value, strong = false) => `<tr style="background:#fff;font-weight:${strong ? '800' : '600'};"><td style="padding:6px 7px;border:1px solid ${gold};text-align:left;">${label}</td><td style="padding:6px 7px;border:1px solid ${gold};text-align:right;white-space:nowrap;">${value}</td></tr>`;
             const quotationRows = [];
-            if (doc.showQuotationOriginalTotal === true) quotationRows.push(summaryRow('Quotation Amount', 'AED ' + originalQuotationTotal.toFixed(2)));
-            if (doc.showQuotationPreviouslyInvoiced === true) quotationRows.push(summaryRow('Previously Invoiced', 'AED ' + previouslyInvoiced.toFixed(2)));
-            if (doc.showQuotationRemainingBalance === true) quotationRows.push(summaryRow('Quotation Balance', 'AED ' + remainingQuotationBalance.toFixed(2), true));
+            if (doc.showQuotationOriginalTotal === true) quotationRows.push(quotationSummaryRow('Quotation Amount', 'AED ' + originalQuotationTotal.toFixed(2)));
+            if (doc.showQuotationPreviouslyInvoiced === true) quotationRows.push(quotationSummaryRow('Previously Invoiced', 'AED ' + previouslyInvoiced.toFixed(2)));
+            if (doc.showQuotationRemainingBalance === true) quotationRows.push(quotationSummaryRow('Quotation Balance', 'AED ' + remainingQuotationBalance.toFixed(2), true));
             const quotationBox = sourceQuotationRef && quotationRows.length ? `
                 <table class="dar-quotation-summary" style="width:48%;margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};align-self:flex-start;">
                     <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="2" style="padding:7px 8px;border:1px solid ${gold};text-align:center;">Quotation Summary</td></tr>
