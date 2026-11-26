@@ -54,6 +54,13 @@ function openStudio(type, editRefCode = null) {
             if (contactInput) contactInput.value = doc.contactPerson || '';
             const notesInput = document.getElementById('st-notes');
             if (notesInput) notesInput.value = doc.notes || '';
+            const termsInput = document.getElementById('st-terms-and-conditions');
+            if (termsInput) {
+                const terms = doc.termsAndConditions ?? doc.termsConditions ?? doc.terms ?? '';
+                termsInput.value = Array.isArray(terms) ? terms.join('\n') : String(terms || '');
+            }
+            const showTermsInput = document.getElementById('st-show-terms');
+            if (showTermsInput) showTermsInput.checked = doc.showTermsAndConditions !== false;
 
             const govtInput = document.getElementById('st-govt-amt');
             if (govtInput) govtInput.value = doc.govtAmt ?? doc.govtFee ?? 0;
@@ -105,6 +112,10 @@ function openStudio(type, editRefCode = null) {
         if (contactInput) contactInput.value = '';
         const notesInput = document.getElementById('st-notes');
         if (notesInput) notesInput.value = '';
+        const termsInput = document.getElementById('st-terms-and-conditions');
+        if (termsInput) termsInput.value = '';
+        const showTermsInput = document.getElementById('st-show-terms');
+        if (showTermsInput) showTermsInput.checked = true;
         const govtInput = document.getElementById('st-govt-amt');
         if (govtInput) govtInput.value = 0;
         const totalInput = document.getElementById('st-total-amt');
@@ -489,6 +500,8 @@ function commitDocumentToMemory() {
         companyName: companyName || 'Direct Clients',
         contactPerson,
         notes,
+        termsAndConditions: document.getElementById('st-terms-and-conditions')?.value.trim() || '',
+        showTermsAndConditions: document.getElementById('st-show-terms')?.checked === true,
         companyClientId: state.selectedCompanyClientId || '',
         staffId: state.selectedStudioStaffId || '',
         staffCode: (state.staff || []).find(item => item.id === state.selectedStudioStaffId)?.staffCode || (state.staff || []).find(item => item.id === state.selectedStudioStaffId)?.staffId || '',
