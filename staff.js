@@ -557,7 +557,7 @@
                 if(!best)return null;
                 const map={};
                 best.hits.sort((a,b)=>a.x-b.x).forEach(hit=>{if(map[hit.field]===undefined)map[hit.field]=hit.x;});
-                return ['passportNumber','personName','cardType','cardNumber'].every(field=>Number.isFinite(map[field])) ? map : null;
+                return Number.isFinite(map.passportNumber) ? map : null;
             };
             const columnBounds=(headerMap)=>{
                 const columns=Object.entries(headerMap).map(([field,x])=>({field,x})).sort((a,b)=>a.x-b.x);
@@ -574,9 +574,9 @@
             const leadingPersonNumbers=[];
             const pageHeaderMaps=pages.map(items=>detectHeaderMap(items));
             const sharedHeaderMap=pageHeaderMaps.find(Boolean);
+            const fallbackHeaderMap={passportNumber:35,personName:85,cardType:230,designation:350,nationality:425,cardNumber:470,contractType:535};
             pages.forEach((items,pageIndex)=>{
-                const headerMap=pageHeaderMaps[pageIndex]||sharedHeaderMap;
-                if(!headerMap)return;
+                const headerMap={...fallbackHeaderMap,...(pageHeaderMaps[pageIndex]||sharedHeaderMap||{})};
                 const bounds=columnBounds(headerMap);
                 const inColumn=(row,field)=>bounds[field]
                     ? row.filter(item=>item.x>=bounds[field].left && item.x<bounds[field].right)
