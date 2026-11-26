@@ -566,9 +566,15 @@ const assert = require('node:assert/strict');
         const finalQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
         const stageInvoice=state.documents.find(d=>d.billingMode==='stage' && d.sourceQuotationRef==='QTN-TEST-001');
         openQuotationConversion('QTN-TEST-001');
-        document.getElementById('qc-mode').value='stage';
+        document.getElementById('qc-mode').value='remaining';
         document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        const finalConversionModalVisible=quoteModal.style.display;
+        submitQuotationConversion();
+        const finalInvoice=state.documents.find(d=>d.billingMode==='remaining' && d.sourceQuotationRef==='QTN-TEST-001');
+        const fullyBilledQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
         return {
+          finalInvoiceAmount:finalInvoice?.totalAmount, finalQuoteInvoiced:fullyBilledQuote?.invoicedAmount,
+          finalQuoteBalance:Math.max(0,fullyBilledQuote.totalAmount-fullyBilledQuote.invoicedAmount),
           amount:amountInvoice?.totalAmount, afterAmount:firstQuote?.invoicedAmount,
           amountInvoiceQuotationRef:amountInvoice?.quotationRef,
           amountInvoiceOriginalTotal:amountInvoice?.originalQuotationTotal,
@@ -580,7 +586,7 @@ const assert = require('node:assert/strict');
           stageInvoiceRemaining:stageInvoice?.remainingQuotationAmount,
           stageADisabled:document.querySelector('#qc-stage-items input[value="0"]').disabled,
           stageBDisabled:document.querySelector('#qc-stage-items input[value="1"]').disabled,
-          modalVisible:quoteModal.style.display
+          modalVisible:finalConversionModalVisible
         };
       } finally {db.ref=oldRef;window.showCustomModal=oldModal;closeQuotationConversion();}
     });
@@ -598,6 +604,9 @@ const assert = require('node:assert/strict');
     assert.equal(conversionResult.stageADisabled,true,'A stage cannot be invoiced twice');
     assert.equal(conversionResult.stageBDisabled,false,'Unbilled stages remain available');
     assert.equal(conversionResult.modalVisible,'flex','Quotation conversion dialog opens');
+    assert.equal(conversionResult.finalInvoiceAmount,125,'Final-balance mode invoices only the remaining quotation amount');
+    assert.equal(conversionResult.finalQuoteInvoiced,300,'Final-balance invoice completes the quotation invoiced total');
+    assert.equal(conversionResult.finalQuoteBalance,0,'Quotation balance reaches zero after the final invoice');
     const linkedEditResult = await page.evaluate(() => {
       const oldRef=db.ref; const oldModal=window.showCustomModal;
       db.ref=path=>({transaction:(updater,callback)=>{const current=Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc]));const next=updater(current);callback(null,!!next,{val:()=>next});}});
@@ -614,7 +623,7 @@ const assert = require('node:assert/strict');
       } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
     });
     assert.equal(linkedEditResult.invoiceTotal,90,'Editing a converted invoice updates its existing record');
-    assert.equal(linkedEditResult.quoteInvoiced,165,'Editing a converted invoice adjusts the source quotation balance');
+    assert.equal(linkedEditResult.quoteInvoiced,290,'Editing a converted invoice reduces the fully invoiced quotation total by the edit difference');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
