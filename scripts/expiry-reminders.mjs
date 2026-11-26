@@ -1,72 +1,57 @@
-// Scheduled expiry reminders. Server-side only; never import this into GitHub Pages.
-// Requires FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_DATABASE_URL, RESEND_API_KEY,
-// REMINDER_FROM_EMAIL and ADMIN_REMINDER_EMAIL as GitHub Actions secrets.
-if (process.env.REMINDER_DRY_RUN === 'true') {\n console.log('DRY RUN: no Firebase connection, database writes, or email sends.');\n process.exit(0);\n}\nimport { initializeApp, cert } from 'firebase-admin/app';
-import { getDatabase } from 'firebase-admin/database';
+import {initializeApp,cert,getApps} from 'firebase-admin/app';
+import {getDatabase} from 'firebase-admin/database';
+import {collectExpiryRecords,dueReminders} from './expiry-core.mjs';
 
-const required = ['FIREBASE_SERVICE_ACCOUNT_JSON','FIREBASE_DATABASE_URL','RESEND_API_KEY','REMINDER_FROM_EMAIL','ADMIN_REMINDER_EMAIL'];
-for (const name of required) if (!process.env[name]) throw new Error('Missing required secret: '+name);
-const credentials = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-if (credentials.project_id !== 'dar-al-shams') throw new Error('Unexpected Firebase project');
-const databaseURL = process.env.FIREBASE_DATABASE_URL;
-if (databaseURL.replace(/\/$/, '') !== 'https://dar-al-shams-default-rtdb.firebaseio.com') throw new Error('Unexpected database URL');
-initializeApp({credential:cert(credentials),databaseURL});
-const db=getDatabase();
-const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const utcDate = iso => { if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||''))return null;const d=new Date(iso+'T00:00:00Z');return !Number.isNaN(+d)&&d.toISOString().slice(0,10)===iso?d:null; };
-const minusMonth = iso => {
- const d=utcDate(iso);if(!d)return null;
- const year=d.getUTCFullYear(),month=d.getUTCMonth(),day=d.getUTCDate();
- const base=new Date(Date.UTC(year,month-1,1));
- const last=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+1,0)).getUTCDate();
- base.setUTCDate(Math.min(day,last));return base.toISOString().slice(0,10);
-};
-const amount=d=>{for(const n of [d.totalAmount,d.totalAmt,d.total,d.amount]){if(n===null||n===undefined||n==='')continue;const v=Number(String(n).replace(/,/g,''));if(Number.isFinite(v))return v;}return 0;};
-// Legacy invoices may contain the same advance both in advanceAmount and paymentLogs.
-// Without an explicit marker, treat the higher of the two as confirmed (never sum ambiguously).
-const paid=d=>{
- const logs=Array.isArray(d.paymentLogs)?d.paymentLogs:Object.values(d.paymentLogs||{});
- const advance=Number(d.advanceAmount??d.advanceAmt??d.advance??0)||0;
- const logged=logs.reduce((sum,p)=>sum+(Number(p?.amount)||0),0);
- return Math.max(0,d.advanceIncludedInPaymentLogs===true?logged:d.advanceIncludedInPaymentLogs===false?advance+logged:Math.max(advance,logged));
-};
-const email=v=>typeof v==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())?v.trim():null;
-const company=d=>d.companyName&&!['direct clients','direct client','private','without company'].includes(String(d.companyName).toLowerCase().trim());
-async function send(to,subject,body){
- const res=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.REMINDER_FROM_EMAIL,to:[to],subject,text:body})});
- if(!res.ok)throw new Error('Resend returned HTTP '+res.status);
+const env=process.env;
+for(const key of ['FIREBASE_SERVICE_ACCOUNT_JSON','FIREBASE_DATABASE_URL'])if(!env[key])throw new Error('Missing required secret: '+key);
+const credentials=JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON);
+if(credentials.project_id!=='dar-al-shams')throw new Error('Unexpected Firebase project');
+const databaseURL=env.FIREBASE_DATABASE_URL.replace(/\/$/,'');
+if(databaseURL!=='https://dar-al-shams-default-rtdb.firebaseio.com')throw new Error('Unexpected Firebase database URL');
+if(!getApps().length)initializeApp({credential:cert(credentials),databaseURL});
+const db=getDatabase(),dryRun=env.REMINDER_DRY_RUN==='true';
+const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const email=v=>typeof v==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())?v.trim():'';
+const phone=v=>{if(typeof v!=='string')return'';const raw=v.replace(/[ ()-]/g,'');const digits=raw.startsWith('+')?raw.slice(1):raw;return digits.length>=8&&digits.length<=15&&digits[0]>='1'&&digits[0]<='9'&&Array.from(digits).every(c=>c>='0'&&c<='9')?digits:'';};
+const safe=v=>String(v||'').replace(/[<>\r\n]/g,' ').slice(0,180);
+const hash=v=>{let h=2166136261;for(const c of String(v)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return(h>>>0).toString(16);};
+async function deliver(ref,send){const tx=await ref.transaction(old=>{if(old?.status==='sent')return;if(old?.status==='sending'&&Date.now()-Date.parse(old.startedAt||0)<3600000)return;return{status:'sending',startedAt:new Date().toISOString()};},undefined,false);if(!tx.committed)return'already-sent-or-in-progress';try{const providerId=await send();await ref.update({status:'sent',sentAt:new Date().toISOString(),providerId:providerId||null});return'sent';}catch(e){await ref.update({status:'failed',failedAt:new Date().toISOString(),error:String(e?.message||e).slice(0,220)});throw e;}}
+async function sendEmail(to,subject,text){
+ if(env.GMAIL_USER&&env.GMAIL_APP_PASSWORD){const nodemailer=await import('nodemailer');const transporter=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:env.GMAIL_USER,pass:env.GMAIL_APP_PASSWORD.replaceAll(' ','')}});const info=await transporter.sendMail({from:env.REMINDER_FROM_EMAIL||env.GMAIL_USER,to,subject,text});return info.messageId||'';}
+ const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:env.REMINDER_FROM_EMAIL,to:[to],subject,text})});
+ const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error('Resend HTTP '+response.status+': '+(data.message||'email failed'));return data.id||'';
 }
-async function once(ref,to,subject,body){
- const claim=await ref.transaction(current=>{
-  if(current?.status==='sent')return;
-  if(current?.status==='sending' && Date.now()-Date.parse(current.startedAt||0)<3600000)return;
-  return {status:'sending',startedAt:new Date().toISOString(),to};
- },undefined,false);
- if(!claim.committed)return false;
- try{await send(to,subject,body);await ref.update({status:'sent',sentAt:new Date().toISOString()});return true;}
- catch(e){await ref.update({status:'failed',error:String(e.message).slice(0,200),failedAt:new Date().toISOString()});throw e;}
-}
-const snapshot=await db.ref('documents').get();
-let processed=0,failed=0;
-for(const [id,d] of Object.entries(snapshot.val()||{})){
- if(!d||!/invoice/i.test(String(d.type||''))||!/^[A-Za-z0-9_-]{1,80}$/.test(id))continue;
- // Only explicitly archived, fully paid invoices are eligible. Legacy visa expiry alone is insufficient.
- const expiry=d.archiveExpiryDate;
- if(!utcDate(expiry)||!(amount(d)>0&&paid(d)>=amount(d)-0.005))continue;
- const reminderDate=minusMonth(expiry);
- if(today<reminderDate||today>expiry)continue;
- const title=String(d.packageName||d.title||'Package').slice(0,150);
- const subject='DAR AL SHAMS · Expiry reminder · '+id;
- const body='Package: '+title+'\nInvoice: '+id+'\nExpiry: '+expiry+'\nPlease review the renewal requirements.';
- const base=db.ref('expiryReminderDeliveries/'+id+'/'+expiry);
- // Never guess recipient emails from unrelated fields. A missing address is reported to admin.
- // Customer delivery is opt-in and disabled until recipient mapping is independently verified.\n const recipients=[['admin',email(process.env.ADMIN_REMINDER_EMAIL)]];\n if(process.env.ENABLE_CUSTOMER_REMINDERS==='true')recipients.push(['recipient',email(company(d)?d.companyEmail:d.clientEmail)]);
- for(const [role,to] of recipients){
-  if(!to){if(role==='recipient')await db.ref('expiryNotificationEvents/'+id+'/'+expiry).update({type:'Email Missing',packageName:title,invoiceRef:id,expiryDate:expiry,createdAt:new Date().toISOString()});continue;}
-  try{if(await once(base.child(role),to,subject,body))processed++;}
-  catch(e){failed++;console.error('Reminder failed',id,role,e.message);}
+async function sendWhatsApp(to,params){const version=env.WHATSAPP_GRAPH_API_VERSION||'v23.0';const res=await fetch('https://graph.facebook.com/'+version+'/'+env.WHATSAPP_PHONE_NUMBER_ID+'/messages',{method:'POST',headers:{Authorization:'Bearer '+env.WHATSAPP_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to,type:'template',template:{name:env.WHATSAPP_TEMPLATE_NAME,language:{code:env.WHATSAPP_TEMPLATE_LANGUAGE||'en'},components:[{type:'body',parameters:params.map(t=>({type:'text',text:safe(t)}))}]}})});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error('WhatsApp Cloud API HTTP '+res.status+': '+(data.error?.message||'send failed'));return data.messages?.[0]?.id||'';}
+const snapshot=await db.ref().get(),root=snapshot.val()||{};
+const records=dueReminders(collectExpiryRecords({
+ clients:Object.entries(root.clients||{}).map(([id,v])=>({id,...v})),
+ staff:Object.entries(root.staff||{}).map(([id,v])=>({id,...v})),
+ companyClients:Object.entries(root.companyClients||{}).map(([id,v])=>({id,...v})),
+ documents:Object.entries(root.documents||{}).map(([refCode,v])=>({refCode,...v}))
+},today));
+let sent=0,failed=0,skipped=0;
+for(const r of records){
+ const timing=r.daysUntilExpiry<0?'Expired '+Math.abs(r.daysUntilExpiry)+' day(s) ago':r.daysUntilExpiry===0?'Expires today':'Expires in '+r.daysUntilExpiry+' day(s)';
+ const who=r.ownerType==='company'?r.companyName:r.ownerName+(r.companyName?' · '+r.companyName:'');
+ const subject='DAR AL SHAMS · '+r.documentType+' expiry · '+r.ownerName;
+ const body=['DAR AL SHAMS DOCUMENTS CLEARING SERVICES','Name: '+who,'Document: '+r.documentType,'Expiry date: '+r.expiryDate,timing,'Please arrange renewal before service interruption.'].join('\n');
+ const targets=[];
+ if(r.ownerType==='company'){if(email(r.email))targets.push({channel:'email',role:'company',to:email(r.email)});if(phone(r.whatsapp))targets.push({channel:'whatsapp',role:'company',to:phone(r.whatsapp)});}
+ else {if(email(r.email))targets.push({channel:'email',role:r.ownerType,to:email(r.email)});if(email(r.companyEmail)&&email(r.companyEmail)!==email(r.email))targets.push({channel:'email',role:'company-copy',to:email(r.companyEmail)});if(phone(r.whatsapp))targets.push({channel:'whatsapp',role:r.ownerType,to:phone(r.whatsapp)});if(phone(r.companyWhatsapp)&&phone(r.companyWhatsapp)!==phone(r.whatsapp))targets.push({channel:'whatsapp',role:'company-copy',to:phone(r.companyWhatsapp)});}
+ const channelStatus={};
+ for(const t of targets){
+  const configured=t.channel==='email'?Boolean((env.GMAIL_USER&&env.GMAIL_APP_PASSWORD)||(env.RESEND_API_KEY&&env.REMINDER_FROM_EMAIL)):Boolean(env.WHATSAPP_ACCESS_TOKEN&&env.WHATSAPP_PHONE_NUMBER_ID&&env.WHATSAPP_TEMPLATE_NAME);
+  const channelKey=t.channel+'_'+t.role;
+  if(dryRun){channelStatus[channelKey]=configured?'dry-run-would-send':'not-configured';skipped++;console.log('DRY RUN: would send',t.channel,'to',t.role,'for',r.ownerType,r.ownerId);continue;}
+  if(!configured){channelStatus[channelKey]='not-configured';skipped++;continue;}
+  const path=['expiryReminderDeliveries',r.ownerType,r.ownerId,r.field,r.expiryDate,r.reminder,t.channel,t.role+'_'+hash(t.to)].join('/');
+  try{const status=await deliver(db.ref(path),()=>t.channel==='email'?sendEmail(t.to,subject,body):sendWhatsApp(t.to,[r.ownerName,r.companyName||r.ownerName,r.documentType,r.expiryDate,String(r.daysUntilExpiry)]));channelStatus[channelKey]=status;if(status==='sent')sent++;else skipped++;}
+  catch(e){channelStatus[channelKey]='failed';failed++;console.error('Delivery failed',r.ownerType,r.ownerId,t.channel,e.message);}
  }
- await db.ref('expiryNotificationEvents/'+id+'/'+expiry).update({packageName:title,invoiceRef:id,expiryDate:expiry,reminderDate,updatedAt:new Date().toISOString()});
+ if(!targets.length){channelStatus.no_recipient='missing-contact-details';skipped++;}
+ const event={ownerType:r.ownerType,ownerName:safe(r.ownerName),companyName:safe(r.companyName),documentType:safe(r.documentType),expiryDate:r.expiryDate,daysUntilExpiry:r.daysUntilExpiry,reminder:r.reminder,channels:channelStatus,status:Object.values(channelStatus).includes('failed')?'failed':Object.values(channelStatus).includes('sent')?'sent':'needs-configuration',checkedAt:new Date().toISOString()};
+ if(!dryRun)await db.ref(['expiryNotificationEvents',r.ownerType,r.ownerId,r.field,r.expiryDate,r.reminder].join('/')).set(event);
+ else console.log('DRY RUN EVENT',JSON.stringify(event));
 }
-console.log('UAE date:',today,'emails sent:',processed,'failures:',failed);
+console.log(JSON.stringify({dateUae:today,dueRecords:records.length,sent,failed,skipped,dryRun}));
 if(failed)process.exitCode=1;

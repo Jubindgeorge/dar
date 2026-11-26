@@ -1,9 +1,11 @@
-name: Scheduled Expiry Reminders (Firebase Spark)
+name: Scheduled Company, Staff & Client Expiry Reminders
 on:
+  schedule:
+    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'No Firebase access, database writes or emails'
+        description: 'Preview only; no Firebase writes or outbound messages'
         type: boolean
         default: true
 permissions:
@@ -14,20 +16,31 @@ concurrency:
 jobs:
   reminders:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install backend dependency
-        run: npm install --no-save --no-package-lock firebase-admin@13.5.0
-      - name: Run expiry scheduler
+      - name: Install server-side dependencies
+        run: npm install --no-save --no-package-lock firebase-admin@13.5.0 nodemailer@7.0.10
+      - name: Validate scheduler and reminder rules
+        run: |
+          node --check scripts/expiry-reminders.mjs
+          node --check scripts/expiry-core.mjs
+          node --test tests/expiry-core.test.mjs
+      - name: Run scheduled expiry reminders
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           REMINDER_FROM_EMAIL: ${{ secrets.REMINDER_FROM_EMAIL }}
-          ADMIN_REMINDER_EMAIL: ${{ secrets.ADMIN_REMINDER_EMAIL }}
-          REMINDER_DRY_RUN: 'true'
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_TEMPLATE_NAME: ${{ secrets.WHATSAPP_TEMPLATE_NAME }}
+          WHATSAPP_TEMPLATE_LANGUAGE: ${{ secrets.WHATSAPP_TEMPLATE_LANGUAGE }}
+          WHATSAPP_GRAPH_API_VERSION: ${{ secrets.WHATSAPP_GRAPH_API_VERSION }}
+          REMINDER_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
         run: node scripts/expiry-reminders.mjs

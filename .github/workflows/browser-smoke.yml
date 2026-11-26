@@ -10,6 +10,10 @@ on:
       - 'tests/v2-readonly-smoke.cjs'
       - 'tests/expiry-dry-run.cjs'
       - 'tests/invoice-mohre-regression.cjs'
+      - 'expiry-center.js'
+      - 'scripts/expiry-core.mjs'
+      - 'tests/expiry-core.test.mjs'
+      - '.github/workflows/expiry-reminders.yml'
       - 'scripts/expiry-reminders.mjs'
       - '.github/workflows/browser-smoke.yml'
   workflow_dispatch:
@@ -26,6 +30,12 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - name: Install Chromium browser
         run: npx playwright install chromium
+      - name: Validate expiry modules
+        run: |
+          node --check expiry-center.js
+          node --check scripts/expiry-core.mjs
+          node --check scripts/expiry-reminders.mjs
+          node --test tests/expiry-core.test.mjs
       - name: Run browser smoke tests against local files only
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/dar-test-http.log 2>&1 &
