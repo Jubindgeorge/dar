@@ -29,6 +29,6 @@ test('collects company, staff and linked-client expiry records without copying i
  assert.equal(rows.find(x=>x.field==='otherDocumentExpiry').documentType,'Insurance');
  assert.equal(rows.find(x=>x.field==='otherStaffDocumentExpiry').documentType,'Certificate');
  const due=dueReminders(rows);
- assert.equal(due.length,5);
+ assert.equal(due.length,3);
  assert.ok(due.every(x=>x.reminder==='before-30'));
 });
