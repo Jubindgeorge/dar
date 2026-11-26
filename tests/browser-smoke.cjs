@@ -8,6 +8,112 @@ const assert = require('node:assert/strict');
     page.on('pageerror', err => errors.push(err.message));
     await page.goto('http://127.0.0.1:8765/index.html', {waitUntil:'domcontentloaded'});
     await page.waitForTimeout(1500);
+    const dashboardSmoke = await page.evaluate(() => {
+      const previous = {
+        documents:state.documents, clients:state.clients, staff:state.staff, companyClients:state.companyClients
+      };
+      const day = offset => {
+        const d = new Date(window.darDates.todayISO() + 'T00:00:00');
+        d.setDate(d.getDate() - offset);
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      };
+      state.documents = [
+        {refCode:'DASH-INV-PARTIAL',type:'Invoice',totalAmount:100,advanceAmount:20,dueDate:day(5),transactionDate:day(10),proStatus:'Completed',clientName:'Dash Client'},
+        {refCode:'DASH-INV-OVERDUE',type:'Invoice',totalAmount:50,advanceAmount:0,dueDate:day(40),transactionDate:day(45),proStatus:'In Progress',clientName:'Other Client'},
+        {refCode:'DASH-INV-PAID',type:'Invoice',totalAmount:200,advanceAmount:200,dueDate:day(10),transactionDate:day(12),proStatus:'Not Started',clientName:'Paid Client'},
+        {refCode:'DASH-QUOTE',type:'Quotation',totalAmount:999,advanceAmount:0}
+      ];
+      state.clients=[{id:'dash-company',companyName:'Dash Company'}];
+      state.staff=[{id:'dash-staff',staffCode:'DASH-STAFF-1',fullName:'Dash Person',companyId:'dash-company',companyName:'Dash Company'}];
+      state.companyClients=[{id:'dash-client',companyId:'dash-company',companyName:'Dash Company',name:'Dash Client'}];
+      window.renderDashboardStats();
+      const values = {
+        invoiced:document.getElementById('dash-exec-invoiced').textContent,
+        received:document.getElementById('dash-exec-received').textContent,
+        outstanding:document.getElementById('dash-exec-outstanding').textContent,
+        partial:document.getElementById('dash-exec-partial').textContent,
+        overdue:document.getElementById('dash-exec-overdue').textContent,
+        completedBalance:document.getElementById('dash-exec-completed-balance').textContent,
+        age30:document.getElementById('dash-exec-age-30').textContent,
+        age60:document.getElementById('dash-exec-age-60').textContent
+      };
+      const search=document.getElementById('dash-exec-search');
+      search.value='Dash Client';
+      search.dispatchEvent(new Event('input',{bubbles:true}));
+      values.clientSearch=document.getElementById('dash-exec-search-results').innerText;
+      search.value='DASH-STAFF-1';
+      search.dispatchEvent(new Event('input',{bubbles:true}));
+      values.staffSearch=document.getElementById('dash-exec-search-results').innerText;
+      state.documents=previous.documents;state.clients=previous.clients;state.staff=previous.staff;state.companyClients=previous.companyClients;
+      window.renderDashboardStats();
+      return values;
+    });
+    assert.match(dashboardSmoke.invoiced,/350\.00/,'Executive dashboard excludes quotations from invoice totals');
+    assert.match(dashboardSmoke.received,/220\.00/,'Executive dashboard uses confirmed advances/payments');
+    assert.match(dashboardSmoke.outstanding,/130\.00/,'Executive dashboard calculates remaining balance');
+    assert.equal(dashboardSmoke.partial,'1','Dashboard keeps partial payment status separate');
+    assert.equal(dashboardSmoke.overdue,'1','Dashboard detects overdue unpaid invoices');
+    assert.equal(dashboardSmoke.completedBalance,'1','Dashboard detects completed work with outstanding balance');
+    assert.match(dashboardSmoke.age30,/80\.00/,'Dashboard assigns due balances to 0–30 day ageing');
+    assert.match(dashboardSmoke.age60,/50\.00/,'Dashboard assigns due balances to 31–60 day ageing');
+    assert.match(dashboardSmoke.clientSearch,/Dash Client/,'Global search includes company-linked client profiles');
+    assert.match(dashboardSmoke.staffSearch,/Dash Person/,'Global search includes staff ID and staff profile');
+    const destinationSmoke = await page.evaluate(() => {
+      const day = offset => {
+        const d = new Date(window.darDates.todayISO() + 'T00:00:00');
+        d.setDate(d.getDate() + offset);
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      };
+      const previous={documents:state.documents,clients:state.clients,staff:state.staff,companyClients:state.companyClients};
+      state.clients=[{id:'expiry-company',companyName:'Expiry Company',tradeLicenseExpiry:day(12),establishmentCardExpiry:day(-3)}];
+      state.staff=[{id:'expiry-staff',fullName:'Expiry Staff',companyId:'expiry-company',labourCardExpiry:day(8),emiratesIdExpiry:day(60)}];
+      state.companyClients=[{id:'expiry-person',name:'Expiry Person',companyId:'expiry-company',passportExpiry:day(20)}];
+      state.documents=[{refCode:'EXPIRY-FILE',type:'Invoice',totalAmount:100,advanceAmount:100,archiveExpiryDate:day(5),clientName:'Expiry Person'}];
+      window.darDashboardOpen('expiry');
+      const expiryText=document.getElementById('dar-expiry-notifications').innerText;
+      const expiryRows=document.querySelectorAll('#dar-expiry-notifications tbody tr').length;
+      const expiryTabActive=document.getElementById('tab-expiry-notifications').classList.contains('active');
+      window.openClientModal('expiry-company');
+      const companyExpiryInput=document.getElementById('cl-input-trade-license-expiry').value;
+      window.closeClientModal();
+      window.openStaffModal('expiry-staff');
+      const staffExpiryInput=document.getElementById('sf-emirates-id-expiry').value;
+      window.closeStaffModal();
+      const clientExpiryRow=[...document.querySelectorAll('#dar-expiry-notifications tbody tr')].find(row=>row.cells[0]?.textContent==='Company Client');
+      clientExpiryRow?.querySelector('button')?.click();
+      const openedClientId=document.getElementById('cc-record-id').value;
+      const clientProfileName=document.getElementById('cc-input-name').value;
+      const clientProfilePassportExpiry=document.getElementById('cc-input-passport-expiry').value;
+      window.closeCompanyClientModal();
+      state.documents=[
+        {refCode:'FILTER-PARTIAL',type:'Invoice',totalAmount:100,advanceAmount:25,proStatus:'In Progress'},
+        {refCode:'FILTER-PAID',type:'Invoice',totalAmount:80,advanceAmount:80,proStatus:'Completed'},
+        {refCode:'FILTER-QUOTE',type:'Quotation',totalAmount:300}
+      ];
+      document.getElementById('doc-payment-status-filter').value='partial';
+      renderDocumentsTable();
+      const invoiceRows=[...document.querySelectorAll('#doc-table-body tr')].map(row=>row.innerText).join(' ');
+      document.getElementById('dar-work-status-filter').value='completed';
+      window.switchTab('work-tracking');
+      const workRows=[...document.querySelectorAll('#dar-work-tracking tbody tr')].map(row=>row.innerText).join(' ');
+      state.documents=previous.documents;state.clients=previous.clients;state.staff=previous.staff;state.companyClients=previous.companyClients;
+      window.renderDashboardStats();
+      return {expiryText,expiryRows,invoiceRows,workRows,expiryTabActive,openedClientId,companyExpiryInput,staffExpiryInput,clientProfileName,clientProfilePassportExpiry,expectedCompanyExpiry:day(12),expectedStaffExpiry:day(60),expectedClientPassportExpiry:day(20)};
+    });
+    assert.match(destinationSmoke.expiryText,/Expiry Company/,'Notification Center shows company profile expiry dates');
+    assert.match(destinationSmoke.expiryText,/Expiry Staff/,'Notification Center shows staff profile expiry dates');
+    assert.match(destinationSmoke.expiryText,/Expiry Person/,'Notification Center shows linked client passport expiry dates');
+    assert.match(destinationSmoke.expiryText,/Trade Licence/,'Notification Center uses the saved company document field names');
+    assert.equal(destinationSmoke.expiryRows,5,'Notification Center includes all due company, staff, client and invoice-file expiry rows');
+    assert.match(destinationSmoke.invoiceRows,/FILTER-PARTIAL/,'Invoice status shortcut filters the invoice register to partial payments');
+    assert.doesNotMatch(destinationSmoke.invoiceRows,/FILTER-PAID/,'Invoice status shortcut excludes unrelated paid records');
+    assert.match(destinationSmoke.workRows,/FILTER-PAID/,'Work lifecycle shortcut filters PRO Work Tracking to manually completed records');
+    assert.equal(destinationSmoke.expiryTabActive,true,'Expiry dashboard shortcut opens the Notification Center destination');
+    assert.equal(destinationSmoke.openedClientId,'expiry-person','Expiry row opens the exact company-client profile, not its parent company');
+    assert.equal(destinationSmoke.companyExpiryInput,destinationSmoke.expectedCompanyExpiry,'Company profile editor loads the saved trade licence expiry');
+    assert.equal(destinationSmoke.staffExpiryInput,destinationSmoke.expectedStaffExpiry,'Staff profile editor loads the saved Emirates ID expiry');
+    assert.equal(destinationSmoke.clientProfileName,'Expiry Person','Expiry notification opens the exact linked-client edit profile');
+    assert.equal(destinationSmoke.clientProfilePassportExpiry,destinationSmoke.expectedClientPassportExpiry,'Linked-client profile loads its saved passport expiry');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
     assert.equal(await page.locator('#dar-protection-panel').count(),1,'Data protection panel exists');
@@ -298,7 +404,7 @@ const assert = require('node:assert/strict');
     assert.match(saveFlow.modal?.actions||'',/Create Next/);
     assert.match(saveFlow.modal?.actions||'',/Back to Invoices/);
     assert.equal(await page.locator('#doc-table-body').count(),1);
-    await page.evaluate(() => renderDocumentsTable());
+    await page.evaluate(() => { clearDocumentFilters(); renderDocumentsTable(); });
     assert.match(await page.locator('#doc-table-body').innerText(),/Employment Visa Package/);
     assert.equal(await page.locator('#doc-table-body tr:first-child td').count(),9,'Invoice register rows have 9 cells including Invoice Date');
     assert.equal(await page.locator('#tab-documents thead tr:first-child th').count(),9,'Invoice register headings have 9 cells including Invoice Date');
@@ -450,31 +556,55 @@ const assert = require('node:assert/strict');
     assert.match(staffLedgerSmoke.filtered,/Test Staff/,'Company filter shows selected company staff');
     assert.doesNotMatch(staffLedgerSmoke.filtered,/Other Staff/,'Company filter excludes other companies');
     assert.equal(staffLedgerSmoke.count,'1 staff','Company staff count follows selected company');
-    const companyClientSmoke = await page.evaluate(() => {
+    const directClientSmoke = await page.evaluate(() => {
       state.clients=[{id:'client-flow-company',companyName:'Client Flow Company'}];
       state.companyClients=[{id:'saved-client-1',companyId:'client-flow-company',companyName:'Client Flow Company',name:'Saved Account Holder'}];
       state.documents=[{refCode:'INV-HISTORY-1',type:'Invoice',companyName:'Client Flow Company',clientName:'Historical Account Holder'}];
       state.selectedCompanyClientId='';
       document.getElementById('st-company-name').value='Client Flow Company';
-      document.getElementById('st-client-name').value='Saved Account Holder';
       populateCompanyClients();
       const options=[...document.getElementById('st-company-client-selector').options].map(option=>option.textContent);
-      const unlinkedValue=document.getElementById('st-company-client-selector').value;
       selectCompanyClient('saved-client-1');
-      const linkedId=state.selectedCompanyClientId;
-      populateCompanyClients();
-      const linkedValue=document.getElementById('st-company-client-selector').value;
+      const selectedId=state.selectedCompanyClientId;
       document.getElementById('st-company-name').value='Another Company';
       populateCompanyClients();
-      const changedCompanyValue=document.getElementById('st-company-client-selector').value;
-      return {options,unlinkedValue,linkedId,linkedValue,changedCompanyValue};
+      const stillAvailable=[...document.getElementById('st-company-client-selector').options].some(option=>option.value==='saved-client-1');
+      const stillSelected=document.getElementById('st-company-client-selector').value;
+      const oldOpen=window.openStaffModal;
+      let staffDefaults=null;
+      window.openStaffModal=(id,defaults)=>{staffDefaults=defaults;};
+      document.getElementById('st-company-name').value='Client Flow Company';
+      openStaffModalFromStudio();
+      window.openStaffModal=oldOpen;
+      return {options,selectedId,stillAvailable,stillSelected,staffDefaults,addButton:document.querySelector('#st-staff-selector + button')?.textContent || document.querySelector('#st-staff-selector')?.parentElement?.querySelector('button')?.textContent};
     });
-    assert.ok(companyClientSmoke.options.includes('Saved Account Holder'),'Studio lists saved clients for the selected company');
-    assert.ok(companyClientSmoke.options.includes('Historical Account Holder'),'Studio lists clients found in historical invoices');
-    assert.equal(companyClientSmoke.unlinkedValue,'','Matching display name does not falsely imply a saved-client link');
-    assert.equal(companyClientSmoke.linkedId,'saved-client-1','Explicit saved-client selection stores the linked ID');
-    assert.equal(companyClientSmoke.linkedValue,'saved-client-1','Explicit saved-client selection remains selected after refresh');
-    assert.equal(companyClientSmoke.changedCompanyValue,'','Changing company clears the previous company client selection');
+    assert.ok(directClientSmoke.options.includes('Saved Account Holder'),'Studio lists independent direct clients');
+    assert.ok(!directClientSmoke.options.includes('Historical Account Holder'),'Historical invoice names do not become direct-client profile records');
+    assert.equal(directClientSmoke.selectedId,'saved-client-1','Selecting a direct client stores its profile ID');
+    assert.equal(directClientSmoke.stillAvailable,true,'Direct client remains available when the selected company changes');
+    assert.equal(directClientSmoke.stillSelected,'saved-client-1','Company changes do not clear the independent direct-client selection');
+    assert.equal(directClientSmoke.staffDefaults.companyId,'client-flow-company','Inline staff creation is scoped to the selected registered company');
+    assert.equal(directClientSmoke.staffDefaults.returnToStudio,true,'Inline staff creation returns to the document editor');
+    const quotationDeleteSmoke = await page.evaluate(async () => {
+      const originalConfirm=window.confirm, originalDelete=window.safeDeleteDarRecord;
+      const calls=[];
+      window.confirm=()=>true;
+      window.safeDeleteDarRecord=async (collection,key)=>{calls.push({collection,key});};
+      try {
+        state.documents=[{refCode:'QTN-DELETE-TEST',type:'Quotation',totalAmount:50,invoicedAmount:0}];
+        await deleteQuotation('QTN-DELETE-TEST');
+        const removed=!state.documents.some(doc=>doc.refCode==='QTN-DELETE-TEST');
+        state.documents=[
+          {refCode:'QTN-LINKED-TEST',type:'Quotation',totalAmount:50,invoicedAmount:10},
+          {refCode:'INV-LINKED-TEST',type:'Invoice',sourceQuotationRef:'QTN-LINKED-TEST',totalAmount:10}
+        ];
+        await deleteQuotation('QTN-LINKED-TEST');
+        return {calls,removed,linkedRetained:state.documents.some(doc=>doc.refCode==='QTN-LINKED-TEST')};
+      } finally {window.confirm=originalConfirm;window.safeDeleteDarRecord=originalDelete;}
+    });
+    assert.deepEqual(quotationDeleteSmoke.calls,[{collection:'documents',key:'QTN-DELETE-TEST'}],'Quotation deletion uses the recoverable data-protection path');
+    assert.equal(quotationDeleteSmoke.removed,true,'Successfully recovered quotation is removed from the active list');
+    assert.equal(quotationDeleteSmoke.linkedRetained,true,'A quotation with invoiced value remains protected');
     const paymentCompatibilitySmoke = await page.evaluate(() => {
       const legacyObjectLogs={ '0':{amount:100,date:'2026-11-01'}, '1':{amount:20,date:'2026-11-02'} };
       const legacyIncluded={totalAmount:200,advanceAmount:100,paymentLogs:{'0':{amount:100}}};

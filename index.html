@@ -154,55 +154,141 @@
                     </div>
                 </section>
 
-                <!-- TAB 1: DASHBOARD -->
+                <!-- TAB 1: EXECUTIVE DASHBOARD -->
                 <section id="tab-dashboard" class="view-panel active">
-                    <div class="dashboard-grid">
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Saved Clients</p>
-                                <h3 id="dash-client-count" style="font-size: 1.8rem; color: var(--primary); margin-top: 5px;">0</h3>
-                            </div>
-                            <i class="fa-solid fa-users fa-2x" style="color: rgba(203,163,88,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Monthly Payouts</p>
-                                <h3 id="dash-monthly-payout" style="font-size: 1.8rem; color: var(--accent-green); margin-top: 5px;">AED 0</h3>
-                            </div>
-                            <i class="fa-solid fa-wallet fa-2x" style="color: rgba(34,197,94,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Annual Payouts</p>
-                                <h3 id="dash-annual-payout" style="font-size: 1.8rem; color: var(--accent-blue); margin-top: 5px;">AED 0</h3>
-                            </div>
-                            <i class="fa-solid fa-chart-line fa-2x" style="color: rgba(56,189,248,0.3);"></i>
-                        </div>
-                        <div class="metric-card">
-                            <div>
-                                <p style="font-size: 0.85rem; color: var(--text-muted);">Total Works Logged</p>
-                                <h3 id="dash-works-count" style="font-size: 1.8rem; color: #f59e0b; margin-top: 5px;">0</h3>
-                            </div>
-                            <i class="fa-solid fa-clipboard-check fa-2x" style="color: rgba(245,158,11,0.3);"></i>
-                        </div>
+                    <div class="dash-exec-heading">
+                        <div><p class="dash-kicker">DAR AL SHAMS · MANAGEMENT</p><h2>Executive Control Centre</h2><p>All-time business position with current-month highlights.</p></div>
+                        <div class="dash-period-chip"><i class="fa-solid fa-calendar-days"></i> All time · This month</div>
                     </div>
-                    <div class="dashboard-grid" style="margin-top:16px;">
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Business Works — All Time</p><h3 id="dash-business-total">AED 0.00</h3><small id="dash-business-count">0 records</small></div></div>
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Staff Works — All Time</p><h3 id="dash-staff-total">AED 0.00</h3><small id="dash-staff-count">0 records</small></div></div>
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Recorded Expenses — This Month</p><h3 id="dash-month-expenses">AED 0.00</h3></div></div>
-                        <div class="metric-card"><div><p style="color:var(--text-muted);font-size:.85rem;">Invoiced Less Expenses — This Month</p><h3 id="dash-month-net">AED 0.00</h3><small style="color:var(--text-muted);">Not cash flow or net profit</small></div></div>
+
+                    <div class="dash-search-wrap">
+                        <label for="dash-exec-search"><i class="fa-solid fa-magnifying-glass"></i> Global search</label>
+                        <input id="dash-exec-search" type="search" autocomplete="off" placeholder="Search company, client, staff, passport, labour card, invoice or quotation reference">
+                        <div id="dash-exec-search-results" class="dash-search-results" role="listbox" aria-label="Search results"></div>
                     </div>
-                    <div class="dashboard-grid" style="margin-top:16px;" aria-label="V2 payment overview">
-                        <div class="metric-card"><div><p>Payments Received — All Time</p><h3 id="dash-v2-received">AED 0.00</h3></div></div>
-                        <div class="metric-card"><div><p>Outstanding — All Time</p><h3 id="dash-v2-outstanding">AED 0.00</h3><small id="dash-v2-payment-status" style="color:var(--text-muted);">Paid: 0 · Partial: 0 · Unpaid: 0 · Overdue: 0</small></div></div>
-                        <div class="metric-card"><div><p>Unassigned Works</p><h3 id="dash-v2-unassigned">0</h3></div></div>
+
+                    <section class="dash-section" aria-label="Quick actions">
+                        <div class="dash-section-title"><h3>Quick actions</h3><span>Common tasks</span></div>
+                        <div class="dash-quick-grid">
+                            <button type="button" onclick="openStudio('Invoice')"><i class="fa-solid fa-file-circle-plus"></i><span>Create invoice</span></button>
+                            <button type="button" onclick="openStudio('Quotation')"><i class="fa-solid fa-file-signature"></i><span>Create quotation</span></button>
+                            <button type="button" onclick="openClientModal(false)"><i class="fa-solid fa-building"></i><span>Add company</span></button>
+                            <button type="button" onclick="switchTab('staff')"><i class="fa-solid fa-user-plus"></i><span>Company staff</span></button>
+                            <button type="button" onclick="darDashboardOpen('record-payment')"><i class="fa-solid fa-money-bill-transfer"></i><span>Record payment</span></button>
+                            <button type="button" onclick="switchTab('work-tracking')"><i class="fa-solid fa-list-check"></i><span>Update work</span></button>
+                        </div>
+                    </section>
+
+                    <section class="dash-section">
+                        <div class="dash-section-title"><h3>All ERP modules</h3><span>Direct navigation</span></div>
+                        <div class="dash-module-grid">
+                            <button type="button" onclick="switchTab('clients')"><i class="fa-solid fa-building"></i><span>Companies & Clients</span></button>
+                            <button type="button" onclick="switchTab('staff')"><i class="fa-solid fa-id-card"></i><span>Company Staff</span></button>
+                            <button type="button" onclick="switchTab('works')"><i class="fa-solid fa-briefcase"></i><span>Works Directory</span></button>
+                            <button type="button" onclick="switchTab('work-tracking')"><i class="fa-solid fa-list-check"></i><span>PRO Work Tracking</span></button>
+                            <button type="button" onclick="switchTab('completed-files')"><i class="fa-solid fa-folder-closed"></i><span>Completed Files</span></button>
+                            <button type="button" onclick="switchTab('documents')"><i class="fa-solid fa-file-invoice"></i><span>Invoices</span></button>
+                            <button type="button" onclick="switchTab('quotations')"><i class="fa-solid fa-file-signature"></i><span>Quotations</span></button>
+                            <button type="button" onclick="switchTab('purchases')"><i class="fa-solid fa-cart-shopping"></i><span>Purchases & Suppliers</span></button>
+                            <button type="button" onclick="switchTab('accounts-ledger')"><i class="fa-solid fa-book"></i><span>Accounts & Ledger</span></button>
+                            <button type="button" onclick="switchTab('services-config')"><i class="fa-solid fa-tags"></i><span>Services & Tariffs</span></button>
+                            <button type="button" onclick="switchTab('expiry-notifications')"><i class="fa-solid fa-bell"></i><span>Notification Centre</span></button>
+                            <button type="button" onclick="switchTab('website-info')"><i class="fa-solid fa-globe"></i><span>Marketing Website</span></button>
+                            <button type="button" onclick="toggleDarProtection()"><i class="fa-solid fa-shield-halved"></i><span>Data Protection</span></button>
+                        </div>
+                    </section>
+
+                    <section class="dash-section">
+                        <div class="dash-section-title"><h3>Business overview</h3><span>All-time totals</span></div>
+                        <div class="dash-metric-grid">
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices')"><span>Total invoiced</span><strong id="dash-exec-invoiced">AED 0.00</strong><small>Valid invoices</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('ledger')"><span>Payments received</span><strong id="dash-exec-received">AED 0.00</strong><small>Confirmed payments</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('invoices','outstanding')"><span>Outstanding balance</span><strong id="dash-exec-outstanding">AED 0.00</strong><small>Remaining to collect</small></button>
+                            <button class="dash-metric-card" type="button" onclick="darDashboardOpen('works','active')"><span>Active works</span><strong id="dash-exec-active-works">0</strong><small>Pending and in progress</small></button>
+                        </div>
+                    </section>
+
+                    <div class="dash-two-column">
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Invoice payment pipeline</h3><span>Payment status</span></div>
+                            <div class="dash-status-list">
+                                <button type="button" onclick="darDashboardOpen('invoices','unpaid')"><span><i class="dash-dot dot-warning"></i>Unpaid</span><strong id="dash-exec-unpaid">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','partial')"><span><i class="dash-dot dot-info"></i>Advance / partially paid</span><strong id="dash-exec-partial">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','paid')"><span><i class="dash-dot dot-success"></i>Fully paid</span><strong id="dash-exec-paid">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('invoices','overdue')"><span><i class="dash-dot dot-danger"></i>Overdue</span><strong id="dash-exec-overdue">0</strong></button>
+                            </div>
+                        </section>
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Work lifecycle</h3><span>Manually confirmed stages</span></div>
+                            <div class="dash-status-list">
+                                <button type="button" onclick="darDashboardOpen('works','pending')"><span>Work pending</span><strong id="dash-exec-work-pending">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','progress')"><span>In progress</span><strong id="dash-exec-work-progress">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','completed')"><span>Work completed</span><strong id="dash-exec-work-completed">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('works','closed')"><span>Closed</span><strong id="dash-exec-work-closed">0</strong></button>
+                                <button type="button" class="dash-status-emphasis" onclick="darDashboardOpen('invoices','completed-balance')"><span>Completed – balance pending</span><strong id="dash-exec-completed-balance">0</strong></button>
+                            </div>
+                        </section>
                     </div>
-                    <div class="v2-report-toolbar">
-                        <strong>Financial Reports</strong>
-                        <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
-                        <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export Excel</button><button type="button" class="btn btn-secondary" onclick="exportDarFinancialReportPDF()">Export PDF</button>
+
+                    <div class="dash-two-column">
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Outstanding invoice ageing</h3><span>Balance by age</span></div>
+                            <div class="dash-age-list">
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-0-30')"><span>0–30 days</span><strong id="dash-exec-age-30">AED 0.00</strong></button>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-31-60')"><span>31–60 days</span><strong id="dash-exec-age-60">AED 0.00</strong></button>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-61-90')"><span>61–90 days</span><strong id="dash-exec-age-90">AED 0.00</strong></button>
+                                <button type="button" class="dash-age-row" onclick="darDashboardOpen('invoices','age-90-plus')"><span>90+ days</span><strong id="dash-exec-age-90plus">AED 0.00</strong></button>
+                            </div>
+                            <p class="dash-footnote">Age uses due date, or invoice date when no due date is saved.</p>
+                        </section>
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Current-month highlights</h3><span id="dash-exec-month-label">This month</span></div>
+                            <div class="dash-age-list">
+                                <div><span>Collections</span><strong id="dash-exec-month-received">AED 0.00</strong></div>
+                                <div><span>Recorded expenses</span><strong id="dash-exec-month-expenses">AED 0.00</strong></div>
+                                <div><span>Cash operating result</span><strong id="dash-exec-month-net">AED 0.00</strong></div>
+                            </div>
+                            <p class="dash-footnote">Cash operating result = collections minus recorded expenses; it is not accounting profit.</p>
+                        </section>
                     </div>
-                    <p style="color:var(--text-muted);font-size:.78rem;margin-top:12px;">Figures are calculated from saved invoices and recorded expenses. Invoice totals are not necessarily payments received. Report exports group by the selected period and do not modify records.</p>
+
+                    <div class="dash-two-column">
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Alerts and follow-ups</h3><span>Upcoming and overdue</span></div>
+                            <div id="dash-exec-alert-list" class="dash-alert-list"><p class="dash-muted">Loading alerts…</p></div>
+                        </section>
+                        <section class="dash-section">
+                            <div class="dash-section-title"><h3>Profiles and quotations</h3><span>Quick access</span></div>
+                            <div class="dash-profile-shortcuts">
+                                <button type="button" onclick="darDashboardOpen('companies')"><i class="fa-solid fa-building"></i><span>Companies</span><strong id="dash-exec-companies">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('staff')"><i class="fa-solid fa-users"></i><span>Staff profiles</span><strong id="dash-exec-staff">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('quotations')"><i class="fa-solid fa-file-signature"></i><span>Quotations</span><strong id="dash-exec-quotations">0</strong></button>
+                                <button type="button" onclick="darDashboardOpen('expiry')"><i class="fa-solid fa-bell"></i><span>Expiry centre</span><i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                        </section>
+                    </div>
+
+                    <section class="dash-section">
+                        <div class="dash-section-title"><h3>Recent activity</h3><span>Latest invoices and quotations</span></div>
+                        <div id="dash-exec-recent" class="dash-recent-list"><p class="dash-muted">Loading activity…</p></div>
+                    </section>
+
+                    <section class="dash-section dash-reports-section">
+                        <div class="dash-section-title"><h3>Financial reports</h3><span>Daily, monthly and yearly exports</span></div>
+                        <div class="v2-report-toolbar">
+                            <select id="dar-report-period" aria-label="Report grouping"><option value="daily">Daily</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select>
+                            <button type="button" class="btn btn-primary" onclick="exportDarFinancialReport()">Export Excel</button>
+                            <button type="button" class="btn btn-secondary" onclick="exportDarFinancialReportPDF()">Export PDF</button>
+                        </div>
+                        <p class="dash-footnote">Invoice totals, confirmed collections and recorded expenses are reported separately. Exports do not modify ERP records.</p>
+                    </section>
+
+                    <!-- Legacy dashboard element IDs retained for existing scripts and compatibility. -->
+                    <div hidden aria-hidden="true">
+                        <span id="dash-client-count">0</span><span id="dash-monthly-payout">AED 0</span><span id="dash-annual-payout">AED 0</span><span id="dash-works-count">0</span>
+                        <span id="dash-business-total">AED 0</span><span id="dash-staff-total">AED 0</span><span id="dash-business-count">0</span><span id="dash-staff-count">0</span>
+                        <span id="dash-month-expenses">AED 0</span><span id="dash-month-net">AED 0</span><span id="dash-v2-received">AED 0</span><span id="dash-v2-outstanding">AED 0</span><span id="dash-v2-payment-status"></span><span id="dash-v2-unassigned">0</span>
+                    </div>
                 </section>
 
                 <!-- TAB 2: CLIENTS -->
@@ -312,6 +398,14 @@
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Arabic Title</span><strong id="cd-name-ar" style="font-size: 1rem; direction: rtl; display: block;">-</strong></div>
                         <div><span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Phone</span><strong id="cd-phone" style="font-size: 1rem;">-</strong></div>
                     </div>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px;"><button type="button" class="btn btn-primary" onclick="openClientModal(state.activeViewingClientId)"><i class="fa-solid fa-pen"></i> Edit Company Profile</button></div>
+                    <h3 style="color:var(--primary);margin:18px 0 10px;font-size:1.1rem;">Company Documents & Expiry Details</h3>
+                    <div style="background:var(--panel-bg);border:1px solid var(--border-color);padding:16px;border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px;">
+                        <div><small>Company Email</small><strong id="cd-company-email">-</strong></div><div><small>WhatsApp</small><strong id="cd-company-whatsapp">-</strong></div>
+                        <div><small>Trade Licence Number</small><strong id="cd-trade-license-number">-</strong><br><small>Expiry</small><strong id="cd-trade-license-expiry">-</strong></div><div><small>Establishment Card Number</small><strong id="cd-establishment-number">-</strong><br><small>Expiry</small><strong id="cd-establishment-expiry">-</strong></div>
+                        <div><small>Immigration / Labour Card Number</small><strong id="cd-labour-card-number">-</strong><br><small>Expiry</small><strong id="cd-labour-card-expiry">-</strong></div><div><small>Tenancy Contract Number</small><strong id="cd-tenancy-number">-</strong><br><small>Expiry</small><strong id="cd-tenancy-expiry">-</strong></div>
+                        <div><small>Other Document</small><strong id="cd-other-document">-</strong></div><div><small>Other Document Expiry</small><strong id="cd-other-document-expiry">-</strong></div>
+                    </div>
                     <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 1.1rem;">Associated Records</h3>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -412,6 +506,9 @@
                             <span style="font-size: 0.85rem; color: var(--text-muted);">Total Ledger Amount: <strong id="ledger-total-amount" style="color: var(--accent-green);">AED 0.00</strong></span>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;">
                                 <input type="search" id="doc-search-input" oninput="renderDocumentsTable()" placeholder="Search client, company or reference..." aria-label="Search financial records" style="flex:2 1 210px;min-width:0;">
+                                <select id="doc-payment-status-filter" onchange="renderDocumentsTable()" aria-label="Filter invoices by payment and ageing status" style="flex:1 1 160px;min-width:0;">
+                                    <option value="">All payment statuses</option><option value="outstanding">All outstanding</option><option value="unpaid">Unpaid</option><option value="partial">Advance / Partially Paid</option><option value="paid">Fully Paid</option><option value="overdue">Overdue</option><option value="completed-balance">Completed Work – Balance Pending</option><option value="age-0-30">Balance Age: 0–30 days</option><option value="age-31-60">Balance Age: 31–60 days</option><option value="age-61-90">Balance Age: 61–90 days</option><option value="age-90-plus">Balance Age: 90+ days</option>
+                                </select>
                                 <select id="doc-branch-filter" onchange="renderDocumentsTable()" aria-label="Filter records by work type" style="flex:1 1 130px;min-width:0;">
                                     <option value="all">All work types</option>
                                     <option value="company">Business Works</option>
@@ -423,7 +520,7 @@
                                 <label class="v2-filter-date">To <input type="date" id="doc-date-to" onchange="renderDocumentsTable()" aria-label="Records through date"></label>
                                 <select id="doc-sort-order" aria-label="Sort invoice records" onchange="renderDocumentsTable()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="amount-desc">Highest amount</option><option value="amount-asc">Lowest amount</option><option value="client">Client A–Z</option><option value="reference">Reference A–Z</option></select>
                                 <select id="doc-date-preset" aria-label="Quick date range" onchange="applyDarDocumentDatePreset(this.value)"><option value="">Custom range</option><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="previous-month">Previous Month</option></select>
-                                <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters()">Clear filters</button>
+                                <button type="button" class="btn btn-secondary" onclick="clearDocumentFilters();document.getElementById('doc-payment-status-filter').value='';renderDocumentsTable()">Clear filters</button>
                                 <span id="doc-filter-count" role="status" aria-live="polite" style="font-size:0.8rem;color:var(--text-muted);"></span>
                             </div>
                         </div>
@@ -473,9 +570,9 @@
                 </section>
 
                 <!-- Package-first operational tracking; PDF/quotation templates unchanged. -->
-                <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
+                <section id="tab-work-tracking" class="view-panel"><h2>PRO Work Tracking</h2><p class="dar-hint">Package-first service stages, dates and progress.</p><div class="v2-filter-toolbar"><label for="dar-work-status-filter">Work status</label><select id="dar-work-status-filter" onchange="darRenderWorkTracking()"><option value="">All work statuses</option><option value="active">All Active Works</option><option value="pending">Work Pending</option><option value="progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="completed-balance">Completed – Balance Pending</option><option value="follow-up">Waiting / On Hold Follow-ups</option></select></div><div id="dar-work-stage-editor" class="dar-stage-editor" hidden></div><div id="dar-work-tracking"></div></section>
                 <section id="tab-completed-files" class="view-panel"><h2>Completed Files</h2><p class="dar-hint">Fully paid invoices grouped by Company → Package, or Private → Package.</p><div id="dar-completed-files"></div></section>
-                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Expiry reminders appear here without opening popups. Automated email requires a secure server scheduler.</p><div id="dar-expiry-notifications"></div></section>
+                <section id="tab-expiry-notifications" class="view-panel"><h2>Notification Center</h2><p class="dar-hint">Company, staff and linked-client expiry alerts. Individual email and WhatsApp reminders run when server credentials are configured. Company-group messages remain manual only.</p><div id="dar-expiry-notifications"></div></section>
                 <!-- TAB 4.5: ACCOUNTS LEDGER & ADVANCES -->
                 <section id="tab-accounts-ledger" class="view-panel">
                     <div style="margin-bottom: 20px;">
@@ -672,18 +769,21 @@
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
                             <div>
-                                <label>Client Name</label>
+                                <label>Direct Client Name</label>
                                 <div class="client-select-line">
-                                    <select id="st-company-client-selector" onchange="selectCompanyClient(this.value)" aria-label="Select a client belonging to the selected company"><option value="">-- Select existing company client --</option></select>
-                                    <button type="button" class="btn btn-secondary" onclick="openCompanyClientModal()" style="white-space:nowrap;">+ New Client</button>
+                                    <select id="st-company-client-selector" onchange="selectCompanyClient(this.value)" aria-label="Select an independent direct client"><option value="">-- Select Direct Client --</option></select>
+                                    <button type="button" class="btn btn-secondary" onclick="openCompanyClientModal()" style="white-space:nowrap;">+ Add Direct Client</button>
                                 </div>
                                 <input type="text" id="st-client-name" placeholder="Primary Account Holder" autocomplete="off">
                                 <label for="st-staff-selector" style="margin-top:8px;">Link Imported Company Staff</label>
-                                <select id="st-staff-selector" onchange="selectStudioStaff(this.value)" aria-label="Select imported staff belonging to the selected company">
-                                    <option value="">-- No staff selected --</option>
-                                </select>
-                                <small class="dar-hint">Select an imported employee to link this invoice to their staff profile. Only staff from the selected company are listed.</small>
-                                <small class="dar-hint">Choose a client linked to the selected company, or add a new one.</small>
+                                <div class="client-select-line">
+                                    <select id="st-staff-selector" onchange="selectStudioStaff(this.value)" aria-label="Select company staff belonging to the selected company">
+                                        <option value="">-- No staff selected --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-secondary" onclick="openStaffModalFromStudio()" style="white-space:nowrap;">+ Add New Staff</button>
+                                </div>
+                                <small class="dar-hint">Only staff belonging to the selected registered company are listed. Newly added staff will be selected automatically.</small>
+                                <small class="dar-hint">Direct clients are independent records and are not linked to companies.</small>
                             </div>
                             <div>
                                 <label>Company Name</label>
@@ -749,7 +849,7 @@
 
     <!-- Client Registration Modal -->
     <div id="client-modal" class="custom-modal-backdrop" style="display:none;">
-        <div class="custom-modal-content" style="text-align: left; max-width: 450px;">
+        <div class="custom-modal-content" style="text-align:left;width:calc(100% - 32px);max-width:560px;max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;margin:16px auto;">
             <h3 id="client-modal-title" style="text-align: center; margin-bottom: 20px;">Add New Company</h3>
             <input type="hidden" id="cl-modal-id">
             <div class="form-group">
@@ -764,9 +864,24 @@
                 <label>Contact Person / Phone</label>
                 <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
             </div>
+            <h4 style="margin:18px 0 10px;color:var(--primary);">Company Contact & Notification Details</h4>
+            <div class="form-group"><label for="cl-input-email">Company Email</label><input type="email" id="cl-input-email" placeholder="accounts@company.com"></div>
+            <div class="form-group"><label for="cl-input-whatsapp">Company WhatsApp Number</label><input type="tel" id="cl-input-whatsapp" placeholder="+9715XXXXXXXX"></div>
+            <div class="form-group"><label for="cl-input-group-link">Company WhatsApp Group Link (manual sharing only)</label><input type="url" id="cl-input-group-link" placeholder="https://chat.whatsapp.com/..."></div>
+            <h4 style="margin:18px 0 10px;color:var(--primary);">Company Documents & Expiry Dates</h4>
+            <div class="form-group"><label for="cl-input-trade-license-no">Trade Licence Number</label><input type="text" id="cl-input-trade-license-no"></div>
+            <div class="form-group"><label for="cl-input-trade-license-expiry">Trade Licence Expiry</label><input type="date" id="cl-input-trade-license-expiry"></div>
+            <div class="form-group"><label for="cl-input-establishment-no">Establishment Card Number</label><input type="text" id="cl-input-establishment-no"></div>
+            <div class="form-group"><label for="cl-input-establishment-expiry">Establishment Card Expiry</label><input type="date" id="cl-input-establishment-expiry"></div>
+            <div class="form-group"><label for="cl-input-labour-card-no">Immigration / Labour Card Number</label><input type="text" id="cl-input-labour-card-no"></div>
+            <div class="form-group"><label for="cl-input-labour-card-expiry">Immigration / Labour Card Expiry</label><input type="date" id="cl-input-labour-card-expiry"></div>
+            <div class="form-group"><label for="cl-input-tenancy-no">Tenancy Contract Number</label><input type="text" id="cl-input-tenancy-no"></div>
+            <div class="form-group"><label for="cl-input-tenancy-expiry">Tenancy Contract Expiry</label><input type="date" id="cl-input-tenancy-expiry"></div>
+            <div class="form-group"><label for="cl-input-other-doc-name">Other Document Name</label><input type="text" id="cl-input-other-doc-name"></div>
+            <div class="form-group"><label for="cl-input-other-doc-expiry">Other Document Expiry</label><input type="date" id="cl-input-other-doc-expiry"></div>
             <div class="custom-modal-actions">
                 <button onclick="closeClientModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
+                <button id="cl-save-button" type="button" onclick="saveClientModalData()" class="btn btn-primary">Save Account</button>
             </div>
         </div>
     </div>
@@ -778,13 +893,18 @@
 
     <!-- Company-linked client modal; does not alter printed document templates. -->
     <div id="company-client-modal" class="custom-modal-backdrop" style="display:none;">
-        <div class="custom-modal-content" style="text-align:left;max-width:480px;">
-            <h3 style="margin-bottom:16px;">Add Client to Company</h3>
+        <div class="custom-modal-content" style="text-align:left;max-width:560px;max-height:calc(100vh - 32px);overflow-y:auto;">
+            <h3 id="cc-modal-title" style="margin-bottom:16px;">Add Direct Client</h3>
+            <input id="cc-record-id" type="hidden">
             <p id="company-client-parent" class="dar-hint"></p>
             <div class="form-group"><label for="cc-input-name">Client Full Name *</label><input id="cc-input-name" type="text" required></div>
             <div class="form-group"><label for="cc-input-phone">Phone</label><input id="cc-input-phone" type="tel"></div>
             <div class="form-group"><label for="cc-input-email">Email</label><input id="cc-input-email" type="email"></div>
-            <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
+            <div class="form-group"><label for="cc-input-whatsapp">WhatsApp</label><input id="cc-input-whatsapp" type="tel" placeholder="+9715XXXXXXXX"></div>
+            <div class="form-group"><label for="cc-input-passport-expiry">Passport Expiry (if applicable)</label><input id="cc-input-passport-expiry" type="date"></div>
+            <div class="form-group"><label for="cc-input-emirates-id-expiry">Emirates ID Expiry (if applicable)</label><input id="cc-input-emirates-id-expiry" type="date"></div>
+            <div class="form-group"><label for="cc-input-visa-expiry">Visa Expiry (if applicable)</label><input id="cc-input-visa-expiry" type="date"></div>
+            <div class="custom-modal-actions"><button type="button" class="btn btn-secondary" onclick="closeCompanyClientModal()">Cancel</button><button id="cc-save-button" type="button" class="btn btn-primary" onclick="saveCompanyClient()">Save Client</button></div>
         </div>
     </div>
 
@@ -804,6 +924,10 @@
                 <div class="form-group"><label for="sf-last-work">Last Work Done</label><input id="sf-last-work" type="text"></div>
                 <div class="form-group"><label for="sf-passport">Passport Number</label><input id="sf-passport" type="text"></div>
                 <div class="form-group"><label for="sf-passport-expiry">Passport Expiry</label><input id="sf-passport-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-emirates-id">Emirates ID Number</label><input id="sf-emirates-id" type="text"></div>
+                <div class="form-group"><label for="sf-emirates-id-expiry">Emirates ID Expiry</label><input id="sf-emirates-id-expiry" type="date"></div>
+                <div class="form-group"><label for="sf-other-document-name">Other Staff Document Name</label><input id="sf-other-document-name" type="text" placeholder="e.g. Insurance / Certificate"></div>
+                <div class="form-group"><label for="sf-other-document-expiry">Other Staff Document Expiry</label><input id="sf-other-document-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-labour-card-number">Labour Card Number</label><input id="sf-labour-card-number" type="text"></div>
                 <div class="form-group"><label for="sf-labour-card-expiry">Labour Card Expiry</label><input id="sf-labour-card-expiry" type="date"></div>
                 <div class="form-group"><label for="sf-visa-number">Visa Number</label><input id="sf-visa-number" type="text"></div>
@@ -811,7 +935,7 @@
                 <div class="form-group"><label for="sf-visa-status">Visa Status</label><select id="sf-visa-status"><option value="">Select status</option><option>Valid</option><option>Expired</option><option>Under Renewal</option><option>Cancelled</option><option>Pending</option></select></div>
                 <div class="form-group"><label for="sf-renewal-status">Renewal Status</label><select id="sf-renewal-status"><option>Not Required</option><option>Pending</option><option>Due Soon</option><option>In Progress</option><option>Renewed</option></select></div>
                 <div class="form-group"><label for="sf-joining-date">Joining Date</label><input id="sf-joining-date" type="date"></div>
-                <div class="form-group"><label for="sf-phone">Contact Number</label><input id="sf-phone" type="tel"></div>
+                <div class="form-group"><label for="sf-phone">Contact Number</label><input id="sf-phone" type="tel"></div><div class="form-group"><label for="sf-whatsapp">WhatsApp Number (for expiry alerts)</label><input id="sf-whatsapp" type="tel" placeholder="+9715XXXXXXXX"></div>
                 <div class="form-group"><label for="sf-email">Email</label><input id="sf-email" type="email"></div>
                 <div class="form-group"><label for="sf-document-reference">Document Reference / Secure URL</label><input id="sf-document-reference" type="text" placeholder="Storage reference or secure document URL"></div>
                 <div class="form-group staff-notes-field"><label for="sf-notes">Notes</label><textarea id="sf-notes" rows="3"></textarea></div>
@@ -1080,5 +1204,6 @@
     <script src="work-tracking.js"></script>
     <script src="translator.js"></script>
     <script src="language.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>

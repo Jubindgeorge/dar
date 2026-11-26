@@ -37,6 +37,7 @@ function initFirebaseListeners() {
         if (typeof renderClientsTable === 'function') renderClientsTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
         if (typeof renderStaffTable === 'function') renderStaffTable();
+        if (typeof window.darRenderExpiryNotifications === 'function') window.darRenderExpiryNotifications();
     }, error => showFirebaseReadError('clients', error));
 
     db.ref('documents').on('value', snapshot => {
@@ -47,6 +48,7 @@ function initFirebaseListeners() {
         if (typeof renderWorksTable === 'function') renderWorksTable();
         if (typeof renderDashboardStats === 'function') renderDashboardStats();
         if (typeof renderAccountsLedgerMaster === 'function') renderAccountsLedgerMaster();
+        if (typeof window.darRenderExpiryNotifications === 'function') window.darRenderExpiryNotifications();
     }, error => showFirebaseReadError('documents', error));
 
     db.ref('services').on('value', snapshot => {
@@ -61,12 +63,16 @@ function initFirebaseListeners() {
         state.staff = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderStaffTable === 'function') renderStaffTable();
         if (typeof renderCompanyStaffLedger === 'function') renderCompanyStaffLedger();
+        if (typeof renderDashboardStats === 'function') renderDashboardStats();
+        if (typeof window.darRenderExpiryNotifications === 'function') window.darRenderExpiryNotifications();
     }, error => showFirebaseReadError('staff', error));
 
     db.ref('companyClients').on('value', snapshot => {
         const val = snapshot.val();
         state.companyClients = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof populateCompanyClients === 'function') populateCompanyClients();
+        if (typeof renderDashboardStats === 'function') renderDashboardStats();
+        if (typeof window.darRenderExpiryNotifications === 'function') window.darRenderExpiryNotifications();
     }, error => showFirebaseReadError('company clients', error));
 
     db.ref('suppliers').on('value', snapshot => {

@@ -523,12 +523,24 @@ window.openClientModal = function(id) {
     document.getElementById('cl-modal-id').value = id || '';
     document.getElementById('cl-input-company-name').value = cl ? cl.companyName : '';
     document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
-    document.getElementById('cl-input-contact-person').value = cl ? cl.contactPerson : '';
+    document.getElementById('cl-input-contact-person').value = cl ? (cl.contactPerson || '') : '';
+    const companyFields = {
+        'cl-input-email':'email','cl-input-whatsapp':'whatsapp','cl-input-group-link':'whatsappGroupLink',
+        'cl-input-trade-license-no':'tradeLicenseNumber','cl-input-trade-license-expiry':'tradeLicenseExpiry',
+        'cl-input-establishment-no':'establishmentCardNumber','cl-input-establishment-expiry':'establishmentCardExpiry',
+        'cl-input-labour-card-no':'immigrationLabourCardNumber','cl-input-labour-card-expiry':'immigrationLabourCardExpiry',
+        'cl-input-tenancy-no':'tenancyContractNumber','cl-input-tenancy-expiry':'tenancyContractExpiry',
+        'cl-input-other-doc-name':'otherDocumentName','cl-input-other-doc-expiry':'otherDocumentExpiry'
+    };
+    Object.entries(companyFields).forEach(([field,key])=>{const el=document.getElementById(field);if(el)el.value=cl?(cl[key]||''):'';});
+    const title=document.getElementById('client-modal-title');if(title)title.textContent=cl?'Edit Company Profile':'Add New Company';
+    const save=document.getElementById('cl-save-button');if(save)save.textContent=cl?'Save Changes':'Save Account';
     document.getElementById('client-modal').style.display = 'flex';
 };
 
 window.closeClientModal = function() {
-    document.getElementById('client-modal').style.display = 'none';
+    const modal=document.getElementById('client-modal');if(modal)modal.style.display='none';
+    const save=document.getElementById('cl-save-button');if(save){save.disabled=false;save.textContent='Save Account';}
 };
 
 window.saveClientModalData = async function() {
@@ -537,6 +549,21 @@ window.saveClientModalData = async function() {
     const companyName = document.getElementById('cl-input-company-name').value.trim();
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
     const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
+    const companyProfile = {
+        email:document.getElementById('cl-input-email')?.value.trim()||'',
+        whatsapp:document.getElementById('cl-input-whatsapp')?.value.trim()||'',
+        whatsappGroupLink:document.getElementById('cl-input-group-link')?.value.trim()||'',
+        tradeLicenseNumber:document.getElementById('cl-input-trade-license-no')?.value.trim()||'',
+        tradeLicenseExpiry:document.getElementById('cl-input-trade-license-expiry')?.value||'',
+        establishmentCardNumber:document.getElementById('cl-input-establishment-no')?.value.trim()||'',
+        establishmentCardExpiry:document.getElementById('cl-input-establishment-expiry')?.value||'',
+        immigrationLabourCardNumber:document.getElementById('cl-input-labour-card-no')?.value.trim()||'',
+        immigrationLabourCardExpiry:document.getElementById('cl-input-labour-card-expiry')?.value||'',
+        tenancyContractNumber:document.getElementById('cl-input-tenancy-no')?.value.trim()||'',
+        tenancyContractExpiry:document.getElementById('cl-input-tenancy-expiry')?.value||'',
+        otherDocumentName:document.getElementById('cl-input-other-doc-name')?.value.trim()||'',
+        otherDocumentExpiry:document.getElementById('cl-input-other-doc-expiry')?.value||''
+    };
     if (!id && companyName) {
         const normalized = companyName.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
         const duplicate = (state.clients || []).find(c => (c.companyName || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim() === normalized);
@@ -555,7 +582,7 @@ window.saveClientModalData = async function() {
 
     const previous = (state.clients || []).find(item => item.id === id) || {};
     const audit = window.darDates ? window.darDates.audit(previous) : { createdDate: previous.createdDate || localISODate(), updatedAt: new Date().toISOString() };
-    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...audit }, (err) => {
+    db.ref(`clients/${id}`).update({ companyName, nameAr, contactPerson, ...companyProfile, ...audit }, (err) => {
         if (!err) { closeClientModal(); }
         else showCustomModal('Save failed', 'Client details could not be saved. Check Firebase permissions and your connection.');
     });
@@ -579,6 +606,19 @@ window.viewClientDetail = function(clientId) {
     document.getElementById('cd-company-name').innerText = client.companyName || '-';
     document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
     document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
+    const profileText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value||'-';};
+    profileText('cd-company-email',client.email);
+    profileText('cd-company-whatsapp',client.whatsapp);
+    profileText('cd-trade-license-number',client.tradeLicenseNumber);
+    profileText('cd-establishment-number',client.establishmentCardNumber);
+    profileText('cd-labour-card-number',client.immigrationLabourCardNumber);
+    profileText('cd-tenancy-number',client.tenancyContractNumber);
+    profileText('cd-trade-license-expiry',client.tradeLicenseExpiry);
+    profileText('cd-establishment-expiry',client.establishmentCardExpiry);
+    profileText('cd-labour-card-expiry',client.immigrationLabourCardExpiry);
+    profileText('cd-tenancy-expiry',client.tenancyContractExpiry);
+    profileText('cd-other-document',client.otherDocumentName);
+    profileText('cd-other-document-expiry',client.otherDocumentExpiry);
 
     const clientDocs = (state.documents || []).filter(d => normalizeCompanyFolderKey(d.companyName || 'Without Company') === normalizeCompanyFolderKey(client.companyName));
     const tbody = document.getElementById('client-detail-records-body');
@@ -731,6 +771,8 @@ window.clearDocumentFilters = function() {
     }
     const branch = document.getElementById('doc-branch-filter');
     if (branch) branch.value = 'all';
+    const paymentStatus = document.getElementById('doc-payment-status-filter');
+    if (paymentStatus) paymentStatus.value = '';
     renderDocumentsTable();
 };
 function darEscapeHTML(value) {
@@ -753,6 +795,7 @@ function renderDocumentsTable() {
 
     const searchVal = (document.getElementById('doc-search-input')?.value || '').trim().toLowerCase();
     const branch = document.getElementById('doc-branch-filter')?.value || 'all';
+    const paymentFilter = document.getElementById('doc-payment-status-filter')?.value || '';
     const minRaw = document.getElementById('doc-min-amount')?.value || '';
     const maxRaw = document.getElementById('doc-max-amount')?.value || '';
     const min = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Math.max(0, Number(minRaw)) : null;
@@ -769,7 +812,22 @@ function renderDocumentsTable() {
         const matchesBranch = branch === 'all' ||
             (branch === 'staff' ? getAutomaticWorkBranch(d) === 'staff' : getAutomaticWorkBranch(d) !== 'staff');
         const amount = getDarDocumentAmount(d);
-        return matchesText && matchesBranch && matchesDate &&
+        const paid = Math.min(amount, Math.max(0, Number(window.getDarDocumentPaidAmount ? window.getDarDocumentPaidAmount(d) : (d.advanceAmount ?? d.advanceAmt ?? d.advance ?? 0)) || 0));
+        const balance = Math.max(0, amount - paid);
+        const paymentStatus = String(window.getDarDocumentPaymentStatus ? window.getDarDocumentPaymentStatus(d) : (balance <= 0.005 ? 'paid' : paid > 0 ? 'partial' : 'unpaid')).toLowerCase();
+        const dueDate = String(d.dueDate || d.paymentDueDate || d.transactionDate || d.createdDate || d.date || '').slice(0,10);
+        const todayISO = window.darDates ? window.darDates.todayISO() : new Date().toISOString().slice(0,10);
+        const ageDays = dueDate ? Math.max(0, Math.floor((Date.parse(todayISO+'T00:00:00Z') - Date.parse(dueDate+'T00:00:00Z')) / 86400000)) : null;
+        const completed = String(d.proStatus || d.workStatus || '').toLowerCase() === 'completed';
+        let matchesPayment = true;
+        if (paymentFilter === 'outstanding') matchesPayment = balance > 0.005;
+        else if (paymentFilter === 'completed-balance') matchesPayment = completed && balance > 0.005;
+        else if (paymentFilter === 'age-0-30') matchesPayment = balance > 0.005 && ageDays !== null && ageDays <= 30;
+        else if (paymentFilter === 'age-31-60') matchesPayment = balance > 0.005 && ageDays !== null && ageDays >= 31 && ageDays <= 60;
+        else if (paymentFilter === 'age-61-90') matchesPayment = balance > 0.005 && ageDays !== null && ageDays >= 61 && ageDays <= 90;
+        else if (paymentFilter === 'age-90-plus') matchesPayment = balance > 0.005 && ageDays !== null && ageDays > 90;
+        else if (paymentFilter) matchesPayment = paymentStatus === paymentFilter;
+        return matchesText && matchesBranch && matchesDate && matchesPayment &&
             (min === null || amount >= min) && (max === null || amount <= max);
     });
     const sortMode = document.getElementById('doc-sort-order')?.value || 'newest';
@@ -1424,9 +1482,35 @@ window.renderQuotationTable = function() {
                 <button type="button" class="btn btn-secondary" onclick='previewInvoiceDocument(${darSafeDocumentKey(d.refCode)})' title="Preview"><i class="fa-solid fa-eye"></i></button>
                 <button type="button" class="btn btn-secondary" onclick='openStudio("Quotation",${darSafeDocumentKey(d.refCode)})' title="Edit"><i class="fa-solid fa-pen"></i></button>
                 <button type="button" class="btn btn-primary" ${balance <= 0.005 ? 'disabled title="Quotation fully invoiced"' : 'onclick=\'openQuotationConversion(' + darSafeDocumentKey(d.refCode) + ')\' title="Convert to invoice"'}>${balance <= 0.005 ? 'Fully Invoiced' : 'Convert'}</button>
+                <button type="button" class="btn btn-danger" onclick='deleteQuotation(${darSafeDocumentKey(d.refCode)})' title="Move quotation to recovery"><i class="fa-solid fa-trash"></i> Delete</button>
             </td>
         </tr>`;
     }).join('');
+};
+
+window.deleteQuotation = async function(refCode) {
+    const quote = (state.documents || []).find(doc => doc.refCode === refCode && doc.type === 'Quotation');
+    if (!quote) { showCustomModal('Quotation not found', 'This quotation is no longer available. Refresh the list and try again.'); return; }
+    const invoicedAmount = Math.max(0, Number(quote.invoicedAmount) || 0);
+    const linkedInvoices = (state.documents || []).filter(doc => doc.type !== 'Quotation' && doc.sourceQuotationRef === refCode);
+    if (invoicedAmount > 0.005 || linkedInvoices.length) {
+        showCustomModal('Quotation cannot be deleted', 'This quotation has invoice(s) linked to it. Keep it to preserve invoice conversion and billing history.');
+        return;
+    }
+    if (typeof window.safeDeleteDarRecord !== 'function') {
+        showCustomModal('Delete unavailable', 'The recovery and audit service is not available. No record was deleted.');
+        return;
+    }
+    if (!window.confirm('Move quotation ' + refCode + ' to Data Protection recovery? This will not delete invoices or payment records.')) return;
+    try {
+        await window.safeDeleteDarRecord('documents', refCode);
+        state.documents = (state.documents || []).filter(doc => doc.refCode !== refCode);
+        if (typeof window.renderQuotationTable === 'function') window.renderQuotationTable();
+        if (typeof renderDashboardStats === 'function') renderDashboardStats();
+    } catch (error) {
+        console.error('Quotation deletion failed:', error);
+        showCustomModal('Delete failed', 'The quotation was not removed from the list because the recovery operation failed.');
+    }
 };
 
 window.openQuotationConversion = function(refCode) {

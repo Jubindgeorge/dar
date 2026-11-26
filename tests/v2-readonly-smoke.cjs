@@ -75,3 +75,39 @@ assert.match(studio, /Billed stages are locked/, 'stage-linked quotation rows ar
 assert.match(styles, /@media print/, 'invoice and quotation previews have an A4 print layout');
 assert.match(app, /Adv\. Amount/, 'PDF summary displays advance amount');
 assert.match(app, /Dis\. %/, 'PDF summary displays discount percentage');
+
+
+// Executive dashboard checks: additive UI, read-only state calculations, navigation, and mobile layout.
+const dashboard = fs.readFileSync('dashboard.js', 'utf8');
+const stateSource = fs.readFileSync('state.js', 'utf8');
+for (const id of [
+  'dash-exec-search','dash-exec-search-results','dash-exec-invoiced','dash-exec-received',
+  'dash-exec-outstanding','dash-exec-unpaid','dash-exec-partial','dash-exec-paid',
+  'dash-exec-overdue','dash-exec-work-pending','dash-exec-work-progress',
+  'dash-exec-work-completed','dash-exec-work-closed','dash-exec-completed-balance',
+  'dash-exec-age-30','dash-exec-age-60','dash-exec-age-90','dash-exec-age-90plus',
+  'dash-exec-alert-list','dash-exec-recent'
+]) {
+  assert.match(html, new RegExp('id="' + id + '"'), 'executive dashboard missing: ' + id);
+}
+assert.match(html, /dashboard\.js/, 'executive dashboard module is loaded');
+assert.match(dashboard, /getDarDocumentPaymentStatus/, 'dashboard reuses the shared payment status rules');
+assert.match(dashboard, /getDarDocumentPaidAmount/, 'dashboard reuses the shared legacy-safe payment total');
+assert.match(dashboard, /norm\(doc\.status\) !== 'draft'/, 'draft invoices are excluded from executive financial totals');
+assert.match(dashboard, /tradeLicenseExpiry/, 'dashboard reads company expiry profile fields');
+assert.match(dashboard, /otherStaffDocumentExpiry/, 'dashboard reads staff expiry profile fields');
+assert.match(dashboard, /window\.viewClientDetail/, 'company search opens company profile');
+assert.match(dashboard, /window\.openStaffProfile/, 'staff search opens staff profile');
+assert.match(dashboard, /window\.previewInvoiceDocument/, 'invoice search opens the selected invoice preview');
+assert.match(dashboard, /window\.openCompanyClientModal/, 'company-client search opens the exact client profile');
+assert.ok((stateSource.match(/darRenderExpiryNotifications/g)||[]).length >= 4, 'expiry centre refreshes after company, invoice, staff and company-client Firebase records load');
+assert.match(stateSource, /renderDashboardStats\(\)/, 'dashboard refreshes after profile records load');
+assert.match(html, /onclick="openStudio\('Invoice'\)"/, 'quick action opens invoice creation');
+assert.match(html, /onclick="openStudio\('Quotation'\)"/, 'quick action opens quotation creation');
+assert.match(html, /darDashboardOpen\('record-payment'\)/, 'quick action opens the payment entry destination');
+assert.match(dashboard, /raw === 'completed'/, 'work completion is based on the manually maintained PRO status');
+assert.match(dashboard, /raw === 'closed'/, 'dashboard recognizes explicitly closed work');
+assert.match(fs.readFileSync('work-tracking.js', 'utf8'), /'Completed','Closed'/, 'work tracking supports manual closure');
+assert.match(styles, /\.dash-quick-grid/, 'executive dashboard quick actions have responsive styling');
+assert.match(styles, /@media\(max-width:640px\)/, 'executive dashboard has a mobile layout');
+console.log('Executive dashboard source checks passed');
