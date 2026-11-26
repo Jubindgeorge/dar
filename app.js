@@ -1036,7 +1036,14 @@ window.previewInvoiceDocument = async function(refCode) {
             const completedAmount = Number(doc.completedWorkAmount ?? getDarDocumentAmount(doc));
             const completedPercent = Number(doc.completedWorkPercent ?? (originalTotal > 0 ? completedAmount / originalTotal * 100 : 0));
             const remainingAmount = Number(doc.remainingQuotationAmount ?? Math.max(0, originalTotal - (Number(doc.quotationPreviouslyInvoiced) || 0) - completedAmount));
-            quotationSourceLine.textContent = `Against Quotation ${sourceRef} | Original Quotation Total: AED ${originalTotal.toFixed(2)} | Amount for Completed Work: AED ${completedAmount.toFixed(2)} (${completedPercent.toFixed(2)}%) | Remaining Quotation Amount: AED ${remainingAmount.toFixed(2)}`;
+            const showOriginal = doc.showQuotationOriginalTotal === true;
+            const showPreviously = doc.showQuotationPreviouslyInvoiced === true;
+            const showRemaining = doc.showQuotationRemainingBalance === true;
+            const details = [];
+            if (showOriginal) details.push(`Original Quotation Total: AED ${originalTotal.toFixed(2)}`);
+            if (showPreviously) details.push(`Previously Invoiced: AED ${Number(doc.quotationPreviouslyInvoiced || 0).toFixed(2)}`);
+            if (showRemaining) details.push(`Remaining Quotation Balance: AED ${remainingAmount.toFixed(2)}`);
+            quotationSourceLine.textContent = `Quotation Reference: ${sourceRef}` + (details.length ? ' | ' + details.join(' | ') : '');
             quotationSourceLine.style.display = 'block';
         } else {
             quotationSourceLine.textContent = '';
@@ -1571,9 +1578,13 @@ window.openQuotationConversion = function(refCode) {
         return `<label class="qc-stage-row"><input type="checkbox" value="${index}" ${billed ? 'disabled' : ''}> <span>${darEscapeHTML(title)}${billed ? ' — already invoiced' : ''}</span><strong>AED ${amount.toFixed(2)}</strong></label>`;
     }).join('') || '<p class="dar-hint">This quotation has no itemised rows. Use amount or percentage billing.</p>';
     const updateMode = () => {
-        const stage = document.getElementById('qc-mode').value === 'stage';
-        document.getElementById('qc-amount-fields').hidden = stage;
+        const mode = document.getElementById('qc-mode').value;
+        const stage = mode === 'stage';
+        const remainingMode = mode === 'remaining';
+        document.getElementById('qc-amount-fields').hidden = stage || remainingMode;
         document.getElementById('qc-stage-fields').hidden = !stage;
+        const remainingHint = document.getElementById('qc-remaining-hint');
+        if (remainingHint) remainingHint.hidden = !remainingMode;
     };
     document.getElementById('qc-mode').onchange = updateMode;
     updateMode();
@@ -1595,7 +1606,13 @@ window.submitQuotationConversion = function() {
     let invoiceSubtotal = 0, invoiceProcessing = 0, invoiceDiscount = 0, invoiceDiscountPercent = 0;
     let completedWorkPercent = 0;
     let selectedStageIndexes = [];
-    if (mode === 'stage') {
+    if (mode === 'remaining') {
+        amount = remaining;
+        if (amount <= 0) { showCustomModal('Nothing remaining','This quotation has no unbilled balance.'); return; }
+        description = 'Final balance invoice against ' + quoteRef;
+        items = [{packageName:description,serviceName:description,title:description,q:1,p:amount}];
+        invoiceSubtotal = amount;
+    } else if (mode === 'stage') {
         selectedStageIndexes = [...document.querySelectorAll('#qc-stage-items input[type="checkbox"]:checked:not(:disabled)')].map(el => Number(el.value));
         if (!selectedStageIndexes.length) { showCustomModal('Select stages','Choose at least one stage that has not already been invoiced.'); return; }
         items = selectedStageIndexes.map(i => (quote.items || [])[i]).filter(Boolean).map(item => ({...item}));
@@ -1658,6 +1675,9 @@ window.submitQuotationConversion = function() {
             completedWorkAmount:amount, completedWorkPercent:completedWorkPercent,
             remainingQuotationAmount:Math.max(0, Math.round((liveRemaining - amount) * 100) / 100),
             billingMode:mode, stageItemIndexes:mode === 'stage' ? selectedStageIndexes : [],
+            showQuotationOriginalTotal:document.getElementById('qc-show-original')?.checked === true,
+            showQuotationPreviouslyInvoiced:document.getElementById('qc-show-previous')?.checked === true,
+            showQuotationRemainingBalance:document.getElementById('qc-show-remaining')?.checked === true,
             packageName:liveQuote.packageName || description, serviceName:liveQuote.serviceName || description,
             items, subtotalAmount:invoiceSubtotal, subTotal:invoiceSubtotal,
             processingCharges:invoiceProcessing, processingCharge:invoiceProcessing,
