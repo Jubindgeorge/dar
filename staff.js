@@ -514,66 +514,116 @@
         const combined=allLines.join(' ').toLowerCase();
         const looksMohre=/list\s+of\s+employees|establishment\s*(?:number|no\.? )|passport\s*(?:number|no\.? )|person\s*name|card\s*type|job\s*name|card\s*number|mohre/i.test(combined);
         if(looksMohre){
-            // MOHRE PDF is a positioned table, not a sequence of pipe-delimited
-            // records. Use the printed column geometry and passport-column anchors.
-            // PDF.js coordinates use the same left-to-right x positions on every page.
+            // Infer MOHRE columns from the PDF's own header row on each page.
+            // This avoids fixed X coordinates, which break when a PDF is exported
+            // with different margins, paper sizes, or scaling.
             const passportPattern=/^[A-Z0-9]{6,12}$/i;
-            const personPattern=/^\d{12,16}$/;
-            const cardPattern=/^\d{8,10}$/;
-            const datePattern=/^\d{1,2}\/\d{1,2}\/\d{4}$/;
+            const personPattern=/^\\d{10,18}$/;
+            const cardPattern=/^\\d{6,12}$/;
+            const datePattern=/^(?:\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{4}|\\d{4}-\\d{1,2}-\\d{1,2})$/;
+            const headerPatterns={
+                passportNumber:/\\bpassport\\b/i,
+                personName:/\\bperson\\b|\\bname\\b/i,
+                cardType:/\\bcard\\s*type\\b/i,
+                designation:/\\bjob\\b/i,
+                nationality:/\\bnationality\\b/i,
+                cardNumber:/\\bcard\\s*(?:number|no)\\b/i,
+                contractType:/\\bcontract\\b/i
+            };
             const latinText=(items)=>items.map(item=>item.text)
                 .filter(value=>/[A-Za-z]/.test(value))
-                .map(value=>value.replace(/[^A-Za-z0-9 .&'()\/-]/g,' ').replace(/\s+/g,' ').trim())
-                .filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+                .map(value=>value.replace(/[^A-Za-z0-9 .&'()\\/-]/g,' ').replace(/\\s+/g,' ').trim())
+                .filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+            const detectHeaderMap=(items)=>{
+                const hits=[];
+                items.forEach(item=>{
+                    const value=item.text.replace(/[^A-Za-z ]/g,' ').replace(/\\s+/g,' ').trim();
+                    Object.entries(headerPatterns).forEach(([field,pattern])=>{
+                        if(pattern.test(value))hits.push({field,x:item.x,y:item.y});
+                    });
+                });
+                const groups=[];
+                hits.sort((a,b)=>b.y-a.y).forEach(hit=>{
+                    let group=groups.find(entry=>Math.abs(entry.y-hit.y)<=10);
+                    if(!group){group={y:hit.y,hits:[]};groups.push(group);}
+                    group.hits.push(hit);
+                });
+                groups.sort((a,b)=>{
+                    const countA=new Set(a.hits.map(hit=>hit.field)).size;
+                    const countB=new Set(b.hits.map(hit=>hit.field)).size;
+                    return countB-countA || b.y-a.y;
+                });
+                const best=groups[0];
+                if(!best)return null;
+                const map={};
+                best.hits.sort((a,b)=>a.x-b.x).forEach(hit=>{if(map[hit.field]===undefined)map[hit.field]=hit.x;});
+                return ['passportNumber','personName','cardType','cardNumber'].every(field=>Number.isFinite(map[field])) ? map : null;
+            };
+            const columnBounds=(headerMap)=>{
+                const columns=Object.entries(headerMap).map(([field,x])=>({field,x})).sort((a,b)=>a.x-b.x);
+                const bounds={};
+                columns.forEach((column,index)=>{
+                    bounds[column.field]={
+                        left:index===0?-Infinity:(columns[index-1].x+column.x)/2,
+                        right:index===columns.length-1?Infinity:(column.x+columns[index+1].x)/2
+                    };
+                });
+                return bounds;
+            };
             const records=[];
             const leadingPersonNumbers=[];
+            const pageHeaderMaps=pages.map(items=>detectHeaderMap(items));
+            const sharedHeaderMap=pageHeaderMaps.find(Boolean);
             pages.forEach((items,pageIndex)=>{
-                const anchors=items.filter(item=>item.x<90 && passportPattern.test(item.text) &&
-                    !/^RP/i.test(item.text))
-                    .sort((a,b)=>b.y-a.y);
+                const headerMap=pageHeaderMaps[pageIndex]||sharedHeaderMap;
+                if(!headerMap)return;
+                const bounds=columnBounds(headerMap);
+                const inColumn=(row,field)=>bounds[field]
+                    ? row.filter(item=>item.x>=bounds[field].left && item.x<bounds[field].right)
+                    : [];
+                const anchors=items.filter(item=>{
+                    const range=bounds.passportNumber;
+                    return range && item.x>=range.left && item.x<range.right &&
+                        passportPattern.test(item.text) && !/^RP/i.test(item.text);
+                }).sort((a,b)=>b.y-a.y);
                 if(!anchors.length)return;
-                // A person number may be the first text on page 2 because the
-                // employee's name/card row began at the bottom of page 1.
                 if(pageIndex>0){
                     const firstY=anchors[0].y;
-                    items.filter(item=>item.x>=85 && item.x<235 && item.y>firstY &&
-                        personPattern.test(item.text)).forEach(item=>leadingPersonNumbers.push({recordIndex:records.length-1,number:item.text}));
+                    const previous=records[records.length-1];
+                    if(previous){
+                        const orphanNumbers=items.filter(item=>item.y>firstY+2 &&
+                            bounds.personName && item.x>=bounds.personName.left &&
+                            item.x<bounds.personName.right && personPattern.test(item.text));
+                        if(orphanNumbers.length&&!previous.personNumber)previous.personNumber=orphanNumbers[0].text;
+                    }
                 }
                 anchors.forEach((anchor,index)=>{
                     const nextY=anchors[index+1]?.y ?? -Infinity;
-                    const rowBottom=Math.max(nextY+2,anchor.y-35);
-                    const inRow=items.filter(item=>item.y<=anchor.y+2 && item.y>rowBottom);
-                    const inColumn=(min,max)=>inRow.filter(item=>item.x>=min && item.x<max);
-                    const passport=anchor.text;
-                    const nameItems=inColumn(85,235);
-                    const personNumber=nameItems.find(item=>personPattern.test(item.text))?.text || '';
+                    const rowBottom=Math.max(nextY+2,anchor.y-45);
+                    const row=items.filter(item=>item.y<=anchor.y+2 && item.y>rowBottom);
+                    const nameItems=inColumn(row,'personName');
+                    const personNumber=nameItems.find(item=>personPattern.test(item.text))?.text||'';
                     const fullName=latinText(nameItems.filter(item=>!personPattern.test(item.text)));
-                    const cardItems=inColumn(470,535);
-                    const cardNumber=cardItems.find(item=>cardPattern.test(item.text))?.text || '';
-                    const expiry=cardItems.find(item=>datePattern.test(item.text))?.text || '';
-                    const cardType=latinText(inColumn(230,350));
-                    const designation=latinText(inColumn(350,425));
-                    const nationality=latinText(inColumn(425,480)).toUpperCase();
-                    const contractType=latinText(inColumn(535,595));
-                    if(!fullName || !cardNumber || !expiry || !cardType) return;
+                    const cardItems=inColumn(row,'cardNumber');
+                    const cardNumber=cardItems.find(item=>cardPattern.test(item.text))?.text||'';
+                    const expiry=cardItems.find(item=>datePattern.test(item.text))?.text||'';
+                    const cardType=latinText(inColumn(row,'cardType'));
+                    const designation=latinText(inColumn(row,'designation'));
+                    const nationality=latinText(inColumn(row,'nationality')).toUpperCase();
+                    const contractType=latinText(inColumn(row,'contractType'));
+                    if(!fullName||!cardNumber||!expiry||!cardType)return;
                     records.push({
                         staffCode:'',personNumber,fullName,nationality,designation,
-                        passportNumber:passport,labourCardNumber:cardNumber,
+                        passportNumber:anchor.text,labourCardNumber:cardNumber,
                         labourCardExpiry:normalizeStaffImportDate(expiry),
                         cardType,contractType,
                         visaNumber:'',visaExpiry:'',visaStatus:'',renewalStatus:'Pending'
                     });
                 });
             });
-            // Attach a page-leading orphan Person Labour No. to the last employee
-            // from the preceding page, never to the first employee on this page.
-            leadingPersonNumbers.forEach(carryover=>{
-                const previous=records[carryover.recordIndex];
-                if(previous && !previous.personNumber)previous.personNumber=carryover.number;
-            });
             if(records.length){
-                const declaredTotal=(combined.match(/total\s+number\s+of\s+employees\s*[:：]?\s*(\d+)/i)||[])[1];
-                if(declaredTotal && Number(declaredTotal)!==records.length){
+                const declaredTotal=(combined.match(/total\\s+number\\s+of\\s+employees\\s*[:：]?\\s*(\\d+)/i)||[])[1];
+                if(declaredTotal&&Number(declaredTotal)!==records.length){
                     throw new Error('MOHRE employee rows were partially identified ('+records.length+' of '+declaredTotal+'). No records have been imported.');
                 }
                 return records;
