@@ -1,0 +1,50 @@
+name: Cloudflare Worker Configuration Check
+
+on:
+  pull_request:
+    paths:
+      - 'wrangler.toml'
+      - 'worker.js'
+      - 'index.html'
+      - 'ledger.html'
+      - '*.js'
+      - '*.css'
+      - '.github/workflows/cloudflare-validation.yml'
+  push:
+    branches:
+      - feature/accounts-finance-management-centre
+    paths:
+      - 'wrangler.toml'
+      - 'worker.js'
+      - 'index.html'
+      - 'ledger.html'
+      - '*.js'
+      - '*.css'
+      - '.github/workflows/cloudflare-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-worker:
+    name: Build and validate Cloudflare Worker preview (dry run)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate Wrangler configuration and static assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 deploy --dry-run --config wrangler.toml --name dar-preview
+          test -s dist/index.html
+          test -s dist/ledger.html
+          test -s dist/config.js
+          test -s dist/finance-centre.css
