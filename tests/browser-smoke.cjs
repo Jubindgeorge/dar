@@ -566,9 +566,14 @@ const assert = require('node:assert/strict');
         const finalQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
         const stageInvoice=state.documents.find(d=>d.billingMode==='stage' && d.sourceQuotationRef==='QTN-TEST-001');
         openQuotationConversion('QTN-TEST-001');
-        document.getElementById('qc-mode').value='stage';
+        document.getElementById('qc-mode').value='remaining';
         document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        submitQuotationConversion();
+        const finalInvoice=state.documents.find(d=>d.billingMode==='remaining' && d.sourceQuotationRef==='QTN-TEST-001');
+        const fullyBilledQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
         return {
+          finalInvoiceAmount:finalInvoice?.totalAmount, finalQuoteInvoiced:fullyBilledQuote?.invoicedAmount,
+          finalQuoteBalance:Math.max(0,fullyBilledQuote.totalAmount-fullyBilledQuote.invoicedAmount),
           amount:amountInvoice?.totalAmount, afterAmount:firstQuote?.invoicedAmount,
           amountInvoiceQuotationRef:amountInvoice?.quotationRef,
           amountInvoiceOriginalTotal:amountInvoice?.originalQuotationTotal,
@@ -598,6 +603,9 @@ const assert = require('node:assert/strict');
     assert.equal(conversionResult.stageADisabled,true,'A stage cannot be invoiced twice');
     assert.equal(conversionResult.stageBDisabled,false,'Unbilled stages remain available');
     assert.equal(conversionResult.modalVisible,'flex','Quotation conversion dialog opens');
+    assert.equal(conversionResult.finalInvoiceAmount,125,'Final-balance mode invoices only the remaining quotation amount');
+    assert.equal(conversionResult.finalQuoteInvoiced,300,'Final-balance invoice completes the quotation invoiced total');
+    assert.equal(conversionResult.finalQuoteBalance,0,'Quotation balance reaches zero after the final invoice');
     const linkedEditResult = await page.evaluate(() => {
       const oldRef=db.ref; const oldModal=window.showCustomModal;
       db.ref=path=>({transaction:(updater,callback)=>{const current=Object.fromEntries(state.documents.map(doc=>[doc.refCode,doc]));const next=updater(current);callback(null,!!next,{val:()=>next});}});
