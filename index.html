@@ -1036,7 +1036,12 @@
     <div id="quotation-conversion-modal" class="dar-conversion-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="qc-title">
         <div class="dar-conversion-card">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><h3 id="qc-title">Convert Quotation to Invoice</h3><button type="button" class="btn btn-secondary" onclick="closeQuotationConversion()">Close</button></div>
-            <p class="dar-hint">Quotation: <strong id="qc-ref"></strong> · Remaining to invoice: <strong id="qc-remaining"></strong></p>
+            <p class="dar-hint">Quotation: <strong id="qc-ref"></strong></p>
+            <div class="qc-quotation-summary" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0;padding:12px;border:1px solid #d7c08a;border-radius:8px;background:#fffdf7;">
+                <div><small>Original quotation total</small><strong id="qc-original-total" style="display:block;">AED 0.00</strong></div>
+                <div><small>Previously invoiced</small><strong id="qc-already-invoiced" style="display:block;">AED 0.00</strong></div>
+                <div><small>Remaining to invoice</small><strong id="qc-remaining" style="display:block;">AED 0.00</strong></div>
+            </div>
             <input type="hidden" id="qc-source-ref">
             <label for="qc-mode">Billing method</label>
             <select id="qc-mode"><option value="amount">Amount / percentage based</option><option value="stage">Completed service stages</option></select>
@@ -1111,6 +1116,8 @@
                         <div id="p-created-date" style="color: #475569;">Date: -</div>
                     </div>
                 </div>
+
+                <div id="p-quotation-source" style="display:none;margin:0 0 10px;padding:7px 9px;border:1px solid #d2b06b;background:#fffdf7;color:#334155;font-size:10px;line-height:1.5;font-weight:600;"></div>
 
                 <!-- Enhanced Table Container -->
                 <div id="p-content-container" style="position: relative; margin-bottom: 10px; min-height: 0;">
