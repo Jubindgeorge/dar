@@ -843,6 +843,21 @@ const assert = require('node:assert/strict');
     console.log('PASS: service and expense deletions use recoverable data protection');
     console.log('PASS: save actions, injected package title, staff folder and ledger column alignment');
     console.log('PASS: mobile sidebar, signup/recovery UI, invoice preview, PDF export call path');
+    const expiryCenterSmoke = await page.evaluate(() => {
+      const addDays = days => { const d=new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); };
+      state.clients=[{id:'expiry-company-test',companyName:'Expiry Test LLC',email:'office@example.com',whatsapp:'+971500000001',whatsappGroupLink:'https://chat.whatsapp.com/ABC123',tradeLicenseExpiry:addDays(10)}];
+      state.staff=[{id:'expiry-staff-test',companyId:'expiry-company-test',companyName:'Expiry Test LLC',fullName:'Expiry Test Employee',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'SENSITIVE-PASSPORT-123',passportExpiry:addDays(7)}];
+      state.companyClients=[{id:'expiry-client-test',companyId:'expiry-company-test',companyName:'Expiry Test LLC',name:'Expiry Linked Client',email:'client@example.com',whatsapp:'+971500000003',passportNumber:'SENSITIVE-CLIENT-PASSPORT',passportExpiry:addDays(15)}];
+      window.darRenderExpiryNotifications();
+      return document.getElementById('dar-expiry-notifications').innerText;
+    });
+    assert.match(expiryCenterSmoke,/Expiry Test LLC/,'Expiry center includes company expiry records');
+    assert.match(expiryCenterSmoke,/Expiry Test Employee/,'Expiry center includes staff expiry records');
+    assert.match(expiryCenterSmoke,/Expiry Linked Client/,'Expiry center includes linked-client expiry records');
+    assert.match(expiryCenterSmoke,/Manual Company Group Messages/,'Expiry center prepares manual-only group messages');
+    assert.match(expiryCenterSmoke,/Open Company Group/,'Saved group link is used for manual group opening');
+    assert.doesNotMatch(expiryCenterSmoke,/SENSITIVE-PASSPORT|SENSITIVE-CLIENT-PASSPORT/,'Expiry center never exposes identity document numbers');
+    console.log('PASS: company, staff and linked-client expiry center; manual group messages protect identity data');
     console.log('PASS: company staff table and purchase/supplier module rendering');
     if (errors.length) console.log('Browser page errors (external dependencies may be unavailable):',errors.slice(0,6));
   } finally { await browser.close(); }
