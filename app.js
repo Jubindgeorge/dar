@@ -1082,21 +1082,29 @@ window.previewInvoiceDocument = async function(refCode) {
         }).join('') + (() => {
             const itemSubtotal = normalizedItems.reduce((sum, item) => sum + (Number(item.p ?? item.price ?? 0) * Number(item.q ?? item.quantity ?? 1)), 0);
             const storedSubtotal = Number(doc.subtotalAmount ?? doc.subTotal);
-            const subtotal = (Number.isFinite(storedSubtotal) ? storedSubtotal : itemSubtotal) + Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0);
+            const subtotal = Number.isFinite(storedSubtotal) ? Math.max(0, storedSubtotal) : itemSubtotal;
+            const processingCharge = Math.max(0, Number(doc.processingCharges ?? doc.processingCharge) || 0);
             const advance = Math.max(0, Number(doc.advanceAmount ?? doc.advanceAmt ?? doc.advance ?? 0) || 0);
             const storedDiscountAmount = Math.max(0, Number(doc.discountAmount ?? doc.discountAmt ?? 0) || 0);
             const enteredDiscountPercent = Number(doc.discountPercent);
+            const discountBase = subtotal + processingCharge;
             const discountPercent = Number.isFinite(enteredDiscountPercent) && enteredDiscountPercent > 0
                 ? enteredDiscountPercent
-                : subtotal > 0 ? (storedDiscountAmount / subtotal) * 100 : 0;
+                : discountBase > 0 ? (storedDiscountAmount / discountBase) * 100 : 0;
+            const paidAmount = typeof window.getDarDocumentPaidAmount === 'function'
+                ? Math.max(0, Number(window.getDarDocumentPaidAmount(doc)) || 0)
+                : advance;
+            const balanceDue = Math.max(0, docTotal - Math.min(docTotal, paidAmount));
             const gold = '#b8860b';
             const summaryRow = (label, value, strong = false) => `<tr style="background:#fff;font-weight:${strong ? '800' : '600'};"><td colspan="3" style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${label}</td><td style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${value}</td></tr>`;
             return `
                 <tr class="dar-summary-host-row"><td colspan="4" style="padding:0;border:0 !important;background:transparent;"><table class="dar-totals-summary" style="width:43%;margin:6px 0 0 auto;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};">
                     ${summaryRow('Subtotal', 'AED ' + subtotal.toFixed(2))}
+                    ${summaryRow('Processing Charge', 'AED ' + processingCharge.toFixed(2))}
                     ${summaryRow('Adv. Amount', 'AED ' + advance.toFixed(2))}
                     ${summaryRow('Dis. %', discountPercent.toFixed(2) + '%')}
                     <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="3" style="padding:8px;border:1.5px solid ${gold};text-align:right;">Grand Total / المبلغ الإجمالي</td><td style="padding:8px;border:1.5px solid ${gold};text-align:right;">AED ${docTotal.toFixed(2)}</td></tr>
+                    ${summaryRow('Balance Due', 'AED ' + balanceDue.toFixed(2), true)}
                 </table></td></tr>`;
         })();
     }
