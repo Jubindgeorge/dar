@@ -594,7 +594,7 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
     #document-preview-modal .preview-modal-toolbar { display:none !important; }
     #document-preview-modal .preview-modal-body-canvas { position:static !important; display:block !important; width:100% !important; height:auto !important; padding:0 !important; margin:0 !important; overflow:visible !important; background:#fff !important; }
     /* Fixed paper-edge frame: repeated by the print engine on every A4 sheet. */
-    #document-preview-modal::after { content:"" !important; display:block !important; position:fixed !important; inset:1mm !important; border:1px solid #b8860b !important; box-sizing:border-box !important; pointer-events:none !important; z-index:2147483000 !important; }
+    #document-preview-modal::after { content:"" !important; display:block !important; position:fixed !important; inset:0.25mm !important; border:1px solid #c59b27 !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; box-sizing:border-box !important; pointer-events:none !important; z-index:2147483000 !important; }
     #a4-wrapper-element { width:190mm !important; max-width:190mm !important; min-width:0 !important; margin:5mm auto !important; padding:6mm 7mm !important; height:auto !important; min-height:0 !important; border:0 !important; box-shadow:none !important; transform:none !important; page-break-inside:auto !important; }
     #a4-wrapper-element::before { display:none !important; }
     #a4-wrapper-element table { page-break-inside:auto !important; }
