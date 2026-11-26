@@ -1,4 +1,4 @@
-name: Deploy DAR ERP to Cloudflare Pages
+name: Deploy DAR ERP to Cloudflare Worker
 
 on:
   workflow_dispatch:
@@ -11,12 +11,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: cloudflare-pages-${{ github.ref }}
+  group: cloudflare-worker-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Deploy static ERP portal
+    name: Deploy DAR ERP static assets to Worker
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -35,8 +35,9 @@ jobs:
           done
           test -s dist/index.html
           test -s dist/ledger.html
+          test -s dist/config.js
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -48,7 +49,11 @@ jobs:
             echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in GitHub Settings > Secrets and variables > Actions."
             exit 1
           fi
-          SAFE_BRANCH="${DEPLOY_BRANCH//\//-}"
-          npx --yes wrangler@4 pages deploy ./dist \
-            --project-name=dar-al-shams-erp \
-            --branch="${SAFE_BRANCH}"
+
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            WORKER_NAME="dar"
+          else
+            WORKER_NAME="dar-preview"
+          fi
+
+          npx --yes wrangler@4 deploy --config wrangler.toml --name "${WORKER_NAME}"
