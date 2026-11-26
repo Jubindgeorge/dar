@@ -1569,7 +1569,11 @@ window.openQuotationConversion = function(refCode) {
     document.getElementById('qc-mode').value = 'amount';
     document.getElementById('qc-amount').value = remaining.toFixed(2);
     document.getElementById('qc-percent').value = '100';
-    ['qc-show-original','qc-show-previous','qc-show-remaining','qc-show-terms'].forEach(id => { const checkbox=document.getElementById(id); if (checkbox) checkbox.checked=false; });
+    ['qc-show-original','qc-show-previous','qc-show-remaining'].forEach(id => { const checkbox=document.getElementById(id); if (checkbox) checkbox.checked=false; });
+    const quotationTerms = quote.termsAndConditions ?? quote.termsConditions ?? quote.terms ?? '';
+    const quotationTermsText = Array.isArray(quotationTerms) ? quotationTerms.join('\n').trim() : String(quotationTerms || '').trim();
+    const showTermsCheckbox = document.getElementById('qc-show-terms');
+    if (showTermsCheckbox) showTermsCheckbox.checked = !!quotationTermsText && quote.showTermsAndConditions !== false;
     const stageBox = document.getElementById('qc-stage-items');
     const alreadyBilledStages = new Set(Array.isArray(quote.invoicedStageIndexes) ? quote.invoicedStageIndexes : []);
     stageBox.innerHTML = (Array.isArray(quote.items) ? quote.items : []).map((item,index) => {
