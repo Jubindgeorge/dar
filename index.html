@@ -813,6 +813,15 @@
                         <label for="st-notes" style="color:var(--primary);font-weight:700;">Notes (optional)</label>
                         <textarea id="st-notes" rows="3" placeholder="Enter any notes to appear on the invoice / quotation PDF..." style="width:100%;box-sizing:border-box;"></textarea>
                     </div>
+                    <div class="studio-editor" style="margin-bottom:16px;">
+                        <label style="display:flex;align-items:center;gap:8px;color:var(--primary);font-weight:700;">
+                            <input type="checkbox" id="st-show-terms" checked>
+                            Include Terms &amp; Conditions on this document
+                        </label>
+                        <label for="st-terms-and-conditions" style="display:block;margin-top:10px;">Terms &amp; Conditions</label>
+                        <textarea id="st-terms-and-conditions" rows="4" placeholder="Enter the terms and conditions for this invoice or quotation..." style="width:100%;box-sizing:border-box;"></textarea>
+                        <small class="dar-hint">Terms are saved separately on each invoice or quotation and appear below the service table when enabled and text is provided.</small>
+                    </div>
                     <div class="studio-editor">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h4 style="color: var(--primary); font-size: 1rem;">Specific Work Breakdown Items</h4>
