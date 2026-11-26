@@ -91,6 +91,7 @@
             <ul class="sidebar-menu">
                 <li class="sidebar-group-toggle" data-group-toggle="workspace" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('workspace')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('workspace')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>WORKSPACE</span></li>
                 <li class="sidebar-subitem active" data-group="workspace" onclick="switchTab('dashboard')" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></li>
+                <li class="sidebar-subitem" data-group="workspace" onclick="switchTab('notes')" data-target="notes"><i class="fa-solid fa-note-sticky"></i><span>Notes & Enquiries</span></li>
                 <li class="sidebar-group-toggle" data-group-toggle="crm" tabindex="0" role="button" aria-expanded="true" onclick="toggleSidebarGroup('crm')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebarGroup('crm')}"><i class="fa-solid fa-chevron-down group-chevron"></i><span>CRM</span></li>
                 <li class="sidebar-subitem" data-group="crm" onclick="switchTab('clients')" data-target="clients"><i class="fa-solid fa-building"></i><span>Companies & Clients</span></li>
                 <li class="sidebar-subitem" data-group="crm" onclick="switchTab('staff')" data-target="staff"><i class="fa-solid fa-id-card"></i><span>Company Staff Data</span></li>
@@ -139,6 +140,15 @@
 
             <main class="view-space">
 
+                <!-- NOTES: shared enquiries and shared team to-do list -->
+                <section id="tab-notes" class="view-panel">
+                    <div class="notes-page-heading"><div><p class="dash-kicker">DAR AL SHAMS · WORKSPACE</p><h2>Notes & Enquiries</h2><p>Capture customer enquiries and shared team reminders.</p></div><div class="notes-summary"><span id="notes-enquiry-count">0 enquiries</span><span id="notes-todo-count">0 open tasks</span></div></div>
+                    <div class="notes-tabs"><button type="button" class="active" data-notes-tab="enquiries" onclick="darNotesTab('enquiries')">A. Service Enquiry</button><button type="button" data-notes-tab="todo" onclick="darNotesTab('todo')">B. To Do</button></div>
+                    <div id="notes-enquiries-panel" class="notes-panel"><div class="notes-form-card"><h3><i class="fa-solid fa-inbox"></i> New Service Enquiry</h3><div class="notes-form-grid"><label>Enquirer name *<input id="notes-enquirer" maxlength="120" placeholder="Customer name"></label><label>Contact number<input id="notes-contact" maxlength="40" placeholder="+971 ..."></label><label>Service *<select id="notes-service"><option value="">Select service</option></select></label><label>Follow-up date<input id="notes-followup" type="date"></label><label class="notes-wide">Remarks<textarea id="notes-remarks" rows="3" maxlength="2000" placeholder="Enquiry details, requirements, expected timing..."></textarea></label></div><button type="button" class="btn btn-primary" onclick="darSaveEnquiry()"><i class="fa-solid fa-floppy-disk"></i> Save Enquiry</button></div><div class="notes-list-card"><div class="notes-list-heading"><h3>Recent Enquiries</h3><input id="notes-enquiry-search" type="search" placeholder="Search enquiries..." oninput="darRenderNotes()"></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Enquiry date</th><th>Customer</th><th>Service</th><th>Status</th><th>Action</th></tr></thead><tbody id="notes-enquiry-rows"><tr><td colspan="5">Loading enquiries...</td></tr></tbody></table></div></div></div>
+                    <div id="notes-todo-panel" class="notes-panel" hidden><div class="notes-form-card"><h3><i class="fa-solid fa-list-check"></i> Shared To Do</h3><div class="notes-form-grid"><label class="notes-wide">Task / reminder *<textarea id="notes-todo-text" rows="3" maxlength="2000" placeholder="Write something the team should remember..."></textarea></label><label>Due date<input id="notes-todo-due" type="date"></label></div><button type="button" class="btn btn-primary" onclick="darSaveTodo()"><i class="fa-solid fa-plus"></i> Add To Do</button></div><div class="notes-list-card"><h3>Team To Do List</h3><div id="notes-todo-rows" class="notes-todo-list">Loading tasks...</div></div></div>
+                    <div id="notes-convert-modal" class="custom-modal-backdrop" style="display:none;"><div class="custom-modal-content notes-convert-content"><button type="button" class="notes-modal-close" onclick="darCloseConvert()">×</button><h3>Continue Enquiry</h3><p>Choose the customer record and optional staff before opening the existing document workflow.</p><input type="hidden" id="notes-convert-id"><label>Customer type<select id="notes-customer-type" onchange="darToggleCustomerFields()"><option value="existing-company">Existing company</option><option value="new-company">New company</option><option value="direct-client">Direct individual client</option></select></label><div id="notes-existing-company-wrap"><label>Company<select id="notes-company-select"></select></label></div><div id="notes-new-company-wrap" hidden><label>New company name<input id="notes-new-company" maxlength="160"></label><label>Contact person<input id="notes-new-contact" maxlength="120"></label></div><div id="notes-staff-wrap"><label>Staff (optional)<select id="notes-staff-select"><option value="">No staff selected</option></select></label><small>Staff list is filtered by the selected company.</small><button type="button" class="btn btn-secondary" onclick="darAddStaffToCompany()">+ Add New Staff to This Company</button></div><div class="notes-convert-actions"><button class="btn btn-secondary" type="button" onclick="darCloseConvert()">Cancel</button><button class="btn btn-secondary" type="button" onclick="darConvertEnquiry('Quotation')">Create Quotation</button><button class="btn btn-primary" type="button" onclick="darConvertEnquiry('Invoice')">Create Invoice</button></div></div></div>
+                </section>
+
                 <!-- WEBSITE INFO: Marketing website admin shortcut. External admin login remains enforced. -->
                 <section id="tab-website-info" class="view-panel">
                     <div class="metric-card" style="display:block;max-width:760px;">
@@ -177,6 +187,7 @@
                             <button type="button" onclick="switchTab('staff')"><i class="fa-solid fa-user-plus"></i><span>Company staff</span></button>
                             <button type="button" onclick="darDashboardOpen('record-payment')"><i class="fa-solid fa-money-bill-transfer"></i><span>Record payment</span></button>
                             <button type="button" onclick="switchTab('work-tracking')"><i class="fa-solid fa-list-check"></i><span>Update work</span></button>
+                            <button type="button" onclick="switchTab('notes')"><i class="fa-solid fa-note-sticky"></i><span>Notes & enquiries</span></button>
                         </div>
                     </section>
 
@@ -1239,5 +1250,6 @@
     <script src="translator.js"></script>
     <script src="language.js"></script>
     <script src="dashboard.js"></script>
+    <script src="notes.js"></script>
 </body>
 </html>

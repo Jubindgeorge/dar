@@ -56,6 +56,7 @@ function initFirebaseListeners() {
         state.services = val ? Object.keys(val).map(k => ({ id: k, ...val[k] })) : [];
         if (typeof renderServicesCatalog === 'function') renderServicesCatalog();
         if (typeof populateStudioInjectorSelect === 'function') populateStudioInjectorSelect();
+        if (typeof window.darRenderNotes === 'function') window.darRenderNotes();
     }, error => showFirebaseReadError('services', error));
 
     db.ref('staff').on('value', snapshot => {
