@@ -1030,25 +1030,9 @@ window.previewInvoiceDocument = async function(refCode) {
     if (docRef) docRef.innerText = `Ref No: ${doc.refCode}`;
     const quotationSourceLine = document.getElementById('p-quotation-source');
     if (quotationSourceLine) {
-        if (doc.type !== 'Quotation' && (doc.sourceQuotationRef || doc.quotationRef)) {
-            const sourceRef = String(doc.sourceQuotationRef || doc.quotationRef);
-            const originalTotal = Number(doc.originalQuotationTotal ?? 0);
-            const completedAmount = Number(doc.completedWorkAmount ?? getDarDocumentAmount(doc));
-            const completedPercent = Number(doc.completedWorkPercent ?? (originalTotal > 0 ? completedAmount / originalTotal * 100 : 0));
-            const remainingAmount = Number(doc.remainingQuotationAmount ?? Math.max(0, originalTotal - (Number(doc.quotationPreviouslyInvoiced) || 0) - completedAmount));
-            const showOriginal = doc.showQuotationOriginalTotal === true;
-            const showPreviously = doc.showQuotationPreviouslyInvoiced === true;
-            const showRemaining = doc.showQuotationRemainingBalance === true;
-            const details = [];
-            if (showOriginal) details.push(`Original Quotation Total: AED ${originalTotal.toFixed(2)}`);
-            if (showPreviously) details.push(`Previously Invoiced: AED ${Number(doc.quotationPreviouslyInvoiced || 0).toFixed(2)}`);
-            if (showRemaining) details.push(`Remaining Quotation Balance: AED ${remainingAmount.toFixed(2)}`);
-            quotationSourceLine.textContent = `Quotation Reference: ${sourceRef}` + (details.length ? ' | ' + details.join(' | ') : '');
-            quotationSourceLine.style.display = 'block';
-        } else {
-            quotationSourceLine.textContent = '';
-            quotationSourceLine.style.display = 'none';
-        }
+        const sourceRef = doc.type !== 'Quotation' ? String(doc.sourceQuotationRef || doc.quotationRef || '') : '';
+        quotationSourceLine.textContent = sourceRef ? `Quotation Reference: ${sourceRef}` : '';
+        quotationSourceLine.style.display = sourceRef ? 'block' : 'none';
     }
     
     const companyValue = String(doc.companyName || '').trim();
@@ -1128,15 +1112,33 @@ window.previewInvoiceDocument = async function(refCode) {
             const balanceDue = Math.max(0, docTotal - Math.min(docTotal, paidAmount));
             const gold = '#b8860b';
             const summaryRow = (label, value, strong = false) => `<tr style="background:#fff;font-weight:${strong ? '800' : '600'};"><td colspan="3" style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${label}</td><td style="padding:6px 8px;border:1px solid ${gold};text-align:right;">${value}</td></tr>`;
+            const sourceQuotationRef = doc.type !== 'Quotation' ? String(doc.sourceQuotationRef || doc.quotationRef || '') : '';
+            const originalQuotationTotal = Math.max(0, Number(doc.originalQuotationTotal) || 0);
+            const previouslyInvoiced = Math.max(0, Number(doc.quotationPreviouslyInvoiced) || 0);
+            const remainingQuotationBalance = Math.max(0, Number(doc.remainingQuotationAmount ?? (originalQuotationTotal - previouslyInvoiced - docTotal)) || 0);
+            const quotationRows = [];
+            if (doc.showQuotationOriginalTotal === true) quotationRows.push(summaryRow('Quotation Amount', 'AED ' + originalQuotationTotal.toFixed(2)));
+            if (doc.showQuotationPreviouslyInvoiced === true) quotationRows.push(summaryRow('Previously Invoiced', 'AED ' + previouslyInvoiced.toFixed(2)));
+            if (doc.showQuotationRemainingBalance === true) quotationRows.push(summaryRow('Quotation Balance', 'AED ' + remainingQuotationBalance.toFixed(2), true));
+            const quotationBox = sourceQuotationRef && quotationRows.length ? `
+                <table class="dar-quotation-summary" style="width:48%;margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};align-self:flex-start;">
+                    <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="2" style="padding:7px 8px;border:1px solid ${gold};text-align:center;">Quotation Summary</td></tr>
+                    ${quotationRows.join('')}
+                </table>` : '';
             return `
-                <tr class="dar-summary-host-row"><td colspan="4" style="padding:0;border:0 !important;background:transparent;"><table class="dar-totals-summary" style="width:43%;margin:6px 0 0 auto;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};">
-                    ${summaryRow('Subtotal', 'AED ' + subtotal.toFixed(2))}
-                    ${summaryRow('Processing Charge', 'AED ' + processingCharge.toFixed(2))}
-                    ${summaryRow('Adv. Amount', 'AED ' + advance.toFixed(2))}
-                    ${summaryRow('Dis. %', discountPercent.toFixed(2) + '%')}
-                    <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="3" style="padding:8px;border:1.5px solid ${gold};text-align:right;">Grand Total / المبلغ الإجمالي</td><td style="padding:8px;border:1.5px solid ${gold};text-align:right;">AED ${docTotal.toFixed(2)}</td></tr>
-                    ${summaryRow('Balance Due', 'AED ' + balanceDue.toFixed(2), true)}
-                </table></td></tr>`;
+                <tr class="dar-summary-host-row"><td colspan="4" style="padding:0;border:0 !important;background:transparent;">
+                    <div class="dar-document-summary-wrap" style="display:flex;justify-content:flex-end;align-items:flex-start;gap:8px;width:100%;">
+                        ${quotationBox}
+                        <table class="dar-totals-summary" style="width:48%;margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};">
+                            ${summaryRow('Subtotal', 'AED ' + subtotal.toFixed(2))}
+                            ${summaryRow('Processing Charge', 'AED ' + processingCharge.toFixed(2))}
+                            ${summaryRow('Adv. Amount', 'AED ' + advance.toFixed(2))}
+                            ${summaryRow('Dis. %', discountPercent.toFixed(2) + '%')}
+                            <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="3" style="padding:8px;border:1.5px solid ${gold};text-align:right;">Grand Total / المبلغ الإجمالي</td><td style="padding:8px;border:1.5px solid ${gold};text-align:right;">AED ${docTotal.toFixed(2)}</td></tr>
+                            ${summaryRow('Balance Due', 'AED ' + balanceDue.toFixed(2), true)}
+                        </table>
+                    </div>
+                </td></tr>`;
         })();
     }
     const notesSection = document.getElementById('p-notes-section');
