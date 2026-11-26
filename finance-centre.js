@@ -112,9 +112,21 @@ function renderCustomers(){
 window.openDarCustomerInvoices=function(encoded){show('invoices');const input=$('ledger-search');if(input){input.value=decodeURIComponent(encoded);input.dispatchEvent(new Event('input',{bubbles:true}));}};
 window.printDarCustomerStatement=function(encoded){
  const name=decodeURIComponent(encoded||''),r=period(),rows=allDocs().filter(d=>(d.clientName||d.companyName||'Unassigned customer')===name&&r.has(invDate(d))).sort((a,b)=>invDate(a).localeCompare(invDate(b)));
- const body=rows.map(d=>'<tr><td>'+esc(invDate(d))+'</td><td>'+esc(d.refCode)+'</td><td>'+fmt(total(d))+'</td><td>'+fmt(paid(d))+'</td><td>'+fmt(Math.max(0,total(d)-paid(d)))+'</td></tr>').join('');
- const sum=rows.reduce((s,d)=>s+total(d),0),rec=rows.reduce((s,d)=>s+paid(d),0),w=window.open('','_blank');if(!w){alert('Allow pop-ups to print the customer statement.');return;}
- w.document.write('<!doctype html><html><head><title>Customer Statement</title><style>body{font:14px Arial;padding:28px;color:#172033}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}</style></head><body><h2>DAR AL SHAMS — Customer Statement</h2><h3>'+esc(name)+'</h3><p>Statement period: '+(r.a||'All dates')+' to '+(r.b||'Present')+' · Generated: '+today()+'</p><table><thead><tr><th>Date</th><th>Invoice</th><th>Invoiced</th><th>Collected</th><th>Outstanding</th></tr></thead><tbody>'+body+'</tbody></table><p><b>Total invoiced:</b> '+fmt(sum)+'<br><b>Collected:</b> '+fmt(rec)+'<br><b>Outstanding:</b> '+fmt(Math.max(0,sum-rec))+'</p><script>onload=()=>print()<\/script></body></html>');w.document.close();
+ const sum=rows.reduce((s,d)=>s+total(d),0),rec=rows.reduce((s,d)=>s+paid(d),0),w=window.open('','_blank');
+ if(!w){alert('Allow pop-ups to print the customer statement.');return;}
+ const doc=w.document,style=doc.createElement('style');
+ style.textContent='body{font:14px Arial;padding:28px;color:#172033}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}';
+ doc.title='Customer Statement';doc.head.append(style);doc.body.replaceChildren();
+ const h2=doc.createElement('h2');h2.textContent='DAR AL SHAMS — Customer Statement';doc.body.append(h2);
+ const h3=doc.createElement('h3');h3.textContent=name;doc.body.append(h3);
+ const periodLine=doc.createElement('p');periodLine.textContent='Statement period: '+(r.a||'All dates')+' to '+(r.b||'Present')+' · Generated: '+today();doc.body.append(periodLine);
+ const table=doc.createElement('table'),thead=doc.createElement('thead'),headRow=doc.createElement('tr'),tbody=doc.createElement('tbody');
+ ['Date','Invoice','Invoiced','Collected','Outstanding'].forEach(label=>{const th=doc.createElement('th');th.textContent=label;headRow.append(th);});
+ thead.append(headRow);table.append(thead,tbody);
+ rows.forEach(d=>{const tr=doc.createElement('tr');[invDate(d),d.refCode||'',fmt(total(d)),fmt(paid(d)),fmt(Math.max(0,total(d)-paid(d)))].forEach(value=>{const td=doc.createElement('td');td.textContent=String(value??'');tr.append(td);});tbody.append(tr);});
+ doc.body.append(table);
+ [['Total invoiced: ',fmt(sum)],['Collected: ',fmt(rec)],['Outstanding: ',fmt(Math.max(0,sum-rec))]].forEach(([label,value])=>{const p=doc.createElement('p'),b=doc.createElement('b');b.textContent=label;p.append(b,doc.createTextNode(value));doc.body.append(p);});
+ w.focus();w.print();
 };
 function renderReports(){
  const d=snapshot();$('finance-report').innerHTML='<div class="finance-report-grid">'+[['Invoice revenue',d.revenue],['Government / direct fees',d.govt],['Invoice-linked direct expenses',d.direct],['Operating expenses',d.operating],['Net profit',d.profit],['Cash collected (separate)',d.collections],['Current outstanding',d.outstanding],['Invoices',d.pd.length]].map(x=>'<div><span>'+x[0]+'</span><b>'+(typeof x[1]==='number'&&x[0]==='Invoices'?x[1]:fmt(x[1]))+'</b></div>').join('')+'</div>';
