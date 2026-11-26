@@ -1036,7 +1036,14 @@ window.previewInvoiceDocument = async function(refCode) {
             const completedAmount = Number(doc.completedWorkAmount ?? getDarDocumentAmount(doc));
             const completedPercent = Number(doc.completedWorkPercent ?? (originalTotal > 0 ? completedAmount / originalTotal * 100 : 0));
             const remainingAmount = Number(doc.remainingQuotationAmount ?? Math.max(0, originalTotal - (Number(doc.quotationPreviouslyInvoiced) || 0) - completedAmount));
-            quotationSourceLine.textContent = `Against Quotation ${sourceRef} | Original Quotation Total: AED ${originalTotal.toFixed(2)} | Amount for Completed Work: AED ${completedAmount.toFixed(2)} (${completedPercent.toFixed(2)}%) | Remaining Quotation Amount: AED ${remainingAmount.toFixed(2)}`;
+            quotationSourceLine.innerHTML = `
+                <div style="font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#805f1b;margin-bottom:6px;">Quotation &amp; Work Progress Details</div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;">
+                    <div><span style="display:block;color:#64748b;font-size:9px;font-weight:600;">Quotation Reference</span><strong>${escapeHtml(sourceRef)}</strong></div>
+                    <div><span style="display:block;color:#64748b;font-size:9px;font-weight:600;">Original Quotation Total</span><strong>AED ${originalTotal.toFixed(2)}</strong></div>
+                    <div><span style="display:block;color:#64748b;font-size:9px;font-weight:600;">Amount for Completed Work</span><strong>AED ${completedAmount.toFixed(2)} (${completedPercent.toFixed(2)}%)</strong></div>
+                    <div><span style="display:block;color:#64748b;font-size:9px;font-weight:600;">Remaining Quotation Amount</span><strong>AED ${remainingAmount.toFixed(2)}</strong></div>
+                </div>`;
             quotationSourceLine.style.display = 'block';
         } else {
             quotationSourceLine.textContent = '';
