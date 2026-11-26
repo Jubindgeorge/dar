@@ -525,7 +525,8 @@ window.openClientModal = function(id) {
     document.getElementById('cl-input-name-ar').value = cl ? cl.nameAr : '';
     document.getElementById('cl-input-contact-person').value = cl ? (cl.contactPerson || '') : '';
     const companyFields = {
-        'cl-input-email':'email','cl-input-whatsapp':'whatsapp','cl-input-group-link':'whatsappGroupLink',
+        'cl-input-phone':'phone','cl-input-address':'address','cl-input-email':'email','cl-input-whatsapp':'whatsapp','cl-input-group-link':'whatsappGroupLink',
+        'cl-input-notify-email':'notificationEmail','cl-input-notify-whatsapp':'notificationWhatsapp',
         'cl-input-trade-license-no':'tradeLicenseNumber','cl-input-trade-license-expiry':'tradeLicenseExpiry',
         'cl-input-establishment-no':'establishmentCardNumber','cl-input-establishment-expiry':'establishmentCardExpiry',
         'cl-input-labour-card-no':'immigrationLabourCardNumber','cl-input-labour-card-expiry':'immigrationLabourCardExpiry',
@@ -550,8 +551,12 @@ window.saveClientModalData = async function() {
     let nameAr = document.getElementById('cl-input-name-ar').value.trim();
     const contactPerson = document.getElementById('cl-input-contact-person').value.trim();
     const companyProfile = {
+        phone:document.getElementById('cl-input-phone')?.value.trim()||'',
+        address:document.getElementById('cl-input-address')?.value.trim()||'',
         email:document.getElementById('cl-input-email')?.value.trim()||'',
         whatsapp:document.getElementById('cl-input-whatsapp')?.value.trim()||'',
+        notificationEmail:document.getElementById('cl-input-notify-email')?.value.trim()||'',
+        notificationWhatsapp:document.getElementById('cl-input-notify-whatsapp')?.value.trim()||'',
         whatsappGroupLink:document.getElementById('cl-input-group-link')?.value.trim()||'',
         tradeLicenseNumber:document.getElementById('cl-input-trade-license-no')?.value.trim()||'',
         tradeLicenseExpiry:document.getElementById('cl-input-trade-license-expiry')?.value||'',
@@ -607,8 +612,12 @@ window.viewClientDetail = function(clientId) {
     document.getElementById('cd-contact-person').innerText = client.contactPerson || '-';
     document.getElementById('cd-name-ar').innerText = client.nameAr || '-';
     const profileText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value||'-';};
+    profileText('cd-phone',client.phone);
+    profileText('cd-address',client.address);
     profileText('cd-company-email',client.email);
     profileText('cd-company-whatsapp',client.whatsapp);
+    profileText('cd-notification-email',client.notificationEmail);
+    profileText('cd-notification-whatsapp',client.notificationWhatsapp);
     profileText('cd-trade-license-number',client.tradeLicenseNumber);
     profileText('cd-establishment-number',client.establishmentCardNumber);
     profileText('cd-labour-card-number',client.immigrationLabourCardNumber);

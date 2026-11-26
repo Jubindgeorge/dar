@@ -402,7 +402,9 @@
                     <div style="display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px;"><button type="button" class="btn btn-primary" onclick="openClientModal(state.activeViewingClientId)"><i class="fa-solid fa-pen"></i> Edit Company Profile</button></div>
                     <h3 style="color:var(--primary);margin:18px 0 10px;font-size:1.1rem;">Company Documents & Expiry Details</h3>
                     <div style="background:var(--panel-bg);border:1px solid var(--border-color);padding:16px;border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px;">
+                        <div><small>Address</small><strong id="cd-address">-</strong></div>
                         <div><small>Company Email</small><strong id="cd-company-email">-</strong></div><div><small>WhatsApp</small><strong id="cd-company-whatsapp">-</strong></div>
+                        <div><small>Expiry Notification Email</small><strong id="cd-notification-email">-</strong></div><div><small>Expiry Notification WhatsApp</small><strong id="cd-notification-whatsapp">-</strong></div>
                         <div><small>Trade Licence Number</small><strong id="cd-trade-license-number">-</strong><br><small>Expiry</small><strong id="cd-trade-license-expiry">-</strong></div><div><small>Establishment Card Number</small><strong id="cd-establishment-number">-</strong><br><small>Expiry</small><strong id="cd-establishment-expiry">-</strong></div>
                         <div><small>Immigration / Labour Card Number</small><strong id="cd-labour-card-number">-</strong><br><small>Expiry</small><strong id="cd-labour-card-expiry">-</strong></div><div><small>Tenancy Contract Number</small><strong id="cd-tenancy-number">-</strong><br><small>Expiry</small><strong id="cd-tenancy-expiry">-</strong></div>
                         <div><small>Other Document</small><strong id="cd-other-document">-</strong></div><div><small>Other Document Expiry</small><strong id="cd-other-document-expiry">-</strong></div>
@@ -866,7 +868,11 @@
                 <input type="text" id="cl-input-contact-person" placeholder="John Doe / +971 4 123 4567">
             </div>
             <h4 style="margin:18px 0 10px;color:var(--primary);">Company Contact & Notification Details</h4>
+            <div class="form-group"><label for="cl-input-phone">Company Phone</label><input type="tel" id="cl-input-phone" placeholder="+971..."></div>
+            <div class="form-group"><label for="cl-input-address">Company Address</label><textarea id="cl-input-address" rows="2" placeholder="Office / branch address"></textarea></div>
             <div class="form-group"><label for="cl-input-email">Company Email</label><input type="email" id="cl-input-email" placeholder="accounts@company.com"></div>
+            <div class="form-group"><label for="cl-input-notify-email">Expiry Notification Email (optional override)</label><input type="email" id="cl-input-notify-email" placeholder="Use company email if blank"></div>
+            <div class="form-group"><label for="cl-input-notify-whatsapp">Expiry Notification WhatsApp (optional override)</label><input type="tel" id="cl-input-notify-whatsapp" placeholder="Use company WhatsApp if blank"></div>
             <div class="form-group"><label for="cl-input-whatsapp">Company WhatsApp Number</label><input type="tel" id="cl-input-whatsapp" placeholder="+9715XXXXXXXX"></div>
             <div class="form-group"><label for="cl-input-group-link">Company WhatsApp Group Link (manual sharing only)</label><input type="url" id="cl-input-group-link" placeholder="https://chat.whatsapp.com/..."></div>
             <h4 style="margin:18px 0 10px;color:var(--primary);">Company Documents & Expiry Dates</h4>
