@@ -590,6 +590,8 @@ const assert = require('node:assert/strict');
     assert.equal(conversionResult.amountInvoiceOriginalTotal,300,'Progress invoice stores the original quotation total');
     assert.equal(conversionResult.amountInvoiceCompletedPercent,25,'Progress invoice records the completed-work percentage');
     assert.equal(conversionResult.amountInvoiceRemaining,225,'Progress invoice records the remaining quotation amount');
+    const quotationSection = await page.locator('#p-quotation-source').innerText().catch(()=>'');
+    assert.ok(quotationSection === '' || quotationSection.includes('Quotation & Work Progress Details'),'Quotation information is rendered in its own labelled section when a converted invoice is previewed');
     assert.equal(conversionResult.stage,100,'Stage billing invoices the selected completed item');
     assert.equal(conversionResult.stageInvoiceOriginalTotal,300,'Stage invoice retains the original quotation total');
     assert.equal(conversionResult.stageInvoicePreviouslyInvoiced,75,'Stage invoice records earlier billed amount');
