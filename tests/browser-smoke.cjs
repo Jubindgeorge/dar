@@ -8,6 +8,74 @@ const assert = require('node:assert/strict');
     page.on('pageerror', err => errors.push(err.message));
     await page.goto('http://127.0.0.1:8765/index.html', {waitUntil:'domcontentloaded'});
     await page.waitForTimeout(1500);
+    await page.evaluate(() => switchTab('accounts-ledger'));
+    await page.evaluate(() => { if (!document.getElementById('finance-centre') && typeof window.initDarFinanceCentre === 'function') window.initDarFinanceCentre(); });
+    const financeDiagnostics = await page.evaluate(() => ({readyState:document.readyState,root:!!document.getElementById('tab-accounts-ledger'),shell:!!document.getElementById('finance-centre'),initializer:typeof window.initDarFinanceCentre,renderer:typeof window.renderFinanceCentre,script: [...document.scripts].map(x=>x.src).filter(x=>x.includes('finance-centre'))}));
+    if (!financeDiagnostics.shell) throw new Error('Finance Centre did not initialize: '+JSON.stringify(financeDiagnostics)+'; page errors: '+errors.join(' | '));
+    const financeCentreSmoke = await page.evaluate(() => {
+      const savedDocs=state.documents, savedExpenses=state.monthlyExpenses;
+      state.documents=[
+        {refCode:'FINANCE-SMOKE-INV',type:'Invoice',transactionDate:'2026-11-10',totalAmount:1000,govtFee:200,clientName:'Finance Smoke Customer',advanceIncludedInPaymentLogs:true,paymentLogs:[{date:'2026-11-11',amount:300,note:'Smoke receipt'}]},
+        {refCode:'FINANCE-SMOKE-QTN',type:'Quotation',transactionDate:'2026-11-12',totalAmount:9000,clientName:'Quotation Must Be Excluded'}
+      ];
+      state.monthlyExpenses=[
+        {id:'finance-smoke-direct',month:'2026-11',date:'2026-11-12',amount:50,title:'Linked cost',linkedInvoiceRef:'FINANCE-SMOKE-INV'},
+        {id:'finance-smoke-office',month:'2026-11',date:'2026-11-13',amount:100,title:'Office cost'}
+      ];
+      document.getElementById('finance-date-from').value='2026-11-01';
+      document.getElementById('finance-date-to').value='2026-11-30';
+      renderFinanceCentre();
+      const result={
+        shell:!!document.getElementById('finance-centre'),
+        profit:document.getElementById('finance-pl').innerText,
+        collections:document.getElementById('finance-cash').innerText,
+        invoiceRows:document.querySelectorAll('#acc-full-ledger-tbody tr').length,
+        invoiceRowText:document.getElementById('acc-full-ledger-tbody').innerText,
+        expenseControls:!!document.getElementById('finance-expense-category')&&!!document.getElementById('finance-expense-payee')&&!!document.getElementById('finance-expense-reference'),
+        paymentMethodControl:!!document.getElementById('pay-input-method'),
+        staffControlsInsidePanel:!!document.querySelector('#finance-staff #ledger-staff-company')&&!!document.querySelector('#finance-staff #ledger-staff-search'),
+        expenseActionsInsidePanel:!!document.querySelector('#finance-expenses button[onclick="openMonthlyExpenseModal()"]')&&!!document.querySelector('#finance-expenses #expense-search')&&!!document.querySelector('#finance-expenses #monthly-expenses-tbody'),
+        invoiceMasterInsidePanel:!!document.querySelector('#finance-invoices #acc-full-ledger-tbody')&&!!document.querySelector('#finance-invoices h3'),
+        paymentLogsInsidePanel:!!document.querySelector('#finance-payments #acc-payment-logs-tbody')&&!!document.querySelector('#finance-payments h3'),
+        rangePresetCount:document.querySelectorAll('#finance-centre [data-finance-range]').length
+      };
+      showFinanceSection('customers');
+      result.customerRow=document.getElementById('finance-customers').innerText;
+      showFinanceSection('invoices');
+      result.openInvoiceAction=document.querySelectorAll('#acc-full-ledger-tbody [data-finance-open]').length;
+      showFinanceSection('overview');
+      state.documents=savedDocs;state.monthlyExpenses=savedExpenses;renderFinanceCentre();
+      return result;
+    });
+    assert.equal(financeCentreSmoke.shell,true,'Finance Management Centre initializes inside Accounts Ledger');
+    assert.match(financeCentreSmoke.profit,/AED 650\.00/,'Invoice-based profit subtracts government fees, linked costs and operating expenses exactly once');
+    assert.match(financeCentreSmoke.collections,/AED 300\.00/,'Cash collections are reported separately from invoice revenue');
+    assert.equal(financeCentreSmoke.invoiceRows,1,'Quotation records are excluded from the invoice ledger');
+    assert.doesNotMatch(financeCentreSmoke.invoiceRowText,/FINANCE-SMOKE-QTN/,'Quotation does not appear in the financial invoice register');
+    assert.match(financeCentreSmoke.invoiceRowText,/Partial/,'Invoice register displays the derived payment status');
+    assert.match(financeCentreSmoke.customerRow,/Finance Smoke Customer/,'Customer account navigation renders linked invoice balances');
+    assert.equal(financeCentreSmoke.openInvoiceAction,1,'Invoice register provides an action to open the existing invoice editor');
+    assert.equal(financeCentreSmoke.expenseControls,true,'Expense category, payee and receipt-reference fields are available');
+    assert.equal(financeCentreSmoke.paymentMethodControl,true,'Payment method is available when recording receipts');
+    assert.equal(financeCentreSmoke.staffControlsInsidePanel,true,'Staff company filter and search remain available inside the Staff Register section');
+    assert.equal(financeCentreSmoke.expenseActionsInsidePanel,true,'Add Expense and expense filters remain available inside the Expenses section');
+    assert.equal(financeCentreSmoke.invoiceMasterInsidePanel,true,'Invoice ledger heading and table remain together inside the Invoices section');
+    assert.equal(financeCentreSmoke.paymentLogsInsidePanel,true,'Payment log heading and table remain together inside the Payments section');
+    assert.equal(financeCentreSmoke.rangePresetCount,4,'Month, quarter, year and all-time reporting presets are available');
+    const statementSafetySmoke = await page.evaluate(() => {
+      const savedDocs=state.documents, originalOpen=window.open, maliciousName='<img src=x onerror=alert(1)>';
+      let statementWindow;
+      state.documents=[{refCode:'STATEMENT-XSS-TEST',type:'Invoice',transactionDate:'2026-11-10',totalAmount:100,clientName:maliciousName}];
+      window.open=()=>{statementWindow={document:document.implementation.createHTMLDocument(''),focus(){},print(){}};return statementWindow;};
+      try {
+        window.printDarCustomerStatement(encodeURIComponent(maliciousName));
+        return {heading:statementWindow.document.querySelector('h3')?.textContent,imageCount:statementWindow.document.querySelectorAll('img').length,invoice:statementWindow.document.querySelector('tbody')?.textContent||''};
+      } finally {window.open=originalOpen;state.documents=savedDocs;}
+    });
+    assert.equal(statementSafetySmoke.heading,'<img src=x onerror=alert(1)>','Customer statement renders customer names as text, not executable markup');
+    assert.equal(statementSafetySmoke.imageCount,0,'Customer statement does not create HTML elements from untrusted customer text');
+    assert.match(statementSafetySmoke.invoice,/STATEMENT-XSS-TEST/,'Safe customer statement still includes invoice rows');
+    console.log('PASS: Finance Centre invoice-basis calculations, cash receipt separation and quotation exclusion');
     const dashboardSmoke = await page.evaluate(() => {
       const previous = {
         documents:state.documents, clients:state.clients, staff:state.staff, companyClients:state.companyClients
