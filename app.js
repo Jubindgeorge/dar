@@ -1122,7 +1122,7 @@ window.previewInvoiceDocument = async function(refCode) {
             if (doc.showQuotationPreviouslyInvoiced === true) quotationRows.push(quotationSummaryRow('Previously Invoiced', 'AED ' + previouslyInvoiced.toFixed(2)));
             if (doc.showQuotationRemainingBalance === true) quotationRows.push(quotationSummaryRow('Quotation Balance', 'AED ' + remainingQuotationBalance.toFixed(2), true));
             const quotationBox = sourceQuotationRef && quotationRows.length ? `
-                <table class="dar-quotation-summary" style="width:48%;margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};align-self:flex-start;">
+                <table class="dar-quotation-summary" style="width:calc(50% - 4px);margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};align-self:flex-start;table-layout:fixed;">
                     <tr style="background:#f5eddc;font-weight:800;color:#111;"><td colspan="2" style="padding:7px 8px;border:1px solid ${gold};text-align:center;">Quotation Summary</td></tr>
                     ${quotationRows.join('')}
                 </table>` : '';
@@ -1130,7 +1130,7 @@ window.previewInvoiceDocument = async function(refCode) {
                 <tr class="dar-summary-host-row"><td colspan="4" style="padding:0;border:0 !important;background:transparent;">
                     <div class="dar-document-summary-wrap" style="display:flex;justify-content:flex-end;align-items:flex-start;gap:8px;width:100%;">
                         ${quotationBox}
-                        <table class="dar-totals-summary" style="width:48%;margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};">
+                        <table class="dar-totals-summary" style="width:calc(50% - 4px);margin:6px 0 0;border-collapse:collapse;font-size:10px;color:#222;border:1px solid ${gold};table-layout:fixed;">
                             ${summaryRow('Subtotal', 'AED ' + subtotal.toFixed(2))}
                             ${summaryRow('Processing Charge', 'AED ' + processingCharge.toFixed(2))}
                             ${summaryRow('Adv. Amount', 'AED ' + advance.toFixed(2))}
