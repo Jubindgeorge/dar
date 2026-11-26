@@ -1044,7 +1044,15 @@
             </div>
             <input type="hidden" id="qc-source-ref">
             <label for="qc-mode">Billing method</label>
-            <select id="qc-mode"><option value="amount">Amount / percentage based</option><option value="stage">Completed service stages</option></select>
+            <select id="qc-mode"><option value="stage">Invoice by completed stages</option><option value="remaining">Invoice all remaining quotation work</option><option value="amount">Custom amount / percentage</option></select>
+            <div id="qc-remaining-hint" class="dar-hint" hidden>The system will create one invoice for the full unbilled quotation balance. Previously invoiced work is excluded.</div>
+            <fieldset style="margin:12px 0;padding:10px;border:1px solid #d7c08a;border-radius:8px;">
+                <legend style="font-weight:700;">Quotation details to show on invoice</legend>
+                <label style="display:block;margin:5px 0;"><input id="qc-show-original" type="checkbox"> Show original quotation total</label>
+                <label style="display:block;margin:5px 0;"><input id="qc-show-previous" type="checkbox"> Show previously invoiced amount</label>
+                <label style="display:block;margin:5px 0;"><input id="qc-show-remaining" type="checkbox"> Show remaining quotation balance</label>
+                <small class="dar-hint">Quotation reference is always displayed above the service table.</small>
+            </fieldset>
             <div id="qc-amount-fields" class="qc-field-group">
                 <label for="qc-amount">Invoice amount (AED)</label><input id="qc-amount" type="number" min="0.01" step="0.01">
                 <label style="display:flex;align-items:center;gap:8px;margin-top:8px;"><input id="qc-use-percent" type="checkbox"> Calculate by quotation percentage</label>
