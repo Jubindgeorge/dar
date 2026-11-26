@@ -12,20 +12,20 @@ test('validates ISO calendar dates and UAE-day reminder windows',()=>{
 });
 
 test('collects company, staff and linked-client expiry records without copying identity numbers',()=>{
- const clients=[{id:'co1',companyName:'Example LLC',email:'office@example.com',whatsapp:'+971500000001',tradeLicenseExpiry:'2027-01-30',otherDocumentName:'Insurance',otherDocumentExpiry:'2027-02-01',whatsappGroupLink:'https://chat.whatsapp.com/abc'}];
+ const clients=[{id:'co1',companyName:'Example LLC',email:'office@example.com',whatsapp:'+971500000001',notificationEmail:'alerts@example.com',notificationWhatsapp:'+971500000009',tradeLicenseExpiry:'2027-01-30',otherDocumentName:'Insurance',otherDocumentExpiry:'2027-02-01',whatsappGroupLink:'https://chat.whatsapp.com/abc'}];
  const staff=[{id:'st1',companyId:'co1',fullName:'Employee One',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'P123456',passportExpiry:'2027-01-30',emiratesIdExpiry:'2027-02-02',otherStaffDocumentName:'Certificate',otherStaffDocumentExpiry:'2027-02-03'}];
  const companyClients=[{id:'cl1',companyId:'co1',name:'Client One',email:'client@example.com',whatsapp:'+971500000003',passportNumber:'SENSITIVE-123',passportExpiry:'2027-01-30',emiratesIdExpiry:'2027-02-04',visaExpiry:'2027-02-05'}];
  const documents=[{refCode:'INV-1',clientName:'Client One',companyName:'Example LLC',archiveExpiryDate:'2027-01-30'}];
  const rows=collectExpiryRecords({clients,staff,companyClients,documents},'2026-12-31');
  assert.equal(rows.length,9);
  const passport=rows.find(x=>x.ownerType==='staff'&&x.field==='passportExpiry');
- assert.equal(passport.companyEmail,'office@example.com');
- assert.equal(passport.companyWhatsapp,'+971500000001');
+ assert.equal(passport.companyEmail,'alerts@example.com');
+ assert.equal(passport.companyWhatsapp,'+971500000009');
  assert.equal(passport.groupLink,'https://chat.whatsapp.com/abc');
  const linked=rows.find(x=>x.ownerType==='client'&&x.field==='passportExpiry');
  assert.equal(linked.ownerName,'Client One');
  assert.equal(linked.companyName,'Example LLC');
- assert.equal(linked.companyEmail,'office@example.com');
+ assert.equal(linked.companyEmail,'alerts@example.com');
  assert.equal(JSON.stringify(linked).includes('SENSITIVE-123'),false);
  assert.equal(rows.find(x=>x.field==='otherDocumentExpiry').documentType,'Insurance');
  assert.equal(rows.find(x=>x.field==='otherStaffDocumentExpiry').documentType,'Certificate');
