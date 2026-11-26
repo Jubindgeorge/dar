@@ -62,6 +62,19 @@ const assert = require('node:assert/strict');
     assert.equal(financeCentreSmoke.invoiceMasterInsidePanel,true,'Invoice ledger heading and table remain together inside the Invoices section');
     assert.equal(financeCentreSmoke.paymentLogsInsidePanel,true,'Payment log heading and table remain together inside the Payments section');
     assert.equal(financeCentreSmoke.rangePresetCount,4,'Month, quarter, year and all-time reporting presets are available');
+    const statementSafetySmoke = await page.evaluate(() => {
+      const savedDocs=state.documents, originalOpen=window.open, maliciousName='<img src=x onerror=alert(1)>';
+      let statementWindow;
+      state.documents=[{refCode:'STATEMENT-XSS-TEST',type:'Invoice',transactionDate:'2026-11-10',totalAmount:100,clientName:maliciousName}];
+      window.open=()=>{statementWindow={document:document.implementation.createHTMLDocument(''),focus(){},print(){}};return statementWindow;};
+      try {
+        window.printDarCustomerStatement(encodeURIComponent(maliciousName));
+        return {heading:statementWindow.document.querySelector('h3')?.textContent,imageCount:statementWindow.document.querySelectorAll('img').length,invoice:statementWindow.document.querySelector('tbody')?.textContent||''};
+      } finally {window.open=originalOpen;state.documents=savedDocs;}
+    });
+    assert.equal(statementSafetySmoke.heading,'<img src=x onerror=alert(1)>','Customer statement renders customer names as text, not executable markup');
+    assert.equal(statementSafetySmoke.imageCount,0,'Customer statement does not create HTML elements from untrusted customer text');
+    assert.match(statementSafetySmoke.invoice,/STATEMENT-XSS-TEST/,'Safe customer statement still includes invoice rows');
     console.log('PASS: Finance Centre invoice-basis calculations, cash receipt separation and quotation exclusion');
     assert.equal(await page.locator('#signup-form').count(),1,'Signup form exists');
     assert.equal(await page.locator('#dar-mobile-menu-backdrop').count(),1,'Mobile navigation backdrop exists');
