@@ -568,6 +568,7 @@ const assert = require('node:assert/strict');
         openQuotationConversion('QTN-TEST-001');
         document.getElementById('qc-mode').value='remaining';
         document.getElementById('qc-mode').dispatchEvent(new Event('change'));
+        const finalConversionModalVisible=quoteModal.style.display;
         submitQuotationConversion();
         const finalInvoice=state.documents.find(d=>d.billingMode==='remaining' && d.sourceQuotationRef==='QTN-TEST-001');
         const fullyBilledQuote=state.documents.find(d=>d.refCode==='QTN-TEST-001');
@@ -585,7 +586,7 @@ const assert = require('node:assert/strict');
           stageInvoiceRemaining:stageInvoice?.remainingQuotationAmount,
           stageADisabled:document.querySelector('#qc-stage-items input[value="0"]').disabled,
           stageBDisabled:document.querySelector('#qc-stage-items input[value="1"]').disabled,
-          modalVisible:quoteModal.style.display
+          modalVisible:finalConversionModalVisible
         };
       } finally {db.ref=oldRef;window.showCustomModal=oldModal;closeQuotationConversion();}
     });
