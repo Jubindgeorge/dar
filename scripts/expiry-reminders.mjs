@@ -26,7 +26,8 @@ const snapshot=await db.ref().get(),root=snapshot.val()||{};
 const records=dueReminders(collectExpiryRecords({
  clients:Object.entries(root.clients||{}).map(([id,v])=>({id,...v})),
  staff:Object.entries(root.staff||{}).map(([id,v])=>({id,...v})),
- companyClients:Object.entries(root.companyClients||{}).map(([id,v])=>({id,...v}))
+ companyClients:Object.entries(root.companyClients||{}).map(([id,v])=>({id,...v})),
+ documents:Object.entries(root.documents||{}).map(([refCode,v])=>({refCode,...v}))
 },today));
 let sent=0,failed=0,skipped=0;
 for(const r of records){
