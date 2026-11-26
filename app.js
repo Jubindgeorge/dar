@@ -1149,7 +1149,7 @@ window.previewInvoiceDocument = async function(refCode) {
     const termsValue = doc.termsAndConditions ?? doc.termsConditions ?? doc.terms ?? '';
     const termsContent = Array.isArray(termsValue) ? termsValue.join('\n') : String(termsValue || '').trim();
     if (termsText) termsText.textContent = termsContent;
-    if (termsSection) termsSection.style.display = termsContent ? 'block' : 'none';
+    if (termsSection) termsSection.style.display = termsContent && doc.showTermsAndConditions !== false ? 'block' : 'none';
     // Show the preview before measuring it; a display:none ancestor reports zero height.
     const modal = document.getElementById('document-preview-modal');
     if (modal) modal.style.display = 'flex';
@@ -1569,7 +1569,7 @@ window.openQuotationConversion = function(refCode) {
     document.getElementById('qc-mode').value = 'amount';
     document.getElementById('qc-amount').value = remaining.toFixed(2);
     document.getElementById('qc-percent').value = '100';
-    ['qc-show-original','qc-show-previous','qc-show-remaining'].forEach(id => { const checkbox=document.getElementById(id); if (checkbox) checkbox.checked=false; });
+    ['qc-show-original','qc-show-previous','qc-show-remaining','qc-show-terms'].forEach(id => { const checkbox=document.getElementById(id); if (checkbox) checkbox.checked=false; });
     const stageBox = document.getElementById('qc-stage-items');
     const alreadyBilledStages = new Set(Array.isArray(quote.invoicedStageIndexes) ? quote.invoicedStageIndexes : []);
     stageBox.innerHTML = (Array.isArray(quote.items) ? quote.items : []).map((item,index) => {
@@ -1679,6 +1679,7 @@ window.submitQuotationConversion = function() {
             showQuotationOriginalTotal:document.getElementById('qc-show-original')?.checked === true,
             showQuotationPreviouslyInvoiced:document.getElementById('qc-show-previous')?.checked === true,
             showQuotationRemainingBalance:document.getElementById('qc-show-remaining')?.checked === true,
+            showTermsAndConditions:document.getElementById('qc-show-terms')?.checked === true,
             packageName:liveQuote.packageName || description, serviceName:liveQuote.serviceName || description,
             items, subtotalAmount:invoiceSubtotal, subTotal:invoiceSubtotal,
             processingCharges:invoiceProcessing, processingCharge:invoiceProcessing,
