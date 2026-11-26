@@ -623,7 +623,7 @@ const assert = require('node:assert/strict');
       } finally {db.ref=oldRef;window.showCustomModal=oldModal;}
     });
     assert.equal(linkedEditResult.invoiceTotal,90,'Editing a converted invoice updates its existing record');
-    assert.equal(linkedEditResult.quoteInvoiced,165,'Editing a converted invoice adjusts the source quotation balance');
+    assert.equal(linkedEditResult.quoteInvoiced,290,'Editing a converted invoice reduces the fully invoiced quotation total by the edit difference');
     const moduleSmoke = await page.evaluate(() => {
       state.clients=[{id:'company-test',companyName:'Sample Company'}];
       state.staff=[{id:'staff-test',staffCode:'ST-001',fullName:'Test Staff',companyId:'company-test',companyName:'Sample Company',lastWorkDone:'Visa renewal',visaExpiry:'2099-01-01',passportExpiry:'2099-02-01',renewalStatus:'Pending'}];
