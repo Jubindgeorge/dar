@@ -570,7 +570,14 @@ const assert = require('node:assert/strict');
         document.getElementById('qc-mode').dispatchEvent(new Event('change'));
         return {
           amount:amountInvoice?.totalAmount, afterAmount:firstQuote?.invoicedAmount,
+          amountInvoiceQuotationRef:amountInvoice?.quotationRef,
+          amountInvoiceOriginalTotal:amountInvoice?.originalQuotationTotal,
+          amountInvoiceCompletedPercent:amountInvoice?.completedWorkPercent,
+          amountInvoiceRemaining:amountInvoice?.remainingQuotationAmount,
           stage:stageInvoice?.totalAmount, afterStage:finalQuote?.invoicedAmount,
+          stageInvoiceOriginalTotal:stageInvoice?.originalQuotationTotal,
+          stageInvoicePreviouslyInvoiced:stageInvoice?.quotationPreviouslyInvoiced,
+          stageInvoiceRemaining:stageInvoice?.remainingQuotationAmount,
           stageADisabled:document.querySelector('#qc-stage-items input[value="0"]').disabled,
           stageBDisabled:document.querySelector('#qc-stage-items input[value="1"]').disabled,
           modalVisible:quoteModal.style.display
@@ -579,7 +586,14 @@ const assert = require('node:assert/strict');
     });
     assert.equal(conversionResult.amount,75,'Percentage billing calculates the correct partial invoice');
     assert.equal(conversionResult.afterAmount,75,'Quotation tracks the amount already invoiced');
+    assert.equal(conversionResult.amountInvoiceQuotationRef,'QTN-TEST-001','Progress invoice retains the source quotation reference');
+    assert.equal(conversionResult.amountInvoiceOriginalTotal,300,'Progress invoice stores the original quotation total');
+    assert.equal(conversionResult.amountInvoiceCompletedPercent,25,'Progress invoice records the completed-work percentage');
+    assert.equal(conversionResult.amountInvoiceRemaining,225,'Progress invoice records the remaining quotation amount');
     assert.equal(conversionResult.stage,100,'Stage billing invoices the selected completed item');
+    assert.equal(conversionResult.stageInvoiceOriginalTotal,300,'Stage invoice retains the original quotation total');
+    assert.equal(conversionResult.stageInvoicePreviouslyInvoiced,75,'Stage invoice records earlier billed amount');
+    assert.equal(conversionResult.stageInvoiceRemaining,125,'Stage invoice records the remaining quotation amount after this stage');
     assert.equal(conversionResult.afterStage,175,'Quotation balance updates after a stage invoice');
     assert.equal(conversionResult.stageADisabled,true,'A stage cannot be invoiced twice');
     assert.equal(conversionResult.stageBDisabled,false,'Unbilled stages remain available');
