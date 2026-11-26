@@ -15,8 +15,9 @@ test('collects company, staff and linked-client expiry records without copying i
  const clients=[{id:'co1',companyName:'Example LLC',email:'office@example.com',whatsapp:'+971500000001',tradeLicenseExpiry:'2027-01-30',otherDocumentName:'Insurance',otherDocumentExpiry:'2027-02-01',whatsappGroupLink:'https://chat.whatsapp.com/abc'}];
  const staff=[{id:'st1',companyId:'co1',fullName:'Employee One',email:'person@example.com',whatsapp:'+971500000002',passportNumber:'P123456',passportExpiry:'2027-01-30',emiratesIdExpiry:'2027-02-02',otherStaffDocumentName:'Certificate',otherStaffDocumentExpiry:'2027-02-03'}];
  const companyClients=[{id:'cl1',companyId:'co1',name:'Client One',email:'client@example.com',whatsapp:'+971500000003',passportNumber:'SENSITIVE-123',passportExpiry:'2027-01-30',emiratesIdExpiry:'2027-02-04',visaExpiry:'2027-02-05'}];
- const rows=collectExpiryRecords({clients,staff,companyClients},'2026-12-31');
- assert.equal(rows.length,8);
+ const documents=[{refCode:'INV-1',clientName:'Client One',companyName:'Example LLC',archiveExpiryDate:'2027-01-31'}];
+ const rows=collectExpiryRecords({clients,staff,companyClients,documents},'2026-12-31');
+ assert.equal(rows.length,9);
  const passport=rows.find(x=>x.ownerType==='staff'&&x.field==='passportExpiry');
  assert.equal(passport.companyEmail,'office@example.com');
  assert.equal(passport.companyWhatsapp,'+971500000001');
@@ -28,7 +29,10 @@ test('collects company, staff and linked-client expiry records without copying i
  assert.equal(JSON.stringify(linked).includes('SENSITIVE-123'),false);
  assert.equal(rows.find(x=>x.field==='otherDocumentExpiry').documentType,'Insurance');
  assert.equal(rows.find(x=>x.field==='otherStaffDocumentExpiry').documentType,'Certificate');
+ const file=rows.find(x=>x.ownerType==='document');
+ assert.equal(file.documentType,'Invoice File');
+ assert.equal(file.email,'client@example.com');
  const due=dueReminders(rows);
- assert.equal(due.length,3);
+ assert.equal(due.length,4);
  assert.ok(due.every(x=>x.reminder==='before-30'));
 });
