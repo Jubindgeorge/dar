@@ -60,7 +60,8 @@ window.renderAccountsLedgerMaster = function() {
     docs.forEach(doc => {
         const opt = document.createElement('option');
         opt.value = doc.refCode;
-        opt.textContent = String(doc.refCode);
+        const totalVal = Number(window.getDarDocumentAmount ? window.getDarDocumentAmount(doc) : (doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount)) || 0;
+        opt.textContent = `${doc.refCode} - ${doc.clientName || doc.companyName || 'Client'} [AED ${totalVal.toFixed(2)}] (${doc.companyName || 'General'})`;
         select.appendChild(opt);
     });
 
