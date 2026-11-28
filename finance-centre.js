@@ -16,8 +16,8 @@ const logs=d=>window.getDarDocumentPaymentLogs?window.getDarDocumentPaymentLogs(
 function receipts(d){
  const ls=logs(d), sum=ls.reduce((s,p)=>s+Math.max(0,num(p.amount)),0), p=paid(d);
  let advance=d.advanceIncludedInPaymentLogs===true?0:(d.advanceIncludedInPaymentLogs===false?Math.max(0,num(d.paymentAdvanceBalance??d.advanceAmount??d.advanceAmt??d.advance)):Math.max(0,p-sum));
- const out=ls.filter(x=>num(x.amount)>0).map(x=>({date:String(x.date||x.transactionDate||invDate(d)).slice(0,10),amount:Math.max(0,num(x.amount)),note:[x.method,x.note].filter(Boolean).join(' · ')}));
- if(advance>0)out.push({date:invDate(d),amount:advance,note:'Advance / legacy receipt'});
+ const out=ls.filter(x=>num(x.amount)>0).map((x,index)=>({date:String(x.date||x.transactionDate||invDate(d)).slice(0,10),amount:Math.max(0,num(x.amount)),method:String(x.method||'Other'),reference:String(x.reference||x.paymentReference||''),note:String(x.note||''),createdAt:String(x.createdAt||''),_logIndex:index}));
+ if(advance>0)out.push({date:invDate(d),amount:advance,method:'Advance',reference:'',note:'Advance / legacy receipt',_logIndex:-1});
  return out;
 }
 function period(){const a=$('finance-date-from')?.value||'',b=$('finance-date-to')?.value||'';return {a,b,has:d=>!!d&&(!a||d>=a)&&(!b||d<=b)};}
@@ -48,7 +48,7 @@ function show(name){
  root.querySelectorAll('[data-finance-tab]').forEach(b=>b.classList.toggle('active',b.dataset.financeTab===name));
  root.querySelectorAll('[data-finance-panel]').forEach(p=>p.classList.toggle('active',p.dataset.financePanel===name));
  root.dataset.activeTab=name;
- if(name==='customers')renderCustomers();if(name==='reports')renderReports();if(name==='reconcile')renderAudit();
+ if(name==='customers')renderCustomers();if(name==='payments')renderPayments();if(name==='reports')renderReports();if(name==='reconcile')renderAudit();
 }
 window.showFinanceSection=show;
 function createShell(){
@@ -59,7 +59,7 @@ function createShell(){
  '<nav class="finance-nav" aria-label="Finance sections">'+
  '<button class="active" data-finance-tab="overview">Overview</button><button data-finance-tab="invoices">Invoices</button><button data-finance-tab="payments">Payments</button><button data-finance-tab="customers">Customers</button><button data-finance-tab="expenses">Expenses</button><button data-finance-tab="reports">Reports</button><button data-finance-tab="reconcile">Reconciliation</button><button data-finance-tab="staff">Staff Register</button></nav>'+
  '<section class="finance-panel active" data-finance-panel="overview"><div class="finance-kpis" id="finance-kpis"></div><div class="finance-grid-two"><article class="finance-card"><h3>Invoice-based Profit &amp; Loss</h3><p>Revenue is recognised on invoice date. Collections are shown separately.</p><div id="finance-pl"></div></article><article class="finance-card"><h3>Cash collections &amp; receivables</h3><p>Receipts in the selected period and all current unpaid balances.</p><div id="finance-cash"></div></article></div><article class="finance-card"><h3>Outstanding ageing</h3><p>Current unpaid invoice balances by invoice age.</p><div id="finance-ageing"></div></article><article class="finance-card"><h3>Recent invoices</h3><div id="finance-recent"></div></article></section>'+
- '<section class="finance-panel" data-finance-panel="invoices"><div id="finance-invoices"></div></section><section class="finance-panel" data-finance-panel="payments"><div id="finance-payments"></div></section>'+
+ '<section class="finance-panel" data-finance-panel="invoices"><div id="finance-invoices"></div></section><section class="finance-panel" data-finance-panel="payments"><div id="finance-payments-register"></div><div id="finance-payments"></div></section>'+
  '<section class="finance-panel" data-finance-panel="customers"><article class="finance-card"><div class="finance-card-head"><div><h3>Customer Accounts</h3><p>Invoice totals, receipts and current outstanding balances.</p></div><input id="finance-customer-search" type="search" placeholder="Search customer"></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Customer</th><th>Invoices</th><th>Invoiced</th><th>Collected</th><th>Outstanding</th><th>Actions</th></tr></thead><tbody id="finance-customers"></tbody></table></div></article></section>'+
  '<section class="finance-panel" data-finance-panel="expenses"><div id="finance-expenses"></div></section>'+
  '<section class="finance-panel" data-finance-panel="reports"><div class="finance-report-actions"><button class="btn btn-primary" id="finance-export-pl">Export P&amp;L (Excel)</button><button class="btn btn-secondary" id="finance-export-customer">Export Customer Balances</button><button class="btn btn-secondary" id="finance-export-collections">Export Collections</button><button class="btn btn-secondary" id="finance-export-expenses">Export Expenses</button><button class="btn btn-secondary" id="finance-export-ageing">Export Ageing</button><button class="btn btn-secondary" id="finance-print">Print Report</button></div><article class="finance-card"><h3>Invoice-based Profit &amp; Loss Report</h3><div id="finance-report"></div></article><article class="finance-card"><h3>Outstanding by customer</h3><div id="finance-report-customers"></div></article></section>'+
@@ -104,6 +104,40 @@ function customerData(){
  const map=new Map();allDocs().forEach(doc=>{const name=String(doc.clientName||doc.companyName||'Unassigned customer').trim();if(!map.has(name))map.set(name,{name,count:0,invoiced:0,collected:0,balance:0,docs:[]});const x=map.get(name);x.count++;x.invoiced+=total(doc);x.collected+=paid(doc);x.balance+=Math.max(0,total(doc)-paid(doc));x.docs.push(doc);});
  return [...map.values()].sort((a,b)=>b.balance-a.balance);
 }
+function renderPayments(){
+ const root=$('finance-payments-register');if(!root)return;
+ const r=period(),rows=[];
+ allDocs().forEach(d=>receipts(d).forEach(p=>{if(r.has(p.date))rows.push({...p,doc:d,ref:d.refCode||'—',customer:d.clientName||d.companyName||'Unassigned customer'});}));
+ rows.sort((a,b)=>b.date.localeCompare(a.date));
+ const totalReceived=rows.reduce((s,p)=>s+p.amount,0);
+ const methods=new Map();rows.forEach(p=>methods.set(p.method||'Advance',(methods.get(p.method||'Advance')||0)+p.amount));
+ root.innerHTML='<div class="finance-kpis">'+kpi('Receipts in period',totalReceived,rows.length+' payment entries','cash')+kpi('Payment methods',methods.size,'Methods used in this period','revenue')+kpi('Invoices with balances',allDocs().filter(d=>total(d)-paid(d)>.005).length,'Invoices still awaiting payment','due')+kpi('Receipt entries',rows.length,'Payments and advances in this period','profit')+'</div><article class="finance-card"><div class="finance-card-head"><div><h3>All Payments &amp; Receipts</h3><p>Business-wide cash receipt register, including advance and partial payments.</p></div><button type="button" class="btn btn-primary" id="finance-new-payment">+ Record Payment</button></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Payment Date</th><th>Invoice</th><th>Customer</th><th>Method</th><th>Reference / Note</th><th>Amount Received</th><th>Receipt</th></tr></thead><tbody>'+(rows.length?rows.map((p,i)=>'<tr><td>'+esc(p.date)+'</td><td><b>'+esc(p.ref)+'</b></td><td>'+esc(p.customer)+'</td><td>'+esc(p.method||'Advance')+'</td><td>'+esc([p.reference,p.note].filter(Boolean).join(' · ')||'—')+'</td><td><b>'+fmt(p.amount)+'</b></td><td><button type="button" class="btn btn-secondary finance-mini" data-finance-receipt="'+i+'">Print receipt</button></td></tr>').join(''):'<tr><td colspan="7" class="finance-empty">No receipts in this reporting period.</td></tr>')+'</tbody></table></div><p class="finance-note">This register is derived from invoice payment history. Recording a payment updates the selected invoice and its outstanding balance.</p></article>';
+ $('finance-new-payment')?.addEventListener('click',()=>{show('payments');const select=$('acc-invoice-select');if(select&&select.value&&typeof window.openAddPaymentModal==='function')window.openAddPaymentModal();else if(select){select.focus();alert('Select the invoice to receive this payment, then choose Record Payment again.');}});
+ root.querySelectorAll('[data-finance-receipt]').forEach(button=>button.addEventListener('click',()=>{const payment=rows[Number(button.dataset.financeReceipt)];if(payment)window.printDarPaymentReceipt(payment);}));
+}
+window.printDarPaymentReceipt=function(entry){
+ const d=entry?.doc;if(!d)return;
+ const w=window.open('','_blank','width=820,height=900');if(!w){alert('Allow pop-ups to open and print the payment receipt.');return;}
+ const doc=w.document,style=doc.createElement('style');
+ style.textContent='*{box-sizing:border-box}body{font:14px Arial,sans-serif;color:#1d2735;margin:0;padding:28px;background:#fff}.receipt{max-width:720px;margin:0 auto;border:1px solid #c59b27;padding:28px}.brand{font-size:20px;font-weight:700}.sub{color:#667085;font-size:12px;margin-top:5px}.rule{border:0;border-top:1px solid #c59b27;margin:20px 0}.title{text-align:center;font-size:19px;letter-spacing:2px;margin:18px 0}.meta{display:flex;justify-content:space-between;gap:20px;margin:16px 0;white-space:pre-line}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}.cell{padding:12px;background:#f7f7f5;border:1px solid #e6e2d8}.label{display:block;color:#667085;font-size:11px;margin-bottom:5px}.value{font-weight:700}.amount{font-size:24px;color:#174d37}.foot{margin-top:30px;color:#667085;font-size:11px;line-height:1.6}.actions{max-width:720px;margin:16px auto;display:flex;justify-content:flex-end;gap:8px}.actions button{padding:10px 16px;border:0;border-radius:6px;background:#263b30;color:#fff;cursor:pointer}@media print{body{padding:0}.receipt{border:1px solid #c59b27;max-width:none}.actions{display:none}@page{size:A4;margin:15mm}}';
+ doc.title='Payment Receipt';doc.head.append(style);doc.body.replaceChildren();
+ const wrap=doc.createElement('main');wrap.className='receipt';
+ const add=(tag,cls,value,parent=wrap)=>{const el=doc.createElement(tag);if(cls)el.className=cls;el.textContent=String(value??'');parent.append(el);return el;};
+ add('div','brand','DAR AL SHAMS DOCUMENTS CLEARING SERVICES');
+ add('div','sub','خدمات دار الشمس لتخليص المعاملات · Sharjah / Dubai, U.A.E.');
+ const rule=doc.createElement('hr');rule.className='rule';wrap.append(rule);
+ add('div','title','PAYMENT RECEIPT');
+ const receiptStamp=entry.createdAt?entry.createdAt.replace(/[^0-9]/g,'').slice(0,14):String(entry._logIndex>=0?entry._logIndex+1:'ADV');const receiptNo='RCPT-'+String(d.refCode||'INVOICE').replace(/[^A-Za-z0-9-]/g,'-')+'-'+receiptStamp;
+ const meta=add('div','meta','');const left=add('div','','Receipt No: '+receiptNo+'\nPayment Date: '+entry.date,meta);const right=add('div','','Invoice: '+(d.refCode||'—')+'\nPrinted: '+today(),meta);right.style.textAlign='right';
+ add('p','','Received from: '+(d.clientName||d.companyName||'Unassigned customer'));
+ const grid=doc.createElement('div');grid.className='grid';
+ [['Amount received',fmt(entry.amount),'amount'],['Payment method',entry.method||'Advance',''],['Transaction reference',entry.reference||'—',''],['Invoice total',fmt(total(d)),''],['Total received to date',fmt(paid(d)),''],['Current outstanding',fmt(Math.max(0,total(d)-paid(d))),'']].forEach(([label,value,cls])=>{const cell=doc.createElement('div');cell.className='cell';add('span','label',label,cell);add('span','value'+(cls?' '+cls:''),value,cell);grid.append(cell);});
+ wrap.append(grid);if(entry.note)add('p','','Note: '+entry.note);
+ add('p','','Payment received with thanks.');
+ add('div','foot','This receipt confirms the payment entry recorded against the invoice shown above. Please retain it for your records.');
+ doc.body.append(wrap);
+ const actions=doc.createElement('div');actions.className='actions';const print=add('button','','Print receipt',actions);print.type='button';print.addEventListener('click',()=>w.print());const close=add('button','','Close',actions);close.type='button';close.addEventListener('click',()=>w.close());doc.body.append(actions);w.focus();
+};
 function renderCustomers(){
  if(!$('finance-customers'))return;const q=($('finance-customer-search')?.value||'').toLowerCase().trim();
  const rows=customerData().filter(x=>!q||x.name.toLowerCase().includes(q));
@@ -182,6 +216,7 @@ function render(){
  const active=$('finance-centre').dataset.activeTab||'overview';
  renderOverview();updateInvoiceTable();
  if(active==='customers')renderCustomers();
+ if(active==='payments')renderPayments();
  if(active==='reports')renderReports();
  if(active==='reconcile')renderAudit();
 }
@@ -193,12 +228,17 @@ function wrapFunctions(){
 }
 
 
+const oldOpen=window.openAddPaymentModal;if(oldOpen)window.openAddPaymentModal=function(){oldOpen.apply(this,arguments);if($('pay-input-method'))$('pay-input-method').value='Cash';if($('pay-input-reference'))$('pay-input-reference').value='';window.updateDarPaymentPreview?.();};
 function addPaymentMethodControl(){
  const modal=$('payment-modal');if(!modal||$('pay-input-method'))return;
  const amountInput=$('pay-input-amount')?.closest('.form-group');if(!amountInput)return;
  const group=document.createElement('div');group.className='form-group';
  group.innerHTML='<label for="pay-input-method">Payment Method</label><select id="pay-input-method"><option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option><option value="Card">Card</option><option value="Cheque">Cheque</option><option value="Other">Other</option></select>';
  amountInput.insertAdjacentElement('afterend',group);
+ const ref=document.createElement('div');ref.className='form-group';ref.innerHTML='<label for="pay-input-reference">Transaction / Receipt Reference</label><input id="pay-input-reference" type="text" maxlength="100" placeholder="Bank reference, cheque number, receipt number">';group.insertAdjacentElement('afterend',ref);
+ const preview=document.createElement('div');preview.id='finance-payment-preview';preview.className='finance-payment-preview';preview.setAttribute('aria-live','polite');ref.insertAdjacentElement('afterend',preview);
+ const update=()=>{const select=$('acc-invoice-select'),doc=allDocs().find(d=>d.refCode===select?.value),amount=num($('pay-input-amount')?.value),balance=doc?Math.max(0,total(doc)-paid(doc)):0;preview.innerHTML=doc?'<div><span>Invoice total</span><b>'+fmt(total(doc))+'</b></div><div><span>Already received</span><b>'+fmt(paid(doc))+'</b></div><div><span>Balance before payment</span><b>'+fmt(balance)+'</b></div><div class="finance-payment-after"><span>Balance after this payment</span><b>'+fmt(Math.max(0,balance-amount))+'</b></div>':'';};
+ $('pay-input-amount')?.addEventListener('input',update);$('acc-invoice-select')?.addEventListener('change',update);window.updateDarPaymentPreview=update;
 }
 
 function addExpenseControls(){
@@ -254,14 +294,14 @@ window.editPaymentLog=async function(refCode,index){
  const original=current[index],date=prompt('Payment date (YYYY-MM-DD):',original.date||original.transactionDate||invDate(doc));if(date===null)return;
  const amountText=prompt('Payment amount (AED):',String(original.amount??''));if(amountText===null)return;
  const value=Number(amountText);if(!date.trim()||!Number.isFinite(value)||value<=0){alert('Enter a valid payment date and amount greater than zero.');return;}
- const note=prompt('Payment note / reference:',original.note||'');if(note===null)return;const method=prompt('Payment method:',original.method||'Other');if(method===null)return;const fingerprint=JSON.stringify(original);
- try{const result=await transactDarDocument(refCode,currentDoc=>{if(!currentDoc)return;const entries=window.getDarDocumentPaymentLogs(currentDoc),idx=index;if(idx<0||idx>=entries.length||JSON.stringify(entries[idx])!==fingerprint)return;const nextPaid=paid(currentDoc)-num(entries[idx].amount)+value;if(nextPaid>total(currentDoc)+.005)return;entries[idx]={...entries[idx],date:date.trim(),transactionDate:date.trim(),amount:value,note:note.trim(),method:method.trim()};currentDoc.paymentLogs=entries;currentDoc.updatedAt=new Date().toISOString();currentDoc.updatedBy=firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown';return currentDoc;});
+ const note=prompt('Payment note:',original.note||'');if(note===null)return;const method=prompt('Payment method:',original.method||'Other');if(method===null)return;const reference=prompt('Transaction / receipt reference:',original.reference||original.paymentReference||'');if(reference===null)return;const fingerprint=JSON.stringify(original);
+ try{const result=await transactDarDocument(refCode,currentDoc=>{if(!currentDoc)return;const entries=window.getDarDocumentPaymentLogs(currentDoc),idx=index;if(idx<0||idx>=entries.length||JSON.stringify(entries[idx])!==fingerprint)return;const nextPaid=paid(currentDoc)-num(entries[idx].amount)+value;if(nextPaid>total(currentDoc)+.005)return;entries[idx]={...entries[idx],date:date.trim(),transactionDate:date.trim(),amount:value,note:note.trim(),method:method.trim(),reference:reference.trim()};currentDoc.paymentLogs=entries;currentDoc.updatedAt=new Date().toISOString();currentDoc.updatedBy=firebase.auth?.().currentUser?.email||firebase.auth?.().currentUser?.uid||'Unknown';return currentDoc;});
  if(!result.committed){alert('Payment was not changed. It may have been edited by another user or the new amount exceeds the invoice total.');return;}
  Object.assign(doc,result.snapshot.val()||{});window.renderAccountsLedgerDetail(refCode);window.renderFullLedgerTableBody();render();
  }catch(error){alert('Payment edit failed. The original payment remains unchanged.');}
 };
 
-function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();addExpenseControls();addPaymentMethodControl();renderExpenses();render();}
+function init(){if(!$('tab-accounts-ledger'))return;createShell();movePanels();wrapFunctions();addExpenseControls();addPaymentMethodControl();renderExpenses();render();renderPayments();}
 window.renderFinanceCentre=render;window.initDarFinanceCentre=init;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
