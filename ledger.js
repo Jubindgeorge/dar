@@ -138,7 +138,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
             allPayments.push({
                 date: log.date || '-',
                 amount: Number(log.amount || 0),
-                note: log.note || 'Direct Payment',
+                note: [log.method, log.reference, log.note].filter(Boolean).join(' · ') || 'Direct Payment',
                 isAdvance: false,
                 index: originalIndex
             });
@@ -325,7 +325,7 @@ window.savePaymentLogData = async function() {
     const amount = Number(document.getElementById('pay-input-amount').value);
     const note = document.getElementById('pay-input-note').value;
     if (!Number.isFinite(amount) || amount <= 0) { alert('Please enter a valid payment amount.'); return; }
-    const payment = {date, transactionDate: date, amount, note, createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
+    const payment = {date, transactionDate: date, amount, note, method: document.getElementById('pay-input-method')?.value || 'Other', reference: document.getElementById('pay-input-reference')?.value.trim() || '', createdAt: new Date().toISOString(), createdBy: firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown'};
     let validationError = '';
     try {
         const result = await transactDarDocument(doc.refCode, current => {
