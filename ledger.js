@@ -51,35 +51,123 @@ window.renderCompanyStaffLedger = function() {
 window.renderAccountsLedgerMaster = function() {
     const select = document.getElementById('acc-invoice-select');
     if (!select) return;
-    
-    const currentSelected = select.value;
-    select.innerHTML = '<option value="">-- Choose Invoice Reference --</option>';
 
-    const docs = state.documents || [];
+    const currentSelected = select.value;
+    const docs = (Array.isArray(state.documents) ? state.documents : [])
+        .filter(doc => doc && doc.refCode && String(doc.type || 'Invoice').toLowerCase() !== 'quotation')
+        .sort((a,b) => String(b.transactionDate || b.createdDate || b.date || '').localeCompare(String(a.transactionDate || a.createdDate || a.date || '')));
+    select.innerHTML = '<option value="">-- Choose Invoice Reference --</option>';
     docs.forEach(doc => {
         const opt = document.createElement('option');
         opt.value = doc.refCode;
-        
-        // Robust fallback mapping for totals
-        const totalVal = Number(getDarDocumentAmount(doc)) || 0;
+        const totalVal = Number(window.getDarDocumentAmount ? window.getDarDocumentAmount(doc) : (doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount)) || 0;
         opt.textContent = `${doc.refCode} - ${doc.clientName || doc.companyName || 'Client'} [AED ${totalVal.toFixed(2)}] (${doc.companyName || 'General'})`;
-        
-        if (doc.refCode === currentSelected) opt.selected = true;
         select.appendChild(opt);
     });
 
-    renderMonthlyExpensesTable();
-    renderCompanyStaffLedger();
-    if (currentSelected) {
-        renderAccountsLedgerDetail(currentSelected);
-    } else if (docs.length > 0) {
-        select.value = docs[0].refCode;
-        renderAccountsLedgerDetail(docs[0].refCode);
+    const selectedRef = docs.some(doc => doc.refCode === currentSelected)
+        ? currentSelected
+        : (docs[0] ? docs[0].refCode : '');
+    select.value = selectedRef;
+
+    const picker = document.getElementById('dar-invoice-picker');
+    const search = document.getElementById('acc-invoice-search');
+    const results = document.getElementById('acc-invoice-results');
+    const selectedCard = document.getElementById('acc-invoice-selected');
+
+    const money = value => 'AED ' + (Number(value) || 0).toLocaleString('en-AE', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const escape = value => window.escapeHtml ? window.escapeHtml(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const getFigures = doc => {
+        const total = Math.max(0, Number(window.getDarDocumentAmount ? window.getDarDocumentAmount(doc) : (doc.totalAmount ?? doc.totalAmt ?? doc.total ?? doc.amount)) || 0);
+        const paid = Math.max(0, Number(window.getDarDocumentPaidAmount ? window.getDarDocumentPaidAmount(doc) : (doc.advanceAmount ?? doc.advanceAmt ?? doc.advance)) || 0);
+        const balance = Math.max(0, total - paid);
+        const status = balance <= 0.005 ? 'Paid' : paid > 0.005 ? 'Partially paid' : 'Unpaid';
+        return {total, paid, balance, status};
+    };
+    const selectedDoc = () => docs.find(doc => doc.refCode === select.value);
+    const closeResults = () => {
+        if (results) results.hidden = true;
+        if (search) search.setAttribute('aria-expanded','false');
+    };
+    const renderSelected = () => {
+        const doc = selectedDoc();
+        if (!selectedCard) return;
+        if (!doc) {
+            selectedCard.innerHTML = '<span class="dar-invoice-empty">No invoice selected</span>';
+            return;
+        }
+        const f = getFigures(doc);
+        const customer = doc.clientName || doc.companyName || 'Customer not specified';
+        selectedCard.innerHTML =
+            '<div class="dar-invoice-selected-main"><span class="dar-invoice-selected-label">Selected invoice</span><strong>' + escape(doc.refCode) + '</strong><small>' + escape(customer) + '</small></div>' +
+            '<div class="dar-invoice-selected-figures"><span><small>Invoice total</small><strong>' + money(f.total) + '</strong></span><span><small>Outstanding</small><strong class="dar-invoice-balance">' + money(f.balance) + '</strong></span></div>' +
+            '<span class="dar-invoice-status ' + (f.status === 'Paid' ? 'is-paid' : f.status === 'Unpaid' ? 'is-unpaid' : 'is-partial') + '">' + f.status + '</span>';
+    };
+    const renderResults = () => {
+        if (!results || !search) return;
+        const query = search.value.trim().toLowerCase();
+        const matches = docs.filter(doc => {
+            const customer = doc.clientName || doc.companyName || '';
+            return [doc.refCode, customer, doc.companyName, doc.clientName].some(value => String(value || '').toLowerCase().includes(query));
+        }).slice(0, 40);
+        results.innerHTML = matches.length ? matches.map(doc => {
+            const f = getFigures(doc);
+            const customer = doc.clientName || doc.companyName || 'Customer not specified';
+            const date = doc.transactionDate || doc.invoiceDate || doc.createdDate || doc.date || '';
+            const statusClass = f.status === 'Paid' ? 'is-paid' : f.status === 'Unpaid' ? 'is-unpaid' : 'is-partial';
+            return '<button type="button" class="dar-invoice-option" role="option" aria-selected="' + (doc.refCode === select.value) + '" data-invoice-ref="' + escape(doc.refCode) + '">' +
+                '<span class="dar-invoice-option-main"><strong>' + escape(doc.refCode) + '</strong><small>' + escape(customer) + '</small><small>' + escape(date || 'Date not available') + '</small></span>' +
+                '<span class="dar-invoice-option-side"><strong>' + money(f.total) + '</strong><small>Invoice total</small><strong>' + money(f.balance) + '</strong><small>Outstanding</small><em class="dar-invoice-status ' + statusClass + '">' + f.status + '</em></span></button>';
+        }).join('') : '<div class="dar-invoice-no-results">No matching invoices found.</div>';
+        results.hidden = false;
+        search.setAttribute('aria-expanded','true');
+    };
+    if (picker && search && results) {
+        // Keep listeners stable while refreshing the current invoice collection on every render.
+        picker._renderInvoiceResults = renderResults;
+        picker._closeInvoiceResults = closeResults;
+        if (!results.hidden) renderResults();
+        picker._selectInvoice = ref => {
+            if (!docs.some(doc => doc.refCode === ref)) return;
+            select.value = ref;
+            select.dispatchEvent(new Event('change', {bubbles:true}));
+            search.value = '';
+            closeResults();
+            renderSelected();
+        };
+        if (!picker.dataset.bound) {
+            picker.dataset.bound = 'true';
+            search.addEventListener('focus', () => picker._renderInvoiceResults?.());
+            search.addEventListener('input', () => picker._renderInvoiceResults?.());
+            search.addEventListener('keydown', event => {
+                if (event.key === 'Escape') picker._closeInvoiceResults?.();
+                if (event.key === 'Enter' && !results.hidden) {
+                    const first = results.querySelector('[data-invoice-ref]');
+                    if (first) { event.preventDefault(); first.click(); }
+                }
+            });
+            results.addEventListener('click', event => {
+                const option = event.target.closest('[data-invoice-ref]');
+                if (option) picker._selectInvoice?.(option.getAttribute('data-invoice-ref'));
+            });
+            document.addEventListener('click', event => {
+                if (!picker.contains(event.target)) picker._closeInvoiceResults?.();
+            });
+        }
+    }
+    renderSelected();
+    if (picker && search && !docs.length) {
+        search.placeholder = 'No invoices available';
+        search.disabled = true;
+    } else if (search) {
+        search.disabled = false;
     }
 
+    renderMonthlyExpensesTable();
+    renderCompanyStaffLedger();
+    if (selectedRef) renderAccountsLedgerDetail(selectedRef);
     renderFullLedgerTableBody();
 };
-
 window.renderAccountsLedgerDetail = function(refCode) {
     const doc = (state.documents || []).find(d => d.refCode === refCode);
     if (!doc) return;
