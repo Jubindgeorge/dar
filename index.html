@@ -656,10 +656,18 @@
                     <!-- Invoice Selector & Actions Bar -->
                     <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1;">
-                            <label for="acc-invoice-select" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Select Invoice Reference:</label>
-                            <select id="acc-invoice-select" onchange="renderAccountsLedgerDetail(this.value)" style="max-width: 350px; background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; color: white;">
-                                <option value="">-- No Invoices Available --</option>
-                            </select>
+                            <div class="dar-invoice-picker" id="dar-invoice-picker">
+                                <label for="acc-invoice-search">Invoice to receive payment</label>
+                                <div class="dar-invoice-search-wrap">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input id="acc-invoice-search" type="search" autocomplete="off" placeholder="Search invoice no., customer or company" aria-controls="acc-invoice-results" aria-expanded="false" aria-label="Search invoices">
+                                </div>
+                                <div id="acc-invoice-selected" class="dar-invoice-selected" aria-live="polite">Choose an invoice to view its payment balance.</div>
+                                <div id="acc-invoice-results" class="dar-invoice-results" role="listbox" aria-label="Matching invoices" hidden></div>
+                                <select id="acc-invoice-select" onchange="renderAccountsLedgerDetail(this.value)" aria-hidden="true" tabindex="-1" class="dar-invoice-source">
+                                    <option value="">-- No Invoices Available --</option>
+                                </select>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button onclick="openAddPaymentModal()" class="btn btn-primary"><i class="fa-solid fa-hand-holding-dollar"></i> Add Payment</button>
