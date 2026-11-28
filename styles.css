@@ -755,3 +755,36 @@ body.dar-arabic-ui .staff-toolbar { direction: rtl; }
 
 /* Notes & Enquiries */
 .notes-page-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}.notes-page-heading h2{font-size:1.5rem;color:var(--text-main);margin:4px 0}.notes-page-heading p{color:var(--text-muted);font-size:.88rem}.notes-summary{display:flex;gap:8px;flex-wrap:wrap}.notes-summary span,.notes-status{padding:7px 11px;border:1px solid var(--border-color);border-radius:20px;color:var(--primary);font-size:.78rem}.notes-tabs{display:flex;gap:8px;border-bottom:2px solid var(--primary);margin-bottom:18px}.notes-tabs button{padding:11px 18px;border:1px solid var(--border-color);border-bottom:0;border-radius:9px 9px 0 0;background:var(--panel-bg);color:var(--text-muted);cursor:pointer}.notes-tabs button.active{background:var(--primary);color:#111827;font-weight:700}.notes-panel[hidden]{display:none}.notes-form-card,.notes-list-card{background:var(--panel-bg);border:1px solid var(--border-color);border-radius:12px;padding:18px;margin-bottom:16px}.notes-form-card h3,.notes-list-card h3{color:var(--primary);margin-bottom:14px}.notes-form-card h3 i{margin-right:8px}.notes-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-bottom:14px}.notes-form-grid label,.notes-convert-content label{display:flex;flex-direction:column;gap:6px;color:var(--text-muted);font-size:.83rem}.notes-form-grid input,.notes-form-grid select,.notes-form-grid textarea,.notes-convert-content input,.notes-convert-content select{width:100%;padding:10px;background:var(--bg-dark);color:var(--text-main);border:1px solid var(--border-color);border-radius:7px}.notes-wide{grid-column:1/-1}.notes-list-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.notes-list-heading input{max-width:260px;padding:8px;border:1px solid var(--border-color);border-radius:7px;background:var(--bg-dark);color:var(--text-main)}.notes-subline{display:block;color:var(--text-muted);font-size:.75rem;margin-top:3px}.notes-todo-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color)}.notes-todo-row label{display:flex;gap:9px;align-items:flex-start}.notes-todo-row small{color:var(--text-muted)}.notes-todo-row.is-done span{text-decoration:line-through;opacity:.6}.notes-convert-content{position:relative;text-align:left;max-width:560px;max-height:90vh;overflow:auto}.notes-convert-content h3{color:var(--primary);margin-bottom:8px}.notes-convert-content>p{color:var(--text-muted);margin-bottom:15px}.notes-convert-content>label,.notes-convert-content>div:not(.notes-convert-actions){margin:12px 0}.notes-convert-content small{color:var(--text-muted)}.notes-convert-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}.notes-modal-close{position:absolute;right:12px;top:8px;background:none;border:0;color:var(--text-main);font-size:25px;cursor:pointer}@media(max-width:700px){.notes-form-grid{grid-template-columns:1fr}.notes-wide{grid-column:auto}.notes-todo-row{grid-template-columns:1fr auto}.notes-todo-row small{grid-column:1}.notes-todo-row button{grid-column:2;grid-row:1/3}.notes-convert-actions .btn{flex:1}}
+
+/* Professional invoice picker for Accounts & Payments */
+.dar-invoice-picker{position:relative;display:grid;gap:8px;flex:1 1 420px;max-width:620px;min-width:min(100%,280px)}
+.dar-invoice-picker>label{font-size:.78rem;font-weight:700;letter-spacing:.035em;color:var(--text-muted);text-transform:uppercase}
+.dar-invoice-search-wrap{position:relative}
+.dar-invoice-search-wrap>i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--primary);pointer-events:none}
+.dar-invoice-search-wrap input{width:100%;min-height:46px;padding:11px 14px 11px 40px;border:1px solid var(--border-color);border-radius:9px;background:var(--bg-dark);color:var(--text-main);font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
+.dar-invoice-search-wrap input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(203,163,88,.14)}
+.dar-invoice-selected{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border-color);border-radius:9px;background:rgba(203,163,88,.055);min-height:74px}
+.dar-invoice-selected-main,.dar-invoice-selected-figures,.dar-invoice-selected-figures>span{display:grid;gap:3px;min-width:0}
+.dar-invoice-selected-label,.dar-invoice-selected-figures small{font-size:.68rem;color:var(--text-muted)}
+.dar-invoice-selected-main strong{font-size:.92rem;color:var(--text-main)}
+.dar-invoice-selected-main small{font-size:.75rem;color:var(--text-muted);overflow-wrap:anywhere}
+.dar-invoice-selected-figures{display:flex;gap:20px}
+.dar-invoice-selected-figures strong{font-size:.82rem;color:var(--text-main);white-space:nowrap}
+.dar-invoice-selected-figures .dar-invoice-balance{color:var(--primary)}
+.dar-invoice-status{display:inline-flex;align-items:center;justify-content:center;width:max-content;padding:3px 7px;border-radius:20px;font-size:.64rem;font-style:normal;font-weight:700;white-space:nowrap}
+.dar-invoice-status.is-paid{background:rgba(34,197,94,.12);color:#4ade80}
+.dar-invoice-status.is-partial{background:rgba(234,179,8,.13);color:#facc15}
+.dar-invoice-status.is-unpaid{background:rgba(59,130,246,.13);color:#93c5fd}
+.dar-invoice-results{position:absolute;z-index:80;top:calc(100% - 70px);left:0;right:0;max-height:340px;overflow:auto;padding:6px;border:1px solid var(--border-color);border-radius:10px;background:var(--panel-bg);box-shadow:0 16px 38px rgba(0,0,0,.32)}
+.dar-invoice-results[hidden]{display:none}
+.dar-invoice-option{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:11px 10px;border:0;border-bottom:1px solid var(--border-color);background:transparent;color:var(--text-main);text-align:left;cursor:pointer;border-radius:6px}
+.dar-invoice-option:last-child{border-bottom:0}
+.dar-invoice-option:hover,.dar-invoice-option[aria-selected="true"]{background:rgba(203,163,88,.09)}
+.dar-invoice-option-main,.dar-invoice-option-side{display:grid;gap:3px;min-width:0}
+.dar-invoice-option-main strong{font-size:.82rem;color:var(--primary)}
+.dar-invoice-option-main small,.dar-invoice-option-side small{font-size:.7rem;color:var(--text-muted);overflow-wrap:anywhere}
+.dar-invoice-option-side{justify-items:end;text-align:right}
+.dar-invoice-option-side strong{font-size:.78rem;white-space:nowrap}
+.dar-invoice-no-results,.dar-invoice-empty{padding:12px;color:var(--text-muted);font-size:.78rem}
+.dar-invoice-source{display:none!important}
+@media(max-width:700px){.dar-invoice-picker{flex-basis:100%;max-width:none}.dar-invoice-selected{align-items:flex-start}.dar-invoice-selected-figures{width:100%;justify-content:space-between}.dar-invoice-results{top:120px;max-height:280px}}
