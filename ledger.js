@@ -165,7 +165,7 @@ window.renderAccountsLedgerDetail = function(refCode) {
                             <td>${window.darFormatTableDate ? window.darFormatTableDate(pay.date) : pay.date}</td>
                             <td style="color: var(--accent-green); font-weight: bold;">AED ${pay.amount.toFixed(2)}</td>
                             <td>${pay.note}</td>
-                            <td style="text-align: center;"><button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
+                            <td style="text-align: center;"><button onclick="editDarPaymentMethod('${doc.refCode}',${pay.index})" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">Change Method</button> <button onclick="deletePaymentLog('${doc.refCode}',${pay.index})" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete</button></td>
                         </tr>
                     `;
                 }
@@ -359,6 +359,49 @@ window.savePaymentLogData = async function() {
         renderFullLedgerTableBody();
     } catch (error) {
         alert('Payment was not saved. Please retry after checking the connection.');
+    }
+};
+
+window.editDarPaymentMethod = async function(refCode, index) {
+    const doc = (state.documents || []).find(d => d.refCode === refCode);
+    if (!doc) return;
+    const selectedLogs = window.getDarDocumentPaymentLogs(doc);
+    if (!Number.isInteger(index) || index < 0 || index >= selectedLogs.length) return;
+    const targetFingerprint = JSON.stringify(selectedLogs[index]);
+    const currentMethod = String(selectedLogs[index].method || 'Other');
+    const allowed = ['Cash', 'Bank Transfer', 'Card', 'Cheque', 'Other'];
+    const answer = prompt('Change payment method to:\n1. Cash\n2. Bank Transfer\n3. Card\n4. Cheque\n5. Other\n\nEnter the method name:', currentMethod);
+    if (answer === null) return;
+    const method = allowed.find(value => value.toLowerCase() === answer.trim().toLowerCase());
+    if (!method) { alert('Choose Cash, Bank Transfer, Card, Cheque, or Other.'); return; }
+    if (method === currentMethod) return;
+    if (!confirm('Update this saved payment method from "' + currentMethod + '" to "' + method + '"? The amount and invoice balance will remain unchanged.')) return;
+    const actor = firebase.auth?.().currentUser?.email || firebase.auth?.().currentUser?.uid || 'Unknown';
+    const changedAt = new Date().toISOString();
+    try {
+        const result = await transactDarDocument(refCode, current => {
+            if (!current) return;
+            const logs = window.getDarDocumentPaymentLogs(current);
+            const currentIndex = logs.findIndex(entry => JSON.stringify(entry) === targetFingerprint);
+            if (currentIndex < 0) return;
+            const entry = logs[currentIndex];
+            entry.methodHistory = Array.isArray(entry.methodHistory) ? entry.methodHistory : [];
+            entry.methodHistory.push({from: String(entry.method || 'Other'), to: method, changedAt, changedBy: actor});
+            entry.method = method;
+            entry.updatedAt = changedAt;
+            entry.updatedBy = actor;
+            current.paymentLogs = logs;
+            current.updatedAt = changedAt;
+            current.updatedBy = actor;
+            return current;
+        });
+        if (!result.committed) { alert('That payment entry changed or was removed by another user. Refresh the invoice and try again.'); return; }
+        Object.assign(doc, result.snapshot.val() || {});
+        renderAccountsLedgerDetail(refCode);
+        renderFullLedgerTableBody();
+        if (typeof window.renderFinanceCentre === 'function') window.renderFinanceCentre();
+    } catch (error) {
+        alert('Payment method was not changed. Please retry after checking the connection.');
     }
 };
 
