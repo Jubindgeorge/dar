@@ -16,7 +16,7 @@ const logs=d=>window.getDarDocumentPaymentLogs?window.getDarDocumentPaymentLogs(
 function receipts(d){
  const ls=logs(d), sum=ls.reduce((s,p)=>s+Math.max(0,num(p.amount)),0), p=paid(d);
  let advance=d.advanceIncludedInPaymentLogs===true?0:(d.advanceIncludedInPaymentLogs===false?Math.max(0,num(d.paymentAdvanceBalance??d.advanceAmount??d.advanceAmt??d.advance)):Math.max(0,p-sum));
- const out=ls.filter(x=>num(x.amount)>0).map((x,index)=>({date:String(x.date||x.transactionDate||invDate(d)).slice(0,10),amount:Math.max(0,num(x.amount)),method:String(x.method||'Other'),reference:String(x.reference||x.paymentReference||''),note:String(x.note||''),_logIndex:index}));
+ const out=ls.filter(x=>num(x.amount)>0).map((x,index)=>({date:String(x.date||x.transactionDate||invDate(d)).slice(0,10),amount:Math.max(0,num(x.amount)),method:String(x.method||'Other'),reference:String(x.reference||x.paymentReference||''),note:String(x.note||''),createdAt:String(x.createdAt||''),_logIndex:index}));
  if(advance>0)out.push({date:invDate(d),amount:advance,method:'Advance',reference:'',note:'Advance / legacy receipt',_logIndex:-1});
  return out;
 }
@@ -127,7 +127,7 @@ window.printDarPaymentReceipt=function(entry){
  add('div','sub','خدمات دار الشمس لتخليص المعاملات · Sharjah / Dubai, U.A.E.');
  const rule=doc.createElement('hr');rule.className='rule';wrap.append(rule);
  add('div','title','PAYMENT RECEIPT');
- const receiptNo='RCPT-'+String(d.refCode||'INVOICE').replace(/[^A-Za-z0-9-]/g,'-')+'-'+String(entry._logIndex>=0?entry._logIndex+1:'ADV');
+ const receiptStamp=entry.createdAt?entry.createdAt.replace(/[^0-9]/g,'').slice(0,14):String(entry._logIndex>=0?entry._logIndex+1:'ADV');const receiptNo='RCPT-'+String(d.refCode||'INVOICE').replace(/[^A-Za-z0-9-]/g,'-')+'-'+receiptStamp;
  const meta=add('div','meta','');const left=add('div','','Receipt No: '+receiptNo+'\nPayment Date: '+entry.date,meta);const right=add('div','','Invoice: '+(d.refCode||'—')+'\nPrinted: '+today(),meta);right.style.textAlign='right';
  add('p','','Received from: '+(d.clientName||d.companyName||'Unassigned customer'));
  const grid=doc.createElement('div');grid.className='grid';
