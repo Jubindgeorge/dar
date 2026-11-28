@@ -117,7 +117,7 @@ window.renderAccountsLedgerMaster = function() {
             const statusClass = f.status === 'Paid' ? 'is-paid' : f.status === 'Unpaid' ? 'is-unpaid' : 'is-partial';
             return '<button type="button" class="dar-invoice-option" role="option" aria-selected="' + (doc.refCode === select.value) + '" data-invoice-ref="' + escape(doc.refCode) + '">' +
                 '<span class="dar-invoice-option-main"><strong>' + escape(doc.refCode) + '</strong><small>' + escape(customer) + '</small><small>' + escape(date || 'Date not available') + '</small></span>' +
-                '<span class="dar-invoice-option-side"><strong>' + money(f.balance) + '</strong><small>Outstanding</small><em class="dar-invoice-status ' + statusClass + '">' + f.status + '</em></span></button>';
+                '<span class="dar-invoice-option-side"><strong>' + money(f.total) + '</strong><small>Invoice total</small><strong>' + money(f.balance) + '</strong><small>Outstanding</small><em class="dar-invoice-status ' + statusClass + '">' + f.status + '</em></span></button>';
         }).join('') : '<div class="dar-invoice-no-results">No matching invoices found.</div>';
         results.hidden = false;
         search.setAttribute('aria-expanded','true');
@@ -126,6 +126,7 @@ window.renderAccountsLedgerMaster = function() {
         // Keep listeners stable while refreshing the current invoice collection on every render.
         picker._renderInvoiceResults = renderResults;
         picker._closeInvoiceResults = closeResults;
+        if (!results.hidden) renderResults();
         picker._selectInvoice = ref => {
             if (!docs.some(doc => doc.refCode === ref)) return;
             select.value = ref;
@@ -140,7 +141,7 @@ window.renderAccountsLedgerMaster = function() {
             search.addEventListener('input', () => picker._renderInvoiceResults?.());
             search.addEventListener('keydown', event => {
                 if (event.key === 'Escape') picker._closeInvoiceResults?.();
-                if (event.key === 'Enter') {
+                if (event.key === 'Enter' && !results.hidden) {
                     const first = results.querySelector('[data-invoice-ref]');
                     if (first) { event.preventDefault(); first.click(); }
                 }
