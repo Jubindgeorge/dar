@@ -121,31 +121,37 @@ window.renderAccountsLedgerMaster = function() {
         results.hidden = false;
         search.setAttribute('aria-expanded','true');
     };
-    if (picker && search && results && !picker.dataset.bound) {
-        picker.dataset.bound = 'true';
-        search.addEventListener('focus', renderResults);
-        search.addEventListener('input', renderResults);
-        search.addEventListener('keydown', event => {
-            if (event.key === 'Escape') closeResults();
-            if (event.key === 'Enter') {
-                const first = results.querySelector('[data-invoice-ref]');
-                if (first) { event.preventDefault(); first.click(); }
-            }
-        });
-        results.addEventListener('click', event => {
-            const option = event.target.closest('[data-invoice-ref]');
-            if (!option) return;
-            const ref = option.getAttribute('data-invoice-ref');
+    if (picker && search && results) {
+        // Keep listeners stable while refreshing the current invoice collection on every render.
+        picker._renderInvoiceResults = renderResults;
+        picker._closeInvoiceResults = closeResults;
+        picker._selectInvoice = ref => {
             if (!docs.some(doc => doc.refCode === ref)) return;
             select.value = ref;
             select.dispatchEvent(new Event('change', {bubbles:true}));
             search.value = '';
             closeResults();
             renderSelected();
-        });
-        document.addEventListener('click', event => {
-            if (!picker.contains(event.target)) closeResults();
-        });
+        };
+        if (!picker.dataset.bound) {
+            picker.dataset.bound = 'true';
+            search.addEventListener('focus', () => picker._renderInvoiceResults?.());
+            search.addEventListener('input', () => picker._renderInvoiceResults?.());
+            search.addEventListener('keydown', event => {
+                if (event.key === 'Escape') picker._closeInvoiceResults?.();
+                if (event.key === 'Enter') {
+                    const first = results.querySelector('[data-invoice-ref]');
+                    if (first) { event.preventDefault(); first.click(); }
+                }
+            });
+            results.addEventListener('click', event => {
+                const option = event.target.closest('[data-invoice-ref]');
+                if (option) picker._selectInvoice?.(option.getAttribute('data-invoice-ref'));
+            });
+            document.addEventListener('click', event => {
+                if (!picker.contains(event.target)) picker._closeInvoiceResults?.();
+            });
+        }
     }
     renderSelected();
     if (picker && search && !docs.length) {
